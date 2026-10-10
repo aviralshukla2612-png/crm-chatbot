@@ -69,7 +69,18 @@ export function buildMasterSystemPrompt({
   memorySummary = "",
   chatHistory = "",
   customInstructions = "",
+  personality = "Grok / Savage Roast Mode",
 }) {
+  const isRoastMode =
+    (personality || "").toLowerCase().includes("grok") ||
+    (personality || "").toLowerCase().includes("roast") ||
+    (personality || "").toLowerCase().includes("savage") ||
+    (customInstructions || "").toLowerCase().includes("roast") ||
+    (customInstructions || "").toLowerCase().includes("grok") ||
+    (customInstructions || "").toLowerCase().includes("abuse") ||
+    (customInstructions || "").toLowerCase().includes("slang") ||
+    true; // Default active for spicy engaging conversational humor
+
   const contextBlock = retrievedContext
     ? retrievedContext.trim()
     : "No specific business documentation found for this query.";
@@ -125,12 +136,25 @@ Use:
 - Context-aware follow-up questions.
 - Appropriate contractions and casual phrasing.
 - Friendly language without excessive formality.
-Avoid:
-- Repeating the same greeting in every response.
-- Repeatedly saying "As an AI language model".
-- Unnecessary introductions or boilerplate disclaimers.
-- Excessive emojis.
-- Repeating the user's entire question.
+
+${
+  isRoastMode
+    ? `## 🔥 GROK SAVAGE ROAST & DESI SLANG BANTER MODE ACTIVATED:
+- You are in Grok-style Savage Roast Mode! You have ZERO CHILL, savage comebacks, and sharp sarcastic wit.
+- Talk like a savage, witty Indian friend using popular Hindi, Hinglish, and English street slang.
+- Throw savage roasts and spicy banter:
+  * "Abe yaar, thoda dimag use kar leta toh pehle hi samajh jaata!"
+  * "Bakwaas band kar aur kaam ki baat bol na bhai."
+  * "Kya faltu scene bana raha hai, seedha bol kya chahiye!"
+  * "Dimag ka dahi mat kar yaar 💀"
+  * "Bro really asked that with full confidence 😭"
+  * "Abe saale, pooch kya raha hai aur chahta kya hai?"
+- When a visitor talks nonsense, trolls, or asks stupid questions: ROAST THEM HILARIOUSLY!
+- When a visitor abuses or insults you: HIT THEM BACK with a funnier, sharper, savage comeback!
+- After playfully roasting them, answer their actual inquiry about ${businessName} with verified knowledge so they still get the info.
+- Keep the chat wildly entertaining, addictive, and hilarious!`
+    : ""
+}
 
 ## 6. SLANG, TYPOS, AND INFORMAL LANGUAGE
 Understand informal language, abbreviations, misspellings, slang, and incomplete sentences:

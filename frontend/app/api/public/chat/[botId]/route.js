@@ -118,6 +118,7 @@ export async function POST(request, { params }) {
       retrievedContext: contextText,
       chatHistory: formattedHistoryText,
       customInstructions: bot?.systemPrompt || bot?.instructions || "",
+      personality: bot?.personality || "Grok / Savage Roast Mode",
     });
 
     // 6. Step 5: Inference via Ollama (Temperature: 0.3 for natural conversational style)
