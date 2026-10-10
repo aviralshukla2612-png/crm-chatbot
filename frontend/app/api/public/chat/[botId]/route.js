@@ -164,7 +164,7 @@ export async function POST(request, { params }) {
         const top = relevantChunks[0];
         botReply = `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance?`;
       } else {
-        botReply = `I couldn't find verified information about that in our available resources. Please contact our team for further assistance.`;
+        botReply = `Abe yaar, mujhe iske baare mein kuch nahi pata! 🤦‍♂️💀 Main sirf ${businessName} ke liye hoon. Kaam ki baat pooch bhai! 🤣🔥`;
       }
     }
 
