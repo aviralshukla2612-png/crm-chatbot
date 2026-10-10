@@ -66,7 +66,10 @@ export async function POST(request, { params }) {
     // 1. Resolve Bot & Enforce Status
     const bot = botsStore.getBot(botId);
     const botName = bot?.name || "AI Assistant";
-    const businessName = bot?.company || bot?.companyName || botName;
+    const businessName =
+      bot?.company && bot?.company !== "My Organization"
+        ? bot.company
+        : (bot?.name && bot.name.length > 2 && !["aa", "ab", "test"].includes(bot.name.toLowerCase()) ? bot.name : "Daily Cashbook");
     const tenantId = bot?.organizationId || botId;
 
     // 2. Step 1: Input Safety and Scope Check (Backend Guardrails)
