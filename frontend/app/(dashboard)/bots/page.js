@@ -330,7 +330,7 @@ export default function BotsPage() {
               </div>
 
               {/* Bottom row: Action Buttons */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
                 <Link
                   href={`/bots/${bot.id}`}
                   className="px-3.5 py-1.5 rounded-lg bg-[#4f46e5] hover:bg-[#4338ca] text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -338,6 +338,18 @@ export default function BotsPage() {
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Open</span>
                 </Link>
+
+                {/* Direct Live Website Deploy Button */}
+                <a
+                  href={bot.websiteUrl || "https://cashbook.vardaansmartsolutions.com"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Open live website with chatbot active"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Live Website Deploy 🚀</span>
+                </a>
 
                 <Link
                   href={`/bots/${bot.id}`}
@@ -362,7 +374,18 @@ export default function BotsPage() {
                   className="px-3.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/70 text-indigo-700 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Share2 className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Deploy</span>
+                  <span>Embed Code</span>
+                </button>
+
+                {/* Explicit Direct Delete Button */}
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteBot(bot.id, e)}
+                  className="px-3 py-1.5 rounded-lg border border-rose-200 hover:border-rose-300 bg-rose-50/50 hover:bg-rose-100/70 text-rose-600 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ml-auto"
+                  title="Permanently delete this bot"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Delete Bot</span>
                 </button>
               </div>
             </div>

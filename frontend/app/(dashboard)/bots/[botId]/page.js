@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Bot,
   Play,
@@ -19,6 +19,7 @@ import {
   Globe,
   ArrowLeft,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
 import StatCard from "@/components/ui/StatCard";
@@ -50,6 +51,15 @@ function BotDetailContent() {
     }
     loadBotData();
   }, [botId]);
+
+  const router = useRouter();
+
+  const handleDeleteBot = async () => {
+    if (confirm(`Are you sure you want to permanently delete "${bot.name}"?`)) {
+      await botsApi.deleteBot(bot.id);
+      router.push("/bots");
+    }
+  };
 
   if (loading || !bot) {
     return (
@@ -94,21 +104,45 @@ function BotDetailContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Direct Live Website Deploy Button */}
+          <a
+            href={bot.websiteUrl || "https://cashbook.vardaansmartsolutions.com"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer"
+            title="Open live website with chatbot active"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            Live Website Deploy 🚀
+          </a>
+
           <button
             onClick={() => setActiveTab("test")}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 transition-colors cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 text-indigo-600" />
             Test Bot
           </button>
+
           <Link
             href={`/bots/${bot.id}/deploy`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs shadow-indigo-600/30 transition-all cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             Deploy Widget
           </Link>
+
+          {/* Delete Bot Button */}
+          <button
+            type="button"
+            onClick={handleDeleteBot}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+            title="Permanently delete this bot"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            Delete Bot
+          </button>
         </div>
       </div>
 
