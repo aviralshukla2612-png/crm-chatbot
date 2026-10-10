@@ -24,6 +24,9 @@ async function resolveOllamaModel() {
           const match = available.find((m) => m.toLowerCase().includes(preferred.toLowerCase()));
           if (match) return match;
         }
+        // Prefer ultra-fast 1B models on CPU VPS
+        const oneB = available.find((m) => m.toLowerCase().includes(":1b") || m.toLowerCase().includes("1.5b") || m.toLowerCase().includes(":0.5b"));
+        if (oneB) return oneB;
         const qwen = available.find((m) => m.toLowerCase().includes("qwen"));
         if (qwen) return qwen;
         const llama = available.find((m) => m.toLowerCase().includes("llama"));
@@ -136,15 +139,18 @@ export async function POST(request, { params }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: activeModel,
+          keep_alive: "24h", // Keep model preloaded in RAM, eliminating cold-start disk delay
           messages: [
             { role: "system", content: masterSystemPrompt },
-            ...sessionHistory,
+            ...sessionHistory.slice(-4), // Keep active prompt lean for faster CPU evaluation
             { role: "user", content: message },
           ],
           stream: false,
           options: {
             temperature: 0.3,
-            num_predict: 280,
+            num_predict: 120, // Snappy answers, finishes generation in 1-2 seconds
+            num_ctx: 1024,    // Faster prompt evaluation on CPU (4x speedup)
+            num_thread: 4,    // Utilize multi-core CPU threads
           },
         }),
         signal: controller.signal,
