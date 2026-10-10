@@ -1,6 +1,23 @@
 name: ollama-stack
 
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexus-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - OLLAMA_URL=http://ollama:11434
+    volumes:
+      - ./frontend/data:/app/data
+    depends_on:
+      - fastapi
+      - ollama
+
   fastapi:
     build:
       context: .
@@ -44,7 +61,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - "C:/Users/Aviral Shukla/.ollama:/root/.ollama"
+      - ollama_data:/root/.ollama
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -62,3 +79,4 @@ services:
 volumes:
   open-webui_data:
   pgvector_data:
+  ollama_data:
