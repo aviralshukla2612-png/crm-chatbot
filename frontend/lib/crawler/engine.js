@@ -375,11 +375,11 @@ export async function executeWebsiteIngestion(jobId) {
  * Searches website knowledge with strict tenant and bot isolation
  */
 export async function searchWebsiteKnowledge(botId, query, topK = 3) {
-  const queryVec = await generateEmbedding(query);
-
-  // Filter vectors by botId (Multi-tenant security)
+  // Filter vectors by botId first (Zero-overhead if no knowledge is ingested yet)
   const botPoints = vectorStorePoints.filter((p) => p.botId === botId);
   if (botPoints.length === 0) return [];
+
+  const queryVec = await generateEmbedding(query);
 
   // Compute cosine similarity
   const scored = botPoints.map((point) => {
