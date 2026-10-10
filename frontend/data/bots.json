@@ -1,0 +1,27 @@
+[
+  {
+    "id": "bot_aa",
+    "name": "aa",
+    "company": "My Organization",
+    "description": "Custom AI chatbot assistant.",
+    "avatar": "🤖",
+    "status": "Active",
+    "primaryColor": "#4f46e5",
+    "welcomeMessage": "Hello! I am aa, your custom AI assistant. How can I help you today?",
+    "placeholderText": "Type a message...",
+    "launcherPosition": "bottom-right",
+    "brandingEnabled": true,
+    "personality": "Helpful & Professional",
+    "systemPrompt": "You are aa, a helpful and polite customer assistant. Answer visitor inquiries accurately. Always be professional, concise, and helpful.",
+    "responseLength": "Balanced",
+    "instructions": "Be courteous, clear, and direct.",
+    "collectLeads": true,
+    "conversationsCount": 0,
+    "questionsCount": 0,
+    "leadsCount": 0,
+    "sourcesCount": 0,
+    "createdDate": "Oct 9, 2026",
+    "lastActive": "Just now",
+    "documents": []
+  }
+]

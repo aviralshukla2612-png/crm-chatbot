@@ -1,0 +1,157 @@
+// Prisma Schema definition for Chatbot SaaS with Website Knowledge & Widget Integration
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id            String          @id @default(cuid())
+  name          String
+  slug          String          @unique
+  plan          String          @default("Starter") // Starter, Growth, Enterprise
+  status        String          @default("ACTIVE")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  users         User[]
+  bots          Bot[]
+  websiteSources WebsiteSource[]
+  ingestionJobs IngestionJob[]
+  installations WidgetInstallation[]
+}
+
+model User {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  email          String        @unique
+  role           String        @default("MEMBER") // OWNER, ADMIN, MEMBER
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Bot {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  avatar         String          @default("🤖")
+  primaryColor   String          @default("#4f46e5")
+  status         String          @default("Active") // Active, Draft, Disabled
+  systemPrompt   String?
+  welcomeMessage String          @default("Hello! How can I help you today?")
+  launcherPosition String        @default("bottom-right") // bottom-right, bottom-left
+  brandingEnabled Boolean        @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  websiteSources WebsiteSource[]
+  ingestionJobs  IngestionJob[]
+  installations  WidgetInstallation[]
+
+  @@index([organizationId])
+}
+
+model WebsiteSource {
+  id              String         @id @default(cuid())
+  organizationId  String
+  botId           String
+  name            String
+  baseUrl         String
+  crawlScope      String         @default("entire") // homepage, selected, entire
+  maxPages        Int            @default(50)
+  includePatterns String[]       @default([])
+  excludePatterns String[]       @default([])
+  syncSchedule    String         @default("manual") // manual, daily, weekly
+  status          String         @default("Pending") // Pending, Crawling, Indexing, Ready, Failed, Paused
+  pagesDiscovered Int            @default(0)
+  pagesIndexed    Int            @default(0)
+  pagesSkipped    Int            @default(0)
+  pagesFailed     Int            @default(0)
+  lastSyncedAt    DateTime?
+  lastError       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bot             Bot            @relation(fields: [botId], references: [id], onDelete: Cascade)
+  pages           WebsitePage[]
+  jobs            IngestionJob[]
+
+  @@index([organizationId, botId])
+  @@index([baseUrl])
+}
+
+model WebsitePage {
+  id              String        @id @default(cuid())
+  websiteSourceId String
+  botId           String
+  organizationId  String
+  url             String
+  canonicalUrl    String?
+  title           String?
+  description     String?
+  contentHash     String
+  crawlStatus     String        @default("Pending") // Pending, Indexed, Excluded, Failed
+  chunksCount     Int           @default(0)
+  httpStatus      Int           @default(200)
+  lastIndexedAt   DateTime?
+  lastError       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  websiteSource   WebsiteSource @relation(fields: [websiteSourceId], references: [id], onDelete: Cascade)
+
+  @@index([websiteSourceId])
+  @@index([botId, url])
+}
+
+model IngestionJob {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  websiteSourceId String
+  jobStatus       String        @default("Pending") // Pending, Discovering, Crawling, Extracting, Embedding, Indexing, Completed, CompletedWithErrors, Failed, Cancelled
+  currentStep     String        @default("Queued")
+  progress        Int           @default(0) // 0-100
+  discoveredCount Int           @default(0)
+  indexedCount    Int           @default(0)
+  failedCount     Int           @default(0)
+  startedAt       DateTime      @default(now())
+  finishedAt      DateTime?
+  errorDetails    String?
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  websiteSource   WebsiteSource @relation(fields: [websiteSourceId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, botId])
+  @@index([websiteSourceId])
+}
+
+model WidgetInstallation {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  domain          String
+  cmsProvider     String?       // custom, wordpress, shopify, webflow
+  installationType String       @default("script") // script, api_plugin
+  installationStatus String     @default("Unverified") // Unverified, Verified, Failed
+  lastVerifiedAt  DateTime?
+  failureReason   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@unique([botId, domain])
+  @@index([botId])
+}

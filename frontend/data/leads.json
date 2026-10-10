@@ -1,0 +1,49 @@
+[
+  {
+    "id": "lead_1791608783809_j20l",
+    "name": "Sarah Connor",
+    "email": "sarah@sky.net",
+    "phone": "+1 555-0199",
+    "company": "Website Embed Visitor",
+    "bot": "aa",
+    "score": "High",
+    "status": "New",
+    "created": "Oct 10, 2026",
+    "createdAt": "2026-10-10T05:06:23.809Z",
+    "updatedAt": "2026-10-10T05:06:23.809Z",
+    "inquiry": "Hello! My name is Sarah Connor (sarah@sky.net). Do you offer enterprise CRM and ERP software?",
+    "budget": "₹50,000+",
+    "source": "Web Chatbot Widget"
+  },
+  {
+    "id": "lead_1791608185636_9oft",
+    "name": "John Doe",
+    "email": "john.doe@innovate.io",
+    "phone": "+91 99999 88888",
+    "company": "Website Embed Visitor",
+    "bot": "aa",
+    "score": "High",
+    "status": "New",
+    "created": "Oct 10, 2026",
+    "createdAt": "2026-10-10T04:56:25.636Z",
+    "updatedAt": "2026-10-10T04:56:25.636Z",
+    "inquiry": "Hi, my name is John Doe and my email is john.doe@innovate.io. We need pricing for your ERP web application.",
+    "budget": "₹50,000+",
+    "source": "Web Chatbot Widget"
+  },
+  {
+    "id": "lead_seed_01",
+    "name": "Rohan Varma",
+    "email": "rohan.v@techlogix.co",
+    "phone": "+91 98200 12345",
+    "company": "TechLogix Global",
+    "bot": "aa",
+    "score": "High",
+    "status": "New",
+    "created": "Oct 10, 2026",
+    "createdAt": "2026-10-10T04:52:30.466Z",
+    "inquiry": "Interested in custom ERP & CRM automation pipeline with real-time vector search.",
+    "budget": "₹1,50,000",
+    "source": "Web Chatbot Widget"
+  }
+]

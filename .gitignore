@@ -85,6 +85,11 @@ huggingface/
 # Node.js / Web Assets (if used)
 # ------------------------------------------------------------------------------
 node_modules/
+.next/
+out/
+*.exe
+cloudflared.exe
+scratch/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -113,12 +118,7 @@ htmlcov/
 *~
 
 # ------------------------------------------------------------------------------
-# OS-Specific Files
+# Frontend inclusions
 # ------------------------------------------------------------------------------
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-[Dd]esktop.ini
+!frontend/lib/
+!frontend/data/

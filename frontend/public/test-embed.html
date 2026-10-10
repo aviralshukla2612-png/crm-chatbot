@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusAI Live Chatbot Embed Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 18px;
+      color: #ffffff;
+    }
+    .logo span {
+      background: #4f46e5;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge {
+      background: #10b98120;
+      color: #34d399;
+      border: 1px solid #10b98140;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    main {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 24px;
+      flex: 1;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .step-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 20px;
+      border-radius: 16px;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .step-card h3 {
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #f1f5f9;
+    }
+    .step-card p {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 0;
+    }
+    .callout {
+      margin-top: 32px;
+      background: #4f46e515;
+      border: 1px solid #4f46e540;
+      padding: 18px 24px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .callout p {
+      margin-bottom: 0;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+    .btn {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #4338ca;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span>🤖</span> NexusAI Website Integration Test
+    </div>
+    <div class="badge">● Live Test Page</div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Your Chatbot is Ready to Deploy</h1>
+      <p>
+        This test webpage simulates an external website with the NexusAI chatbot widget snippet embedded. Look at the bottom-right corner: click the floating circular launcher button to chat with your assistant in real-time!
+      </p>
+
+      <div class="steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>Copy Snippet</h3>
+          <p>Copy the single &lt;script&gt; line from the Deploy console.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>Paste in HTML</h3>
+          <p>Paste immediately before the closing &lt;/body&gt; tag.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>Instant Activation</h3>
+          <p>The widget loads automatically with zero external dependencies.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p>Want to open the chat window right now?</p>
+        <button class="btn" onclick="window.NexusWidget ? window.NexusWidget.toggle() : alert('Widget is loading...')">Open Chatbot Widget</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- NexusAI Standalone Chatbot Widget Snippet for bot 'aa' -->
+  <script
+    src="/widget.js"
+    data-bot-id="aa"
+    data-color="#4f46e5"
+    data-position="bottom-right"
+    defer
+  ></script>
+</body>
+</html>
