@@ -136,6 +136,14 @@ function BotDetailContent() {
             </button>
           );
         })}
+
+        <Link
+          href={`/bots/${bot.id}/deploy`}
+          className="flex items-center gap-1.5 pb-3.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors ml-auto"
+        >
+          <Share2 className="w-4 h-4 text-indigo-600" />
+          <span>External Site Deploy &rarr;</span>
+        </Link>
       </div>
 
       {/* Tab: Overview */}

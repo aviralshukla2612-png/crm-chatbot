@@ -73,15 +73,14 @@ export default function BotsPage() {
   const activeCount = bots.filter((b) => b.status === "Active").length;
   const draftCount = bots.filter((b) => b.status === "Draft").length;
 
-  const liveHost = "https://river-socks-hiring-vcr.trycloudflare.com";
   const appOrigin =
-    typeof window !== "undefined" ? (window.location.origin.includes("localhost") ? liveHost : window.location.origin) : liveHost;
+    typeof window !== "undefined" ? window.location.origin : "http://187.127.158.24:3300";
 
   const getEmbedSnippet = (bot) => {
     if (!bot) return "";
     const idToUse = bot.id || "bot_aa";
     return `<script
-  src="${liveHost}/widget.js"
+  src="${appOrigin}/widget.js"
   data-bot-id="${idToUse}"
   data-color="${bot.primaryColor || "#4f46e5"}"
   data-position="${bot.launcherPosition || "bottom-right"}"
