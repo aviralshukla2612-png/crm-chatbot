@@ -7,6 +7,7 @@ import {
   checkInputScopeAndSafety,
   buildMasterSystemPrompt,
   validateOutput,
+  detectLanguage,
 } from "@/lib/ai/masterPrompt";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
@@ -75,8 +76,11 @@ export async function POST(request, { params }) {
         : (bot?.name && bot.name.length > 2 && !["aa", "ab", "test"].includes(bot.name.toLowerCase()) ? bot.name : "Daily Cashbook");
     const tenantId = bot?.organizationId || botId;
 
-    // 2. Step 1: Input Safety and Scope Check (Backend Guardrails)
-    const safetyCheck = checkInputScopeAndSafety(message, businessName);
+    // 2. Step 1: Analyze Input Language (English, Hindi, or Hinglish)
+    const lang = detectLanguage(message);
+
+    // Step 2: Input Safety and Scope Check (Backend Guardrails)
+    const safetyCheck = checkInputScopeAndSafety(message, businessName, lang);
     if (safetyCheck.blocked) {
       return corsResponse(
         NextResponse.json({
@@ -88,7 +92,7 @@ export async function POST(request, { params }) {
       );
     }
 
-    // 3. Step 2: Resolve Persistent Database Conversation Memory
+    // 3. Step 3: Resolve Persistent Database Conversation Memory
     const currentSessionId = sessionId || `session_${botId}_${Date.now()}`;
     const existingConv = conversationsStore.getConversation(currentSessionId);
 
@@ -110,13 +114,13 @@ export async function POST(request, { params }) {
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n");
 
-    // 4. Step 3: Multi-Tenant Vector Search over Authorized Knowledge
+    // 4. Step 4: Multi-Tenant Vector Search over Authorized Knowledge
     const relevantChunks = await searchWebsiteKnowledge(botId, message, 4);
     const contextText = relevantChunks
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    // 5. Step 4: Build Master System Prompt with Multi-Turn Memory & Verified Knowledge
+    // 5. Step 5: Build Master System Prompt with Strict Language Adaptation
     const masterSystemPrompt = buildMasterSystemPrompt({
       assistantName: botName,
       businessName: businessName,
@@ -124,7 +128,7 @@ export async function POST(request, { params }) {
       retrievedContext: contextText,
       chatHistory: formattedHistoryText,
       customInstructions: bot?.systemPrompt || bot?.instructions || "",
-      personality: bot?.personality || "Grok / Savage Roast Mode",
+      userLanguage: lang,
     });
 
     // 6. Step 5: Inference via Ollama (Temperature: 0.3 for natural conversational style)
@@ -171,14 +175,23 @@ export async function POST(request, { params }) {
     if (!botReply) {
       if (relevantChunks.length > 0) {
         const top = relevantChunks[0];
-        botReply = `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance?`;
+        botReply =
+          lang === "english"
+            ? `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance?`
+            : `Hamari verified details ke mutabiq: ${top.content.slice(0, 300)}...\n\nAur details chahiye toh batao!`;
       } else {
-        botReply = `Abe yaar, mujhe iske baare mein kuch nahi pata! 🤦‍♂️💀 Main sirf ${businessName} ke liye hoon. Kaam ki baat pooch bhai! 🤣🔥`;
+        if (lang === "english") {
+          botReply = `I couldn't find verified details about that for ${businessName}. Feel free to ask about our services, features, or pricing! 🚀`;
+        } else if (lang === "hindi") {
+          botReply = `मुझे ${businessName} के लिए इस बारे में पुष्टि की गई जानकारी नहीं मिली। आप हमारी सेवाओं या कीमतों के बारे में पूछ सकते हैं! 🚀`;
+        } else {
+          botReply = `Arrey bhai, iske baare mein mujhe confirmed details nahi mili. ${businessName} ke baare mein kuch pooch na! 💀🔥`;
+        }
       }
     }
 
     // Step 5: Output Validation
-    botReply = validateOutput(botReply, businessName);
+    botReply = validateOutput(botReply, businessName, lang);
 
     // 4. Capture Lead if Visitor Details Provided or extracted from message
     const emailInMsg = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);

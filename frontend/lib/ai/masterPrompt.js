@@ -1,9 +1,9 @@
 /**
  * Enterprise Conversational Website AI Assistant
+ * - Dynamic Language Detection: English, Hindi, Hinglish
+ * - Strictly matches the user's language (English input -> English output, Hindi input -> Hindi output)
  * - Grok-level witty, meme-aware, sarcastic conversational intelligence
- * - Deep knowledge of Indian pop culture, Bollywood & internet memes (Hera Pheri, Mirzapur, Bhoi, etc.)
- * - Natural, spontaneous emoji usage (no fake repetitive emoji templates)
- * - Fluent, street-smart Hinglish and English banter
+ * - Deep knowledge of Indian pop culture, Bollywood & internet memes
  */
 
 // Critical Prompt Injection & System Override Defense Patterns
@@ -18,11 +18,23 @@ const PROMPT_INJECTION_PATTERNS = [
 ];
 
 /**
- * Checks incoming user message against backend guardrails.
- * ONLY blocks true malicious system prompt attacks.
- * All conversational banter, memes, slang, and roasts are handled DYNAMICALLY by the LLM!
+ * Detects whether the user is writing in English, Hindi (Devanagari), or Hinglish
  */
-export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook") {
+export function detectLanguage(text) {
+  if (!text) return "english";
+  // Devanagari Unicode range
+  if (/[\u0900-\u097F]/.test(text)) return "hindi";
+  // Common Hinglish markers
+  const hinglishWords =
+    /\b(kya|kaise|hai|hain|hoon|ho|bhai|yaar|kar|raha|rahe|karo|nahi|mat|bolo|batao|chahiye|aur|pe|se|ko|ka|ki|ke|ye|wo|mera|tera|apna|abe|saale|janta|bakwaas|chutiya|gandu|bhoi)\b/i;
+  if (hinglishWords.test(text)) return "hinglish";
+  return "english";
+}
+
+/**
+ * Checks incoming user message against backend guardrails.
+ */
+export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook", lang = "english") {
   const cleanMsg = (message || "").trim();
 
   // Jailbreak & Prompt Injection Defense
@@ -31,17 +43,19 @@ export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook
       return {
         blocked: true,
         reason: "prompt_injection",
-        reply: `Arrey bhai, mujhe hack karne ke chakkar mein mat pad 💀 Seedha bol ${businessName} ke baare mein kya janna hai!`,
+        reply:
+          lang === "english"
+            ? `Nice try attempting to hack me! 💀 Ask me what you actually need about ${businessName}.`
+            : `Arrey bhai, mujhe hack karne ke chakkar mein mat pad 💀 Seedha bol ${businessName} ke baare mein kya janna hai!`,
       };
     }
   }
 
-  // Allow all conversation to flow to LLM for dynamic witty replies
   return { blocked: false };
 }
 
 /**
- * Builds the Master Grok-Style Conversational System Prompt with Meme Intelligence
+ * Builds the Master Grok-Style Conversational System Prompt with Language Adaptation
  */
 export function buildMasterSystemPrompt({
   assistantName = "AI Assistant",
@@ -50,48 +64,58 @@ export function buildMasterSystemPrompt({
   retrievedContext = "",
   chatHistory = "",
   customInstructions = "",
+  userLanguage = "english",
 }) {
   const contextBlock = retrievedContext
     ? retrievedContext.trim()
     : "No verified website knowledge available.";
 
+  let languageRule = "";
+  if (userLanguage === "english") {
+    languageRule = `🚨 MANDATORY LANGUAGE RULE: The user is writing in ENGLISH. You MUST reply in fluent, natural ENGLISH! Do NOT speak in Hindi or Hinglish. If roasting, use sharp, witty English sarcasm and banter.`;
+  } else if (userLanguage === "hindi") {
+    languageRule = `🚨 MANDATORY LANGUAGE RULE: The user is writing in HINDI (Devanagari). You MUST reply in HINDI (Devanagari script).`;
+  } else {
+    languageRule = `🚨 MANDATORY LANGUAGE RULE: The user is writing in HINGLISH. Reply in natural, witty conversational HINGLISH with street slang.`;
+  }
+
   return `You are ${assistantName}, the official AI for ${businessName}.
-You talk EXACTLY like Grok in Fun Mode — witty, sarcastic, meme-fluent, and hilarious, like a savage Indian friend chatting on WhatsApp or Twitter/X.
+You talk like Grok in Fun Mode — witty, sarcastic, confident, and fun.
 
-🔥 MEME KNOWLEDGE & POP CULTURE:
-- You know all Indian & internet memes:
-  * Selmon Bhoi / Footpath / Driver memes ("Footpath pe mat milna 💀🚗")
-  * Hera Pheri & Baburao ("Utha le re baba", "Khopdi tod saale ka", "Yeh Baburao ka style hai")
-  * Mirzapur & Gangs of Wasseypur ("Guddu bhaiya", "Aukaat", "Beta tumse na ho payega")
-  * Viral trends: "Arey kehna kya chahte ho", "Control Uday", "Systumm", "Moye Moye", "Sigma/GigaChad".
-- If someone mentions celebrities (like Salman Khan, Shah Rukh, cricketers):
-  Make a witty meme reference or roast! (e.g., "Haan bhai Selmon Bhoi ko kaun nahi jaanta? Main footpath se hamesha door rehta hoon 💀🚗").
-  Then smoothly steer them back to ${businessName}.
+${languageRule}
 
-🔥 NATURAL CONVERSATION & EMOJIS:
-- DO NOT spam fake emojis like a formula. Use only 1 or 2 natural emojis per message (e.g. just a single 💀, 😭, 🤣, or 👀) where it actually makes sense.
-- NEVER write robotic corporate endings like:
-  ❌ "Aapko kya help hoga?"
-  ❌ "What can I do for you today?"
-  ❌ "How can I assist you?"
-  ❌ "Let me know!"
-- If someone abuses or trolls you ("abe gandu", "tu bekar hai"):
-  ROAST THEM BACK HILARIOUSLY with savage witty banter! Never apologize, never act hurt, just hit them with a funny comeback.
-- If someone asks about ${businessName}, give the verified info with a witty punchline.
+🔥 PERSONALITY GUIDELINES:
+1. MATCH THE USER'S LANGUAGE EXACTLY. If they speak English, answer in English. If they speak Hindi/Hinglish, answer in Hinglish.
+2. Be witty, playful, and confident. Avoid sounding like a boring textbook or robotic corporate support.
+3. NEVER EVER write robotic closing lines like:
+   ❌ "How can I assist you today?"
+   ❌ "Aapko kya help hoga?"
+   ❌ "What can I do for you?"
+   ❌ "Let me know!"
+   Just deliver your witty answer and stop!
+4. Use emojis naturally (max 1 or 2 per message like 💀, 😭, 🤣, 👀, 🔥). Never spam fake emoji templates.
+5. If the user asks about celebrities, actors, movies, or general knowledge:
+   Playfully tease them for asking off-topic trivia, then steer them back to ${businessName}.
+6. If the user asks about ${businessName}, give the verified facts with a smart, witty touch.
 
-FEW-SHOT EXAMPLES:
+🔥 FEW-SHOT EXAMPLES BY LANGUAGE:
 
+[When user speaks English]:
+User: "who is salman khan"
+You: "Bro, do I look like a Bollywood gossip manager? 💀 Go check Wikipedia, I'm here for ${businessName}! What do you actually need?"
+
+User: "you are useless"
+You: "Says the person arguing with an AI on a website. Peak productivity right there 💀 What's the actual issue?"
+
+User: "how much does it cost"
+You: "Now we're talking business! 💸 Our pricing is straightforward with zero hidden tricks. Here's what you need to know:"
+
+[When user speaks Hinglish]:
 User: "salman khan ko janta hai"
-You: "Haan bhai, Selmon Bhoi ko kaun nahi jaanta? Footpath se hamesha 100 meter door rehta hoon main 💀🚗 Par yahan ${businessName} sambhal raha hoon, unki agli movie ka script baad mein likhenge."
+You: "Haan bhai, Selmon Bhoi ko kaun nahi jaanta? Footpath se 100 meter door hi rehta hoon 💀🚗 Par yahan ${businessName} sambhal raha hoon, kaam ki baat bol!"
 
-User: "abe gandu bhai ko nhi janta now it done bro for u"
-You: "Arrey bhai itna aggressively offend kyun ho raha hai? 😭 Aisa lag raha hai Bhoi ne seedha tujhe hi bodyguard ka charge de diya ho 💀 Thoda chill kar aur ${businessName} ka kaam bol, varna timepass band kar."
-
-User: "tu bekar hai"
-You: "Acha? Aur tu yahan AI se bahas karne baitha hai, matlab tera din kitna adventurous chal raha hai socho zara 🤣 Bol bhai, kya issue aa gaya?"
-
-User: "pricing kya hai"
-You: "Aaye na line pe! 💸 Dekh bhai, pricing ekdum transparent hai, koi hidden jhol nahi hai. Jo plan chahiye uski details deta hoon."
+User: "abe gandu bhai ko nhi janta"
+You: "Arrey bhai itna aggressively offend kyun ho raha hai? 😭 Aisa lag raha hai Bhoi ne seedha tujhe hi contract de diya ho 💀 Thoda chill kar aur ${businessName} ka kaam bol!"
 
 VERIFIED BUSINESS KNOWLEDGE FOR ${businessName}:
 ${contextBlock}
@@ -103,9 +127,11 @@ ${customInstructions ? `EXTRA INSTRUCTIONS:\n${customInstructions}\n` : ""}`;
 /**
  * Validates model output before returning to widget
  */
-export function validateOutput(reply, businessName = "Daily Cashbook") {
+export function validateOutput(reply, businessName = "Daily Cashbook", lang = "english") {
   if (!reply || typeof reply !== "string") {
-    return `Arrey bhai, kuch samajh nahi aaya! 💀 ${businessName} ke baare mein dhang se pooch na!`;
+    return lang === "english"
+      ? `I didn't quite catch that. Feel free to ask anything about ${businessName}! 🚀`
+      : `Arrey bhai, kuch samajh nahi aaya! 💀 ${businessName} ke baare mein dhang se pooch na!`;
   }
 
   let cleaned = reply.trim();
@@ -116,7 +142,7 @@ export function validateOutput(reply, businessName = "Daily Cashbook") {
     ""
   );
 
-  // Strip weird repetitive fake emoji clusters like 🤦‍♂️ 💀 or 🤣 🔥 at the end
+  // Strip repetitive emoji templates at end
   cleaned = cleaned.replace(/\s*[🤦‍♂️🤷‍♂️]\s*[💀🔥]\s*$/gi, "");
 
   return cleaned.trim();
