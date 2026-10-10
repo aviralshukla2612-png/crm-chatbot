@@ -40,8 +40,14 @@ function DeployBotContent() {
   const [brandingEnabled, setBrandingEnabled] = useState(true);
   const [activeCms, setActiveCms] = useState("html"); // html, wordpress, shopify, webflow, ssh
 
-  // Custom Host URL (live Cloudflare HTTPS tunnel)
-  const [customHost, setCustomHost] = useState("https://river-socks-hiring-vcr.trycloudflare.com");
+  // Host URL (defaults to active server origin, e.g. http://187.127.158.24:3300)
+  const [customHost, setCustomHost] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCustomHost(window.location.origin);
+    }
+  }, []);
 
   // Copy state
   const [copiedScript, setCopiedScript] = useState(false);

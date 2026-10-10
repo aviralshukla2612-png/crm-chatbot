@@ -5,7 +5,34 @@ import { conversationsStore } from "@/lib/db/conversationsStore";
 import { leadsStore } from "@/lib/db/leadsStore";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
-const CHAT_MODEL = process.env.CHAT_MODEL || "llama3.2:1b";
+
+// Dynamic model resolver
+async function resolveOllamaModel() {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const data = await res.json();
+      const available = (data.models || []).map((m) => m.name);
+      if (available.length > 0) {
+        const preferred = process.env.CHAT_MODEL;
+        if (preferred) {
+          const match = available.find((m) => m.toLowerCase().includes(preferred.toLowerCase()));
+          if (match) return match;
+        }
+        const qwen = available.find((m) => m.toLowerCase().includes("qwen"));
+        if (qwen) return qwen;
+        const llama = available.find((m) => m.toLowerCase().includes("llama"));
+        if (llama) return llama;
+        const chatModel = available.find((m) => !m.toLowerCase().includes("embed"));
+        if (chatModel) return chatModel;
+        return available[0];
+      }
+    }
+  } catch (err) {
+    // Ollama tags query fallback
+  }
+  return process.env.CHAT_MODEL || "qwen2.5:3b";
+}
 
 // CORS Headers helper
 function corsResponse(res) {
@@ -36,7 +63,7 @@ export async function POST(request, { params }) {
     const botName = bot?.name || "AI Assistant";
     const systemPrompt =
       bot?.systemPrompt ||
-      `You are ${botName}, a helpful and polite customer assistant. Answer visitor inquiries accurately using the provided website knowledge. Always be professional, concise, and helpful.`;
+      `You are ${botName}, a helpful and polite customer assistant. Answer visitor inquiries accurately and informatively. Always be professional, concise, and helpful.`;
 
     // 2. Multi-Tenant Vector Search over Website Knowledge
     const relevantChunks = await searchWebsiteKnowledge(botId, message, 3);
@@ -44,32 +71,40 @@ export async function POST(request, { params }) {
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    const promptWithContext = `SYSTEM INSTRUCTIONS:
+    let promptWithContext = "";
+    if (contextText) {
+      promptWithContext = `SYSTEM INSTRUCTIONS:
 ${systemPrompt}
 
-${
-  contextText
-    ? `VERIFIED WEBSITE KNOWLEDGE:
+VERIFIED WEBSITE KNOWLEDGE:
 ${contextText}
 
-Use the verified website knowledge above to answer the visitor's question accurately. If the information is not in the knowledge base, politely state that you can connect them with a human specialist.`
-    : "Answer politely and ask how you can help."
-}
+Use the verified website knowledge above to answer the visitor's question accurately. If the information is not in the knowledge base, provide a helpful general answer and invite them to leave contact details for a human specialist.
 
 VISITOR QUERY:
 ${message}`;
+    } else {
+      promptWithContext = `SYSTEM INSTRUCTIONS:
+${systemPrompt}
+
+Provide a direct, informative, helpful and polite answer to the visitor's inquiry. If they ask about services, details, or appointments, provide clear guidance and invite them to leave their contact number or email so the team can follow up directly.
+
+VISITOR QUERY:
+${message}`;
+    }
 
     // 3. Inference via Ollama or Intelligent RAG Generator
     let botReply = "";
     try {
+      const activeModel = await resolveOllamaModel();
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 7000);
+      const timeout = setTimeout(() => controller.abort(), 45000);
 
       const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: CHAT_MODEL,
+          model: activeModel,
           messages: [
             { role: "system", content: promptWithContext },
             ...history.slice(-4),
@@ -78,7 +113,7 @@ ${message}`;
           stream: false,
           options: {
             temperature: 0.3,
-            num_predict: 200,
+            num_predict: 300,
           },
         }),
         signal: controller.signal,
@@ -88,18 +123,20 @@ ${message}`;
       if (ollamaRes.ok) {
         const data = await ollamaRes.json();
         botReply = data.message?.content || "";
+      } else {
+        console.error("[OLLAMA_ERROR_STATUS]", ollamaRes.status);
       }
     } catch (llmErr) {
-      // Ollama offline fallback
+      console.error("[OLLAMA_FETCH_ERROR]", llmErr.message);
     }
 
-    // High quality contextual fallback if Ollama container is offline
+    // Context-aware fallback if Ollama container is offline or cold starting
     if (!botReply) {
       if (relevantChunks.length > 0) {
         const top = relevantChunks[0];
-        botReply = `Based on our verified knowledge: ${top.content.slice(0, 280)}...\n\nWould you like more details or assistance booking an appointment/consultation?`;
+        botReply = `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance booking an appointment/consultation?`;
       } else {
-        botReply = `Thank you for reaching out! We'd be glad to assist you with your inquiry. Feel free to leave your contact details or ask any questions about our services.`;
+        botReply = `Thank you for asking about "${message.slice(0, 50)}". We'd be glad to provide all details. Please leave your contact number or email here, and our specialist will reach out to assist you right away!`;
       }
     }
 
