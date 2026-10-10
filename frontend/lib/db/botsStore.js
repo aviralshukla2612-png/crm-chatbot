@@ -47,12 +47,12 @@ function loadBotsFromDisk() {
     }
     const raw = fs.readFileSync(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
+    if (Array.isArray(parsed)) {
       memoryBotsCache = parsed;
       return memoryBotsCache;
     }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(DEFAULT_BOTS, null, 2), "utf8");
-    memoryBotsCache = [...DEFAULT_BOTS];
+    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), "utf8");
+    memoryBotsCache = [];
     return memoryBotsCache;
   } catch (err) {
     console.error("Error reading bots store:", err);

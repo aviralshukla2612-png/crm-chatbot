@@ -69,7 +69,7 @@ export const botsApi = {
       const res = await fetch("/api/bots", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        if (data.success && Array.isArray(data.bots) && data.bots.length > 0) {
+        if (data.success && Array.isArray(data.bots)) {
           saveStoredBots(data.bots);
           return data.bots.filter((b) => !orgId || b.organizationId === orgId);
         }
@@ -79,17 +79,6 @@ export const botsApi = {
     }
 
     const bots = getStoredBots();
-    // If local storage has bots, sync them to server in background
-    if (bots.length > 0) {
-      bots.forEach((b) => {
-        fetch("/api/bots", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(b),
-        }).catch(() => {});
-      });
-    }
-
     return bots.filter((b) => !orgId || b.organizationId === orgId);
   },
 
@@ -176,18 +165,20 @@ export const botsApi = {
   },
 
   async deleteBot(id) {
-    const bots = getStoredBots();
-    const updated = bots.filter((b) => b.id !== id);
-    saveStoredBots(updated);
-
     if (typeof window !== "undefined") {
-      fetch(`/api/bots/${id}`, {
-        method: "DELETE",
-      }).catch(() => {});
+      try {
+        await fetch(`/api/bots/${id}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Error deleting bot from server:", err);
+      }
     } else {
       const store = getServerStore();
       if (store) store.deleteBot(id);
     }
+
+    const bots = getStoredBots();
+    const updated = bots.filter((b) => b.id !== id && b.name?.toLowerCase() !== id?.toLowerCase());
+    saveStoredBots(updated);
 
     return { success: true };
   },

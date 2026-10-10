@@ -56,9 +56,10 @@ export default function BotsPage() {
 
   const handleDeleteBot = async (id, e) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this bot?")) {
+    if (confirm("Are you sure you want to permanently delete this bot?")) {
+      setBots((prev) => prev.filter((b) => b.id !== id));
       await botsApi.deleteBot(id);
-      loadBots();
+      await loadBots();
     }
   };
 
