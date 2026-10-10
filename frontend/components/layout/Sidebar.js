@@ -150,6 +150,20 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {/* Footer */}
         <div className="p-3 border-t border-slate-800/60 space-y-2">
+          {/* Public Website Link */}
+          <Link
+            href="/"
+            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Public Website</span>
+            </div>
+            <span className="text-[9px] font-mono bg-emerald-400/20 px-1 rounded-sm">
+              LIVE
+            </span>
+          </Link>
+
           {/* Super Admin Switcher */}
           <Link
             href="/admin"

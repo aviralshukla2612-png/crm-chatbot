@@ -35,12 +35,15 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("Srajan Shukla");
   const [companyName, setCompanyName] = useState("Acme Healthcare");
 
+  const [portalRole, setPortalRole] = useState("subadmin"); // 'subadmin' or 'superadmin'
+
   const handleSignIn = () => {
     setLoading(true);
+    const destination = portalRole === "superadmin" ? "/admin" : "/dashboard";
     if (typeof window !== "undefined") {
-      window.location.href = "/dashboard";
+      window.location.href = destination;
     } else {
-      router.push("/dashboard");
+      router.push(destination);
     }
   };
 
@@ -98,81 +101,65 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* QUICK ACCESS LAUNCHER IN THIS SPACE */}
-          <div className="p-4 rounded-2xl bg-slate-900/70 border border-indigo-500/30 backdrop-blur-md shadow-xl space-y-3">
+          {/* 3 CORE ACCESS PORTALS: SUPER ADMIN, SUB ADMIN, WEBSITE */}
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-700/60 backdrop-blur-md shadow-xl space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2 text-xs font-bold text-white">
-                <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span>Quick Access to All 9 Screens</span>
-              </div>
-              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                Click to Open
+              <span className="text-xs font-bold text-slate-200">Access Portals</span>
+              <span className="text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">
+                Direct Login
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <LayoutDashboard className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 shrink-0" />
-                <span className="truncate font-medium">2. Dashboard</span>
-              </Link>
-
-              <Link
-                href="/bots"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <Bot className="w-4 h-4 text-sky-400 group-hover:text-sky-300 shrink-0" />
-                <span className="truncate font-medium">3. Bots Mgmt</span>
-              </Link>
-
-              <Link
-                href="/bots/create"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <FileText className="w-4 h-4 text-teal-400 group-hover:text-teal-300 shrink-0" />
-                <span className="truncate font-medium">4. Knowledge</span>
-              </Link>
-
-              <Link
-                href="/bots/create"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <Palette className="w-4 h-4 text-purple-400 group-hover:text-purple-300 shrink-0" />
-                <span className="truncate font-medium">5. Appearance</span>
-              </Link>
-
-              <Link
-                href="/conversations"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <MessageSquare className="w-4 h-4 text-violet-400 group-hover:text-violet-300 shrink-0" />
-                <span className="truncate font-medium">6. Conversations</span>
-              </Link>
-
-              <Link
-                href="/leads"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <Users2 className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 shrink-0" />
-                <span className="truncate font-medium">7. Leads (127)</span>
-              </Link>
-
-              <Link
-                href="/analytics"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/60 hover:bg-indigo-600/30 border border-slate-700/60 hover:border-indigo-400 text-slate-200 hover:text-white transition-all group"
-              >
-                <BarChart3 className="w-4 h-4 text-rose-400 group-hover:text-rose-300 shrink-0" />
-                <span className="truncate font-medium">8. Analytics</span>
-              </Link>
-
+            <div className="space-y-2.5 text-xs">
+              {/* 1. Super Admin */}
               <Link
                 href="/admin"
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-400/50 hover:border-indigo-300 text-indigo-100 hover:text-white transition-all group font-semibold"
+                className="flex items-center justify-between p-3 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 hover:border-indigo-400 text-slate-100 transition-all group"
               >
-                <ShieldCheck className="w-4 h-4 text-indigo-300 shrink-0" />
-                <span className="truncate">9. Super Admin</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block text-xs">Super Admin</span>
+                    <span className="text-[11px] text-slate-400">Master platform management & tenants</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-300 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+
+              {/* 2. Sub Admin */}
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-slate-100 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                    <Building className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block text-xs">Sub Admin</span>
+                    <span className="text-[11px] text-slate-400">Client bots, conversations & leads</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-300 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+
+              {/* 3. Website */}
+              <Link
+                href="/"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-slate-100 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block text-xs">Website</span>
+                    <span className="text-[11px] text-slate-400">Public landing page & live demo</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-300 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
           </div>
@@ -210,6 +197,34 @@ export default function LoginPage() {
                 ? "Sign in to your account"
                 : "Join and start building your AI chatbot"}
             </p>
+          </div>
+
+          {/* Role Portal Switcher: Sub Admin vs Super Admin */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setPortalRole("subadmin")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                portalRole === "subadmin"
+                  ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Building className="w-3.5 h-3.5" />
+              <span>Sub Admin</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPortalRole("superadmin")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                portalRole === "superadmin"
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Super Admin</span>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -378,6 +393,16 @@ export default function LoginPage() {
                 </button>
               </>
             )}
+          </div>
+
+          <div className="text-center pt-3 border-t border-slate-100">
+            <Link
+              href="/"
+              className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              <span>← Back to Public Website</span>
+            </Link>
           </div>
         </div>
       </div>
