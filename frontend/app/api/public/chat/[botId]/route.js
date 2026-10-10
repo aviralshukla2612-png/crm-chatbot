@@ -82,22 +82,45 @@ export async function POST(request, { params }) {
       );
     }
 
-    // 3. Step 2: Multi-Tenant Vector Search over Authorized Knowledge
+    // 3. Step 2: Resolve Persistent Database Conversation Memory
+    const currentSessionId = sessionId || `session_${botId}_${Date.now()}`;
+    const existingConv = conversationsStore.getConversation(currentSessionId);
+
+    // Retrieve previous messages from database or fallback to request history
+    let sessionHistory = [];
+    if (existingConv && Array.isArray(existingConv.messages)) {
+      sessionHistory = existingConv.messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+    } else if (Array.isArray(history) && history.length > 0) {
+      sessionHistory = history
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+    }
+
+    const formattedHistoryText = sessionHistory
+      .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+      .join("\n");
+
+    // 4. Step 3: Multi-Tenant Vector Search over Authorized Knowledge
     const relevantChunks = await searchWebsiteKnowledge(botId, message, 4);
     const contextText = relevantChunks
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    // 4. Step 3: Build Master System Prompt with RAG Context
+    // 5. Step 4: Build Master System Prompt with Multi-Turn Memory & Verified Knowledge
     const masterSystemPrompt = buildMasterSystemPrompt({
       assistantName: botName,
       businessName: businessName,
       tenantId: tenantId,
       retrievedContext: contextText,
+      chatHistory: formattedHistoryText,
       customInstructions: bot?.systemPrompt || bot?.instructions || "",
     });
 
-    // 5. Step 4: Inference via Ollama (Low temperature for strict factual adherence)
+    // 6. Step 5: Inference via Ollama (Temperature: 0.3 for natural conversational style)
     let botReply = "";
     try {
       const activeModel = await resolveOllamaModel();
@@ -111,13 +134,13 @@ export async function POST(request, { params }) {
           model: activeModel,
           messages: [
             { role: "system", content: masterSystemPrompt },
-            ...history.slice(-4),
+            ...sessionHistory,
             { role: "user", content: message },
           ],
           stream: false,
           options: {
-            temperature: 0.2,
-            num_predict: 250,
+            temperature: 0.3,
+            num_predict: 280,
           },
         }),
         signal: controller.signal,
@@ -165,11 +188,9 @@ export async function POST(request, { params }) {
       });
     }
 
-    // 5. Store conversation continuity in real-time
-    const currentSessionId = sessionId || `session_${botId}_${Date.now()}`;
-    const existingConv = conversationsStore.getConversation(currentSessionId);
-
-    if (existingConv) {
+    // 7. Store conversation continuity in real-time
+    const reloadedConv = conversationsStore.getConversation(currentSessionId);
+    if (reloadedConv) {
       conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
       conversationsStore.addMessage(currentSessionId, {
         role: "assistant",
