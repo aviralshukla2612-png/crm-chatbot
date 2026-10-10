@@ -44,6 +44,16 @@
 
   // Session state & defaults
   const sessionKey = `nexus_chat_v2_${botId}`;
+  let activeSessionId = "";
+  try {
+    activeSessionId = sessionStorage.getItem(`${sessionKey}_id`);
+    if (!activeSessionId) {
+      activeSessionId = `visitor_${botId}_${Date.now()}`;
+      sessionStorage.setItem(`${sessionKey}_id`, activeSessionId);
+    }
+  } catch (e) {
+    activeSessionId = `visitor_${botId}_${Date.now()}`;
+  }
   let isOpen = false;
   let isLoading = false;
 
@@ -378,12 +388,19 @@
           </div>
         </div>
       </div>
-      <button id="nexus-close-btn" class="nexus-btn-icon" aria-label="Close chat">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button id="nexus-refresh-btn" class="nexus-btn-icon" aria-label="Restart chat" title="Start new conversation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+        <button id="nexus-close-btn" class="nexus-btn-icon" aria-label="Close chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="nexus-messages" id="nexus-messages-list"></div>
@@ -496,6 +513,19 @@
   launcher.addEventListener("click", toggleChat);
   document.getElementById("nexus-close-btn")?.addEventListener("click", toggleChat);
 
+  document.getElementById("nexus-refresh-btn")?.addEventListener("click", () => {
+    try {
+      sessionStorage.removeItem(sessionKey);
+      sessionStorage.removeItem(`${sessionKey}_id`);
+    } catch (e) {}
+    activeSessionId = `visitor_${botId}_${Date.now()}`;
+    try {
+      sessionStorage.setItem(`${sessionKey}_id`, activeSessionId);
+    } catch (e) {}
+    messages = [];
+    renderMessages();
+  });
+
   // 10. Chat Inference
   async function sendMessage() {
     const input = document.getElementById("nexus-user-input");
@@ -516,7 +546,7 @@
         body: JSON.stringify({
           message: text,
           history: messages.slice(-4),
-          sessionId: sessionKey,
+          sessionId: activeSessionId,
         }),
       });
 
