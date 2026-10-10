@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Send,
   Sparkles,
@@ -36,7 +36,11 @@ export default function BotPreviewWidget({
   const [leadCaptured, setLeadCaptured] = useState(false);
   const [leadData, setLeadData] = useState({ name: "", email: "", phone: "" });
   const [showPromptLead, setShowPromptLead] = useState(false);
-  const [sessionId] = useState(() => `session_preview_${Date.now()}`);
+  const [sessionId, setSessionId] = useState("");
+
+  useEffect(() => {
+    setSessionId(`session_preview_${Date.now()}`);
+  }, []);
 
   const handleSend = async (e) => {
     e?.preventDefault();

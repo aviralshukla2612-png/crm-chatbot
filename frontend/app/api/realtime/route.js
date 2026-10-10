@@ -1,7 +1,5 @@
 import { sseBroker } from "@/lib/db/sseBroker";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(request) {
   let unsubscribe;
   let heartbeatInterval;
