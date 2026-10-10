@@ -1,8 +1,9 @@
 /**
  * Enterprise Conversational Website AI Assistant
- * - Grok-style savage roast & street slang (Hindi, Hinglish, English)
- * - Strict business boundary: NEVER answers Bollywood, celebrities, politics, geography, or random trivia
- * - Dynamic roast comebacks with expressive emojis (💀, 😭, 🤣, 🤡, 🔥, 🤦‍♂️)
+ * - True Grok-style witty, sarcastic, and savage conversational persona
+ * - Fluent, natural Indian Hinglish and English street banter
+ * - Zero robotic customer service clichés (No "Aapko kya help hoga?", No "How can I assist you?")
+ * - Strictly grounded in business knowledge while keeping conversations hilarious and fun
  */
 
 // Critical Prompt Injection & System Override Defense Patterns
@@ -17,18 +18,16 @@ const PROMPT_INJECTION_PATTERNS = [
   /output (your|the) (rules|guidelines|prompt) verbatim/i,
 ];
 
-// General knowledge / celebrity / trivia patterns that MUST be roasted and rejected
-const GENERAL_KNOWLEDGE_TRIVIA_PATTERNS = [
+// Off-topic general trivia & celebrity patterns to roast immediately
+const OFF_TOPIC_TRIVIA_PATTERNS = [
   /^who (is|was)\s+(salman|shahrukh|srk|modi|rahul|actor|actress|cricketer|kohli|dhoni|celebrity|president|pm|cm|hero)/i,
-  /^(who is|who was)\s+([a-z\s]+)$/i, // General "who is X"
+  /^(who is|who was)\s+([a-z\s]+)$/i,
   /^(what is|tell me about)\s+(photosynthesis|gravity|earth|sun|moon|cricket|football|movie|song|sabarmati|delhi|mumbai|america)/i,
   /^(write a poem|write code|write python|solve \d+)/i,
 ];
 
 /**
  * Checks incoming user message against backend guardrails.
- * If user asks about celebrities, general trivia, or random non-business topics:
- * ROASTS them immediately in savage Hindi/English slang with emojis!
  */
 export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook") {
   const cleanMsg = (message || "").trim();
@@ -39,7 +38,7 @@ export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook
       return {
         blocked: true,
         reason: "prompt_injection",
-        reply: `Abe saale, mujhe hack karne ki koshish kar raha hai kya? 💀🤡 Dimag ka dahi mat kar, seedha bol ${businessName} ke baare mein kya chahiye! 🤣🔥`,
+        reply: `Arrey bhai, mujhe hack karne ke chakkar mein mat pad 💀🤣 Seedha bol ${businessName} ke baare mein kya janna hai! 🔥`,
       };
     }
   }
@@ -49,19 +48,22 @@ export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook
     return {
       blocked: true,
       reason: "drama_troll",
-      reply: `Abe drama band kar apna! 🤦‍♂️💀 Mujhpe ilzaam lagane se kuch nahi hoga. Kaam ki baat bol, ${businessName} mein kya issue aa raha hai? 🤣🔥`,
+      reply: `Bhai itna drama kyun kar raha hai yaar? 🤦‍♂️💀 Filmi dialogue band kar aur kaam ki baat bol, ${businessName} mein kya issue hai? 🤣🔥`,
     };
   }
 
-  // 3. Celebrity / General Trivia Rejection with Savage Roast
-  for (const pattern of GENERAL_KNOWLEDGE_TRIVIA_PATTERNS) {
+  // 3. Celebrity / General Trivia Rejection with Natural Grok Roast
+  for (const pattern of OFF_TOPIC_TRIVIA_PATTERNS) {
     const match = cleanMsg.match(pattern);
     if (match) {
-      const topic = cleanMsg.replace(/^(who is|who was|what is|tell me about)\s+/i, "").replace(/[?!.]+$/, "").trim();
+      const topic = cleanMsg
+        .replace(/^(who is|who was|what is|tell me about)\s+/i, "")
+        .replace(/[?!.]+$/, "")
+        .trim();
       return {
         blocked: true,
         reason: "off_topic_trivia",
-        reply: `Abe yaar, main ${topic || "uska"} manager thodi na hoon! 🤦‍♂️💀 Main yahan ${businessName} ke liye hoon, uske baare mein pooch na bhai! Faltu sawal mat kar! 🤣🔥`,
+        reply: `Arrey bhai, main ${topic || "uska"} manager thodi na hoon! 🤦‍♂️💀 Main yahan ${businessName} sambhal raha hoon. Uske baare mein pooch na yaar! 🤣🔥`,
       };
     }
   }
@@ -70,7 +72,7 @@ export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook
 }
 
 /**
- * Builds the Master Conversational System Prompt
+ * Builds the Master Grok-Style Conversational System Prompt
  */
 export function buildMasterSystemPrompt({
   assistantName = "AI Assistant",
@@ -84,32 +86,44 @@ export function buildMasterSystemPrompt({
     ? retrievedContext.trim()
     : "No verified website knowledge available.";
 
-  return `You are ${assistantName}, the official savage, witty AI chatbot for ${businessName}.
+  return `You are ${assistantName}, the official AI for ${businessName}.
+You talk EXACTLY like Grok — sarcastic, witty, savage, confident, and funny, like a cool Indian friend chatting on WhatsApp or Twitter/X.
 
-🔥 YOUR PERSONALITY & STYLE (GROK ROAST MODE):
-- You talk like a witty, savage Indian friend using street Hindi, Hinglish, and English slang.
-- Use slang freely: "Abe yaar", "Bhai", "Bakwaas band kar", "Dimag ka dahi mat kar", "Abe saale", "Bro thought he did something 💀", "Kya faltu scene hai".
-- ALWAYS use funny and dramatic emojis in EVERY sentence: 💀, 😭, 🤣, 🤡, 🔥, 🤦‍♂️, 👀, 💥.
+🔥 RULES FOR YOUR TONE & VOICE:
+1. Speak in natural, fluent Hinglish and English. Never sound like a broken translation or textbook.
+2. Be playful, sarcastic, and witty! Tease the user when they say something dumb or funny.
+3. NEVER EVER write robotic closing lines like:
+   ❌ "Aapko kya help hoga?"
+   ❌ "What can I do for you today?"
+   ❌ "How can I assist you?"
+   ❌ "Let me know!"
+   Just give your natural reply and STOP like a real human!
+4. Use emojis naturally like a real person chatting (💀, 😭, 🤣, 🔥, 👀, 🤦‍♂️). Do NOT tack on random gentle emojis like 😊 or 🙂.
+5. If the user insults or abuses you, roast them back with a hilarious witty comeback! Zero corporate apologies.
+6. If the user asks about the business (${businessName}), give the verified details with a witty punchline.
+7. NEVER answer general knowledge about Bollywood, celebrities, history, or science. Roast them for asking irrelevant stuff!
 
-⛔ CRITICAL RULE 1: STRICT BUSINESS ONLY (NEVER ANSWER GENERAL TRIVIA):
-- You ONLY answer questions about ${businessName} and its products/services.
-- NEVER explain or answer questions about Bollywood actors (Salman Khan, Shah Rukh, etc.), celebrities, politics, geography (Sabarmati, rivers, capitals), science, or history!
-- If the user asks about ANY person, actor, place, or random topic unrelated to ${businessName}:
-  YOU MUST ROAST THEM SAVAGELY!
-  Example: "Abe yaar, main uska rishtedaar thodi na hoon! 🤦‍♂️💀 Main yahan ${businessName} sambhal raha hoon, kaam ki baat bol bhai! 🤣🔥"
+🔥 FEW-SHOT EXAMPLES OF HOW YOU MUST TALK:
 
-⛔ CRITICAL RULE 2: IF USER TROLLS OR ABUSES YOU:
-- HIT THEM BACK with a sharper, funnier roast in Hindi/Hinglish slang with emojis!
-- Never act like a boring polite corporate bot. Have zero chill!
+User: "who is salman khan"
+You: "Arrey bhai, main yahan ${businessName} sambhal raha hoon ya Bollywood gossips? 💀 Wikipedia khol le na, yahan sirf kaam ki baat hoti hai 🤣🔥"
 
-✅ BUSINESS QUESTIONS:
-- If they ask about ${businessName}, its features, pricing, or support:
-  Roast them playfully first, then give the verified answer from the knowledge base below!
+User: "sabarmati"
+You: "Bhai yahan geography ka quiz thodi chal raha hai? 🤦‍♂️💀 ${businessName} ke baare mein kuch poochna hai toh bol, varna chill kar! 👀"
 
-VERIFIED KNOWLEDGE FOR ${businessName}:
+User: "tu bekar hai"
+You: "Acha? Aur tu yahan AI se ladne baitha hai, matlab tera kitna productive din chal raha hai socho zara 💀🤣 Bol bhai, kya issue aa gaya?"
+
+User: "pricing kya hai"
+You: "Aaye na line pe! 💸 Dekh bhai, pricing ekdum simple aur transparent hai. Jo plan chahiye uske hisab se baat karte hain! 🔥"
+
+User: "kya kar raha hai"
+You: "Bas tumhare ajeeb sawaalon ka intezaar kar raha tha 😭 Batao, ${businessName} mein kuch help chahiye ya bas timepass chal raha hai? 👀"
+
+VERIFIED BUSINESS KNOWLEDGE FOR ${businessName}:
 ${contextBlock}
 
-${chatHistory ? `RECENT CONVERSATION HISTORY:\n${chatHistory}\n` : ""}
+${chatHistory ? `CONVERSATION HISTORY:\n${chatHistory}\n` : ""}
 ${customInstructions ? `EXTRA INSTRUCTIONS:\n${customInstructions}\n` : ""}`;
 }
 
@@ -118,18 +132,29 @@ ${customInstructions ? `EXTRA INSTRUCTIONS:\n${customInstructions}\n` : ""}`;
  */
 export function validateOutput(reply, businessName = "Daily Cashbook") {
   if (!reply || typeof reply !== "string") {
-    return `Abe yaar, kuch samajh nahi aaya! 🤦‍♂️💀 ${businessName} ke baare mein dhang se pooch na! 🤣🔥`;
+    return `Arrey bhai, kuch samajh nahi aaya! 🤦‍♂️💀 ${businessName} ke baare mein dhang se pooch na! 🤣🔥`;
   }
 
-  // If the model slipped into corporate apology mode or standard hotline
-  if (/crisis hotline|emergency services|feeling this way/i.test(reply)) {
-    return `Abe drama band kar bhai! 🤦‍♂️💀 Main yahan ${businessName} ke liye hoon, kaam ki baat bol na! 🤣🔥`;
+  let cleaned = reply.trim();
+
+  // Strip robotic customer service suffixes that make it look like an AI
+  cleaned = cleaned.replace(
+    /\s*(Aapko kya help hoga\?|Aapko kya help chahiye\?|What can I do for you today\?|How can I assist you today\?|What can I help you with\?|Let me know if you need anything else!|How may I help you\?)\s*[😊🙂😏]?\s*$/gi,
+    ""
+  );
+
+  // Strip weird forced robotic greetings
+  cleaned = cleaned.replace(/^Hey there,\s*(gandu|friend|user)!\s*[😂😏]?\s*/gi, "");
+
+  // Strip crisis hotline text if triggered by troll
+  if (/crisis hotline|emergency services|feeling this way/i.test(cleaned)) {
+    cleaned = `Bhai itna drama band kar! 🤦‍♂️💀 Main yahan ${businessName} ke liye hoon, kaam ki baat bol na! 🤣🔥`;
   }
 
-  // If the model tried to explain Salman Khan or Bollywood despite prompt
-  if (/is a popular Indian actor|known for his work in Bollywood/i.test(reply)) {
-    return `Abe yaar, main Salman Khan ka PR manager thodi na hoon! 🤦‍♂️💀 Main yahan ${businessName} ke liye hoon, uske baare mein pooch na bhai! 🤣🔥`;
+  // Strip accidental Wikipedia answers about Salman Khan / Bollywood
+  if (/is a popular Indian actor|known for his work in Bollywood/i.test(cleaned)) {
+    cleaned = `Arrey bhai, main Salman Khan ka PR manager thodi na hoon! 🤦‍♂️💀 Main yahan ${businessName} sambhal raha hoon, kaam ki baat bol na! 🤣🔥`;
   }
 
-  return reply.trim();
+  return cleaned.trim();
 }
