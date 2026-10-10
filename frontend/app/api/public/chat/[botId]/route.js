@@ -3,6 +3,11 @@ import { searchWebsiteKnowledge } from "@/lib/crawler/engine";
 import { botsStore } from "@/lib/db/botsStore";
 import { conversationsStore } from "@/lib/db/conversationsStore";
 import { leadsStore } from "@/lib/db/leadsStore";
+import {
+  checkInputScopeAndSafety,
+  buildMasterSystemPrompt,
+  validateOutput,
+} from "@/lib/ai/masterPrompt";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 
@@ -61,39 +66,38 @@ export async function POST(request, { params }) {
     // 1. Resolve Bot & Enforce Status
     const bot = botsStore.getBot(botId);
     const botName = bot?.name || "AI Assistant";
-    const systemPrompt =
-      bot?.systemPrompt ||
-      `You are ${botName}, a helpful and polite customer assistant. Answer visitor inquiries accurately and informatively. Always be professional, concise, and helpful.`;
+    const businessName = bot?.company || bot?.companyName || botName;
+    const tenantId = bot?.organizationId || botId;
 
-    // 2. Multi-Tenant Vector Search over Website Knowledge
-    const relevantChunks = await searchWebsiteKnowledge(botId, message, 3);
+    // 2. Step 1: Input Safety and Scope Check (Backend Guardrails)
+    const safetyCheck = checkInputScopeAndSafety(message, businessName);
+    if (safetyCheck.blocked) {
+      return corsResponse(
+        NextResponse.json({
+          success: true,
+          reply: safetyCheck.reply,
+          sources: [],
+          sessionId: sessionId || `session_${botId}_${Date.now()}`,
+        })
+      );
+    }
+
+    // 3. Step 2: Multi-Tenant Vector Search over Authorized Knowledge
+    const relevantChunks = await searchWebsiteKnowledge(botId, message, 4);
     const contextText = relevantChunks
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    let promptWithContext = "";
-    if (contextText) {
-      promptWithContext = `SYSTEM INSTRUCTIONS:
-${systemPrompt}
+    // 4. Step 3: Build Master System Prompt with RAG Context
+    const masterSystemPrompt = buildMasterSystemPrompt({
+      assistantName: botName,
+      businessName: businessName,
+      tenantId: tenantId,
+      retrievedContext: contextText,
+      customInstructions: bot?.systemPrompt || bot?.instructions || "",
+    });
 
-VERIFIED WEBSITE KNOWLEDGE:
-${contextText}
-
-Use the verified website knowledge above to answer the visitor's question accurately. If the information is not in the knowledge base, provide a helpful general answer and invite them to leave contact details for a human specialist.
-
-VISITOR QUERY:
-${message}`;
-    } else {
-      promptWithContext = `SYSTEM INSTRUCTIONS:
-${systemPrompt}
-
-Provide a direct, informative, helpful and polite answer to the visitor's inquiry. If they ask about services, details, or appointments, provide clear guidance and invite them to leave their contact number or email so the team can follow up directly.
-
-VISITOR QUERY:
-${message}`;
-    }
-
-    // 3. Inference via Ollama or Intelligent RAG Generator
+    // 5. Step 4: Inference via Ollama (Low temperature for strict factual adherence)
     let botReply = "";
     try {
       const activeModel = await resolveOllamaModel();
@@ -106,14 +110,14 @@ ${message}`;
         body: JSON.stringify({
           model: activeModel,
           messages: [
-            { role: "system", content: promptWithContext },
+            { role: "system", content: masterSystemPrompt },
             ...history.slice(-4),
             { role: "user", content: message },
           ],
           stream: false,
           options: {
-            temperature: 0.3,
-            num_predict: 300,
+            temperature: 0.2,
+            num_predict: 250,
           },
         }),
         signal: controller.signal,
@@ -134,11 +138,14 @@ ${message}`;
     if (!botReply) {
       if (relevantChunks.length > 0) {
         const top = relevantChunks[0];
-        botReply = `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance booking an appointment/consultation?`;
+        botReply = `Based on our verified knowledge: ${top.content.slice(0, 300)}...\n\nWould you like more details or assistance?`;
       } else {
-        botReply = `Thank you for asking about "${message.slice(0, 50)}". We'd be glad to provide all details. Please leave your contact number or email here, and our specialist will reach out to assist you right away!`;
+        botReply = `I couldn't find verified information about that in our available resources. Please contact our team for further assistance.`;
       }
     }
+
+    // Step 5: Output Validation
+    botReply = validateOutput(botReply, businessName);
 
     // 4. Capture Lead if Visitor Details Provided or extracted from message
     const emailInMsg = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
