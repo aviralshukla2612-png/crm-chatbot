@@ -12,6 +12,7 @@ services:
     environment:
       - NODE_ENV=production
       - OLLAMA_URL=http://ollama:11434
+      - CHAT_MODEL=${CHAT_MODEL:-qwen2.5:3b}
     volumes:
       - ./frontend/data:/app/data
     depends_on:
@@ -33,7 +34,7 @@ services:
       - DB_USER=postgres
       - DB_PASS=postgrespassword
       - OLLAMA_URL=http://ollama:11434
-      - LLM_MODEL=llama3.2:1b
+      - LLM_MODEL=${LLM_MODEL:-qwen2.5:3b}
       - EMBED_MODEL=nomic-embed-text
     volumes:
       - ./app:/app
