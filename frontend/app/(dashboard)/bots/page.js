@@ -22,6 +22,7 @@ import {
   X,
   Download,
   ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import { botsApi } from "@/lib/api/bots";
 import { useRealtimeSync } from "@/lib/hooks/useRealtimeSync";
@@ -338,6 +339,16 @@ export default function BotsPage() {
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Open</span>
+                </Link>
+
+                {/* Direct Add Information / Knowledge Button */}
+                <Link
+                  href={`/bots/${bot.id}?tab=knowledge`}
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Add website URLs, documents, Q&A pairs, or training information"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>+ Add Information 📚</span>
                 </Link>
 
                 {/* Direct Live Website Deploy Button */}

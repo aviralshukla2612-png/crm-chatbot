@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Bot,
   Play,
@@ -30,14 +30,20 @@ import { knowledgeApi } from "@/lib/api/knowledge";
 
 function BotDetailContent() {
   const routeParams = useParams();
+  const searchParams = useSearchParams();
   const botId = routeParams?.botId || "bot_sales_01";
+  const queryTab = searchParams?.get("tab");
 
   const [bot, setBot] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [qas, setQas] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(queryTab || "overview");
   const [knowledgeSubtab, setKnowledgeSubtab] = useState("websites");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (queryTab) setActiveTab(queryTab);
+  }, [queryTab]);
 
   useEffect(() => {
     async function loadBotData() {
@@ -116,6 +122,17 @@ function BotDetailContent() {
             <Globe className="w-3.5 h-3.5" />
             Live Website Deploy 🚀
           </a>
+
+          {/* Direct Add Information / Knowledge Button */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("knowledge")}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-colors cursor-pointer"
+            title="Add website URLs, documents, Q&A pairs, or training information"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>+ Add Information 📚</span>
+          </button>
 
           <button
             onClick={() => setActiveTab("test")}
