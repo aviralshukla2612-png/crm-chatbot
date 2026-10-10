@@ -12,7 +12,7 @@ services:
     environment:
       - NODE_ENV=production
       - OLLAMA_URL=http://ollama:11434
-      - CHAT_MODEL=${CHAT_MODEL:-qwen2.5:3b}
+      - CHAT_MODEL=${CHAT_MODEL:-llama3.2:1b}
     volumes:
       - ./frontend/data:/app/data
     depends_on:

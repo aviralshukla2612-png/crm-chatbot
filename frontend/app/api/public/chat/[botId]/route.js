@@ -20,14 +20,22 @@ async function resolveOllamaModel() {
       const data = await res.json();
       const available = (data.models || []).map((m) => m.name);
       if (available.length > 0) {
+        // 1. Prioritize ultra-fast 1B models on CPU VPS
+        const oneB = available.find(
+          (m) =>
+            m.toLowerCase().includes("llama3.2:1b") ||
+            m.toLowerCase().includes(":1b") ||
+            m.toLowerCase().includes("1.5b") ||
+            m.toLowerCase().includes(":0.5b")
+        );
+        if (oneB) return oneB;
+
         const preferred = process.env.CHAT_MODEL;
         if (preferred) {
           const match = available.find((m) => m.toLowerCase().includes(preferred.toLowerCase()));
           if (match) return match;
         }
-        // Prefer ultra-fast 1B models on CPU VPS
-        const oneB = available.find((m) => m.toLowerCase().includes(":1b") || m.toLowerCase().includes("1.5b") || m.toLowerCase().includes(":0.5b"));
-        if (oneB) return oneB;
+
         const qwen = available.find((m) => m.toLowerCase().includes("qwen"));
         if (qwen) return qwen;
         const llama = available.find((m) => m.toLowerCase().includes("llama"));
@@ -40,7 +48,7 @@ async function resolveOllamaModel() {
   } catch (err) {
     // Ollama tags query fallback
   }
-  return process.env.CHAT_MODEL || "qwen2.5:3b";
+  return "llama3.2:1b";
 }
 
 // CORS Headers helper
@@ -135,8 +143,9 @@ export async function POST(request, { params }) {
     let botReply = "";
     try {
       const activeModel = await resolveOllamaModel();
+      console.log(`[OLLAMA_CALL] Using model: ${activeModel} for message: "${message.slice(0, 30)}"`);
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
       const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
         method: "POST",
@@ -154,7 +163,6 @@ export async function POST(request, { params }) {
             temperature: 0.3,
             num_predict: 120, // Snappy answers, finishes generation in 1-2 seconds
             num_ctx: 1024,    // Faster prompt evaluation on CPU (4x speedup)
-            num_thread: 4,    // Utilize multi-core CPU threads
           },
         }),
         signal: controller.signal,
@@ -164,8 +172,10 @@ export async function POST(request, { params }) {
       if (ollamaRes.ok) {
         const data = await ollamaRes.json();
         botReply = data.message?.content || "";
+        console.log(`[OLLAMA_SUCCESS] Received reply length: ${botReply.length}`);
       } else {
-        console.error("[OLLAMA_ERROR_STATUS]", ollamaRes.status);
+        const errorText = await ollamaRes.text().catch(() => "");
+        console.error("[OLLAMA_ERROR_STATUS]", ollamaRes.status, errorText);
       }
     } catch (llmErr) {
       console.error("[OLLAMA_FETCH_ERROR]", llmErr.message);
