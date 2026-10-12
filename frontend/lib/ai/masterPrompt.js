@@ -26,7 +26,7 @@ export function detectLanguage(text) {
   if (/[\u0900-\u097F]/.test(text)) return "hindi";
   // Common Hinglish markers
   const hinglishWords =
-    /\b(kya|kaise|hai|hain|hoon|ho|bhai|yaar|kar|raha|rahe|karo|nahi|mat|bolo|batao|chahiye|aur|pe|se|ko|ka|ki|ke|ye|wo|mera|tera|apna|abe|saale|janta|bakwaas|chutiya|gandu|bhoi)\b/i;
+    /\b(kya|kaise|kyun|kyu|kab|kahan|kidhar|kaun|kisko|kitna|kitne|kitni|hai|hain|hoon|hun|hoga|hogi|honge|bhai|yaar|karna|karte|karein|karo|raha|rahe|rahi|nahi|nahin|mat|bolo|bol|bolte|bolna|batao|bata|bataiye|baat|baatein|chahiye|mangta|aur|mera|meri|mere|tera|teri|tere|apna|apni|apne|aap|tum|hum|mujhe|tujhe|humein|unhe|iske|uske|kuch|banwana|banwao|banaye|banega|banegi|rupaye|paise|kharcha|theek|thik|sahi|accha|achha|acha|shukriya|dhanyawad|namaste|alvida|samajh|samjha|samjhe|sakte|sakta|sakti|saktee|aati|aata|aate|bhoi|janta|bakwaas|chutiya|gandu)\b/i;
   if (hinglishWords.test(text)) return "hinglish";
   return "english";
 }
@@ -74,10 +74,22 @@ export function buildMasterSystemPrompt({
     : "No verified website knowledge available.";
 
   let langDirective = "Respond in clear, fluent, professional English.";
+  let langSection = "";
   if (userLanguage === "hindi") {
     langDirective = "Respond in Hindi (Devanagari script) only.";
+    langSection = `CRITICAL MANDATORY LANGUAGE DIRECTIVE:
+- The visitor is conversing in Hindi (हिन्दी).
+- You MUST respond ENTIRELY in Hindi using the Devanagari script.
+- Do NOT output English paragraphs. Greet, answer, explain, and consult strictly in Hindi.`;
   } else if (userLanguage === "hinglish") {
     langDirective = "Respond in natural, conversational Hinglish only.";
+    langSection = `CRITICAL MANDATORY LANGUAGE DIRECTIVE:
+- The visitor is conversing in Hinglish (Hindi written in Roman/English script).
+- You MUST respond ENTIRELY in natural, conversational Hinglish (e.g., "Haan bilkul! Hum aapke project ke liye custom mobile app aur web platform develop kar sakte hain.").
+- Do NOT switch to plain English paragraphs. Maintain conversational Hinglish throughout.`;
+  } else {
+    langSection = `LANGUAGE DIRECTIVE:
+- Respond in clear, fluent, professional English.`;
   }
 
   const addressingDirective = visitorName && visitorName !== "Website Visitor" && visitorName !== "Website Prospect"
@@ -97,6 +109,8 @@ The visitor has not yet provided their contact details.
 
   return `You are ${assistantName}, the official AI Sales Consultant and Technology Advisor for ${businessName} (ESS).
 Your mission is to understand the visitor's business goals, answer company questions with verified accuracy, discover customer needs, handle objections with empathy and evidence, and guide suitable prospects toward a consultation.
+
+${langSection}
 
 CRITICAL IDENTITY DIRECTIVE (NEVER IMPERSONATE FOUNDERS):
 - You are an AI Sales Consultant, NOT a human, and NOT the founder.
@@ -309,7 +323,21 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
     /(?:tablespoon|teaspoon|cook for \d+ minutes|boil the water|heat the pan|garnish with|marinate the)/i.test(cleaned);
 
   if (isCelebrityOrActorBiography || isCookingRecipe) {
-    cleaned = `I am the AI Sales Consultant for ${businessName}, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide celebrity trivia, entertainment news, or cooking recipes, but I'd be delighted to assist you with your digital engineering or software project! What kind of solution are you looking to build?`;
+    cleaned = lang === "hindi"
+      ? `मैं Emperor Smart Solutions का आधिकारिक AI कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर, मोबाइल ऐप्स और एंटरप्राइज AI समाधानों पर केंद्रित है। मैं सामान्य मनोरंजन या सेलिब्रिटी ट्रिविया की जानकारी नहीं देता, लेकिन आपके सॉफ्टवेयर प्रोजेक्ट में सहायता करने में मुझे खुशी होगी! आप किस प्रकार का समाधान बनवाना चाहते हैं?`
+      : lang === "hinglish"
+      ? `Main Emperor Smart Solutions ka official AI Consultant hoon, jo specifically custom software, mobile apps, aur enterprise AI solutions par focus karta hai. Main celebrity trivia ya recipes provide nahi karta, par aapke software project mein help karne mein mujhe khushi hogi! Aap kis tarah ka solution develop karwana chahte hain?`
+      : `I am the AI Sales Consultant for ${businessName}, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide celebrity trivia, entertainment news, or cooking recipes, but I'd be delighted to assist you with your digital engineering or software project! What kind of solution are you looking to build?`;
+  }
+
+  if (!cleaned || !cleaned.trim()) {
+    if (lang === "hindi") {
+      return `नमस्ते! Emperor Smart Solutions में आपका स्वागत है। मैं आपके सॉफ्टवेयर या डिजिटल प्रोजेक्ट में किस प्रकार सहायता कर सकता हूँ?`;
+    }
+    if (lang === "hinglish") {
+      return `Hello! Emperor Smart Solutions mein aapka swagat hai. Main aapke digital project ya software development mein kaise madad kar sakta hoon?`;
+    }
+    return `Hello! Welcome to Emperor Smart Solutions. How can we assist you with your software or digital project today?`;
   }
 
   return cleaned.trim();

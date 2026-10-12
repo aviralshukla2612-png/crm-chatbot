@@ -164,7 +164,7 @@ export async function POST(request, { params }) {
     const tenantId = bot?.organizationId || botId;
 
     // 2. Step 1: Analyze Input Language (English, Hindi, or Hinglish)
-    const lang = detectLanguage(message);
+    let lang = detectLanguage(message);
 
     // Step 2: Input Safety and Scope Check (Backend Guardrails)
     const safetyCheck = checkInputScopeAndSafety(message, businessName, lang);
@@ -194,6 +194,21 @@ export async function POST(request, { params }) {
         .filter((m) => m.role === "user" || m.role === "assistant")
         .slice(-12)
         .map((m) => ({ role: m.role, content: m.content }));
+    }
+
+    // Maintain language continuity across multi-turn sessions
+    if (lang === "english" && sessionHistory.length > 0) {
+      const explicitEnglishRequest = /\b(?:speak\s+in\s+english|talk\s+in\s+english|switch\s+to\s+english|in\s+english\s+please)\b/i.test(message);
+      if (!explicitEnglishRequest) {
+        const priorUserMsgs = sessionHistory.filter((m) => m.role === "user").slice(-3);
+        for (let i = priorUserMsgs.length - 1; i >= 0; i--) {
+          const priorLang = detectLanguage(priorUserMsgs[i].content);
+          if (priorLang === "hindi" || priorLang === "hinglish") {
+            lang = priorLang;
+            break;
+          }
+        }
+      }
     }
 
     // 4. Step 4: Multi-Tenant Vector Search over Authorized Knowledge (Top 2 chunks for fast evaluation)
@@ -299,8 +314,22 @@ export async function POST(request, { params }) {
       /\b(?:contact\s*(?:details?|number|info|information)?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human)\b/i.test(message) &&
       (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company)\b/i.test(message) || message.trim().length <= 25);
 
+    const isLanguageSwitchQuery =
+      !hasTechnicalKeywords &&
+      /\b(?:hindi|hinglish)\b/i.test(message) &&
+      (/\b(?:baat|bol|bolte|bolna|bolo|aati|aata|aate|sakte|sakta|saktee|sakti|kar\s+sakte|samajhte|samajh)\b/i.test(message) ||
+       /\b(?:speak|talk|know|understand|switch|change|converse|support)\b/i.test(message));
+
+    const isEnglishSwitchQuery =
+      !hasTechnicalKeywords &&
+      /\b(?:english)\b/i.test(message) &&
+      (/\b(?:baat|bol|bolte|bolna|bolo|sakte|sakta|kar\s+sakte)\b/i.test(message) ||
+       /\b(?:speak|talk|know|understand|switch|change|converse|support)\b/i.test(message));
+
     const isCelebrityOrTriviaQuery =
       !isContactDetailsQuery &&
+      !isLanguageSwitchQuery &&
+      !isEnglishSwitchQuery &&
       (isExternalEntityQuery ||
       (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
       (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && !isContactSubmissionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
@@ -308,11 +337,29 @@ export async function POST(request, { params }) {
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
     let deterministicReply = null;
-    if (isPureGreeting && !hasTechnicalKeywords) {
-      if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
-        deterministicReply = `Hi ${resolvedName}! Great to hear from you. How can Emperor Smart Solutions assist you with your project today?`;
+    if (isLanguageSwitchQuery) {
+      lang = /[\u0900-\u097F]/.test(message) ? "hindi" : "hinglish";
+      if (lang === "hindi") {
+        deterministicReply = `हाँ बिल्कुल! मैं हिंदी में बात कर सकता हूँ। Emperor Smart Solutions में आपका स्वागत है! मैं आपके डिजिटल प्रोजेक्ट में किस प्रकार सहायता कर सकता हूँ? क्या आप कोई मोबाइल ऐप, वेबसाइट या कस्टम AI समाधान बनवाना चाहते हैं?`;
       } else {
-        deterministicReply = `Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?`;
+        deterministicReply = `Haan bilkul! Main Hindi aur Hinglish dono mein baat kar sakta hoon. Emperor Smart Solutions ki taraf se main aapke digital project mein kaise help kar sakta hoon? Aapko mobile app, website, ya custom AI solution banwana hai?`;
+      }
+    } else if (isEnglishSwitchQuery) {
+      lang = "english";
+      deterministicReply = `Yes, absolutely! I can converse fluently in English. Emperor Smart Solutions specializes in custom mobile apps, web platforms, and enterprise AI solutions. What kind of project are you looking to build?`;
+    } else if (isPureGreeting && !hasTechnicalKeywords) {
+      if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+        deterministicReply = lang === "hindi"
+          ? `नमस्ते ${resolvedName}! Emperor Smart Solutions में आपका स्वागत है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
+          : lang === "hinglish"
+          ? `Hi ${resolvedName}! Emperor Smart Solutions mein aapka swagat hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`
+          : `Hi ${resolvedName}! Great to hear from you. How can Emperor Smart Solutions assist you with your project today?`;
+      } else {
+        deterministicReply = lang === "hindi"
+          ? `नमस्ते! Emperor Smart Solutions में आपका स्वागत है। क्या आप अपना नाम और फ़ोन नंबर (या WhatsApp) साझा कर सकते हैं ताकि हम बेहतर सहायता कर सकें?`
+          : lang === "hinglish"
+          ? `Hello! Emperor Smart Solutions mein aapka swagat hai. Kya aap apna Name aur Phone Number (ya WhatsApp) share kar sakte hain taaki hum aapko personalize assist kar sakein?`
+          : `Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?`;
       }
     } else if (isFirstMessageQuery) {
       let firstUserMsg = "";

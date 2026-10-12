@@ -640,7 +640,7 @@
         const data = await res.json();
         messages.push({
           role: "assistant",
-          content: data.reply || "Hello! I am ready to answer your questions. Please ask anything about our services.",
+          content: data.reply || "Hello! Welcome to Emperor Smart Solutions. How can I assist you with your project today?",
           sources: data.sources || [],
         });
       }

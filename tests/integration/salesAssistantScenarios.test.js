@@ -160,6 +160,8 @@ describe("ESS Sales Assistant - 40 Scenario Full Evaluation Suite", () => {
     assert.equal(detectLanguage("Hello, what is the cost of Flutter app?"), "english");
     assert.equal(detectLanguage("क्या आप मोबाइल ऐप बनाते हैं?"), "hindi");
     assert.equal(detectLanguage("Bhai mujhe ek custom app banwana hai kitna kharcha aayega?"), "hinglish");
+    assert.equal(detectLanguage("kya aap hindi mein baat kar sakte ho"), "hinglish");
+    assert.equal(detectLanguage("hindi aati hai kya"), "hinglish");
   });
 
   // 21. Irrelevant question
