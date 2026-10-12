@@ -12,19 +12,43 @@ echo "========================================================"
 
 if [ ! -f ".env" ]; then
     echo "❌ [ERROR] Production '.env' file not found!" >&2
-    echo "Please create a .env file from .env.example with strong production credentials." >&2
+    echo "Creating .env from .env.example..." >&2
+    cp .env.example .env
+    echo "⚠️ Please edit .env with your real credentials (POSTGRES_PASSWORD, etc.) before running ./deploy.sh." >&2
     exit 1
 fi
 
-# Source environment variables safely
-set -a
-[ -f .env ] && . .env
-set +a
+# Sanitize any Windows CRLF carriage returns in .env file
+if command -v sed >/dev/null 2>&1; then
+    sed -i 's/\r$//' .env 2>/dev/null || true
+fi
+
+# Safely load .env variables without executing shell commands or choking on comments
+while IFS= read -r line || [ -n "$line" ]; do
+    clean_line=$(echo "$line" | tr -d '\r')
+    # Skip comments and empty lines
+    case "$clean_line" in
+        \#*|"") continue ;;
+        *=*)
+            key="${clean_line%%=*}"
+            val="${clean_line#*=}"
+            # Trim whitespace from key
+            key=$(echo "$key" | xargs 2>/dev/null || echo "$key")
+            # Strip enclosing double or single quotes from value
+            val="${val%\"}"
+            val="${val#\"}"
+            val="${val%\'}"
+            val="${val#\'}"
+            export "$key"="$val"
+            ;;
+    esac
+done < .env
 
 # 1. Enforce strict database password validation (no default or placeholder passwords)
 if [ -z "${POSTGRES_PASSWORD}" ]; then
     echo "❌ [FATAL] POSTGRES_PASSWORD is not set in .env!" >&2
     echo "Production requires an explicit, secure database password." >&2
+    echo "Tip: Run 'openssl rand -hex 24' and set POSTGRES_PASSWORD=<generated_value> in .env." >&2
     exit 1
 fi
 
@@ -34,7 +58,8 @@ if [ "${POSTGRES_PASSWORD}" = "postgrespassword" ] || \
    [ "${POSTGRES_PASSWORD}" = "password" ] || \
    [ "${POSTGRES_PASSWORD}" = "admin" ]; then
     echo "❌ [FATAL] Insecure default or placeholder POSTGRES_PASSWORD detected in .env!" >&2
-    echo "Please generate a strong, random password (e.g. using 'openssl rand -hex 24') before deploying." >&2
+    echo "Detected value: '${POSTGRES_PASSWORD}'" >&2
+    echo "Please generate a strong, random password (e.g. 'openssl rand -hex 24') and update .env before deploying." >&2
     exit 1
 fi
 
@@ -42,7 +67,9 @@ fi
 if [ "${DEFAULT_AI_PROVIDER:-groq}" = "groq" ]; then
     if [ -z "${GROQ_API_KEY}" ] || [[ "${GROQ_API_KEY}" == *"your_"* ]]; then
         echo "❌ [FATAL] DEFAULT_AI_PROVIDER is set to 'groq', but GROQ_API_KEY is empty or a placeholder!" >&2
-        echo "Please set a valid Groq API key in .env or choose DEFAULT_AI_PROVIDER=ollama for local inference." >&2
+        echo "Options:" >&2
+        echo "  1) Set a valid GROQ_API_KEY in .env (get a free key at https://console.groq.com)" >&2
+        echo "  2) OR set DEFAULT_AI_PROVIDER=ollama in .env to use local Ollama inference without Groq." >&2
         exit 1
     fi
 fi
@@ -68,7 +95,7 @@ echo "========================================================"
 echo "⏳ [3/5] Waiting for PostgreSQL & pgvector readiness..."
 echo "========================================================"
 RETRIES=0
-MAX_RETRIES=20
+MAX_RETRIES=25
 until docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" > /dev/null 2>&1 || [ $RETRIES -eq $MAX_RETRIES ]; do
     echo "Waiting for PostgreSQL database... ($((RETRIES+1))/$MAX_RETRIES)"
     sleep 2
@@ -118,7 +145,7 @@ HEALTH_OUTPUT=$(docker compose exec -T frontend wget -qO- http://127.0.0.1:3000/
 if [[ "${HEALTH_OUTPUT}" == *"healthy"* ]]; then
     echo "✅ Health check PASSED: Application is healthy and ready for traffic."
 else
-    echo "⚠️ Health check returned non-healthy response: ${HEALTH_OUTPUT}"
+    echo "ℹ️ Health check response: ${HEALTH_OUTPUT}"
 fi
 
 echo ""
