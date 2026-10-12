@@ -25,6 +25,7 @@ test("Database Migration - Validates flat JSON datasets and generates valid SQL"
   
   // Ensure idempotent keywords are present
   assert.ok(fullSql.includes("ON CONFLICT"), "SQL must use ON CONFLICT for idempotency");
+  assert.ok(fullSql.includes("ON CONFLICT (\"id\") DO NOTHING;"), "Seed migration must use DO NOTHING to prevent overwriting live data");
   assert.ok(fullSql.includes("INSERT INTO \"Bot\""), "Must contain Bot insert");
   assert.ok(fullSql.includes("INSERT INTO \"Lead\""), "Must contain Lead insert");
   assert.ok(fullSql.includes("INSERT INTO \"KnowledgeDocument\""), "Must contain KnowledgeDocument insert");

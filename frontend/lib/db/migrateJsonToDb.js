@@ -205,10 +205,7 @@ ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Bot" ("id", "organizationId", "name", "description", "avatar", "primaryColor", "status", "systemPrompt", "welcomeMessage", "createdAt", "updatedAt")
 VALUES ('${bot.id}', '${orgId}', '${bot.name.replace(/'/g, "''")}', '${(bot.description || "").replace(/'/g, "''")}', '${bot.avatar || "🤖"}', '${bot.primaryColor || "#4f46e5"}', '${bot.status || "Active"}', '${(bot.systemPrompt || "").replace(/'/g, "''")}', '${(bot.welcomeMessage || "").replace(/'/g, "''")}', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "name" = EXCLUDED."name",
-  "systemPrompt" = EXCLUDED."systemPrompt",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
         `.trim());
       }
     } catch (e) {
@@ -231,10 +228,7 @@ ON CONFLICT ("id") DO UPDATE SET
         report.sqlStatements.push(`
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
 VALUES ('${lead.id}', 'org_default', '${lead.bot || "bot_aa"}', '${(lead.name || "Prospect").replace(/'/g, "''")}', '${(lead.email || "").replace(/'/g, "''")}', '${(lead.phone || "").replace(/'/g, "''")}', '${(lead.company || "").replace(/'/g, "''")}', '${lead.score || "High"}', '${lead.status || "New"}', '${(lead.inquiry || "").replace(/'/g, "''")}', '${lead.budget || "₹50,000+"}', '${lead.source || "Widget"}', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "phone" = EXCLUDED."phone",
-  "email" = EXCLUDED."email",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
         `.trim());
       }
     } catch (e) {

@@ -11,9 +11,9 @@ echo "🚀 [1/5] Pre-Flight Checks & Configuration Validation..."
 echo "========================================================"
 
 if [ ! -f ".env" ]; then
-    echo "⚠️ Warning: .env file not found. Copying .env.example..."
-    cp .env.example .env
-    echo "Created .env with default placeholders. Please review .env credentials before production use."
+    echo "❌ [ERROR] Production '.env' file not found!" >&2
+    echo "Please create a .env file from .env.example with strong production credentials." >&2
+    exit 1
 fi
 
 # Source environment variables safely
@@ -21,11 +21,37 @@ set -a
 [ -f .env ] && . .env
 set +a
 
+# 1. Enforce strict database password validation (no default or placeholder passwords)
+if [ -z "${POSTGRES_PASSWORD}" ]; then
+    echo "❌ [FATAL] POSTGRES_PASSWORD is not set in .env!" >&2
+    echo "Production requires an explicit, secure database password." >&2
+    exit 1
+fi
+
+if [ "${POSTGRES_PASSWORD}" = "postgrespassword" ] || \
+   [ "${POSTGRES_PASSWORD}" = "your_strong_postgres_password_here" ] || \
+   [ "${POSTGRES_PASSWORD}" = "your_secure_password_here" ] || \
+   [ "${POSTGRES_PASSWORD}" = "password" ] || \
+   [ "${POSTGRES_PASSWORD}" = "admin" ]; then
+    echo "❌ [FATAL] Insecure default or placeholder POSTGRES_PASSWORD detected in .env!" >&2
+    echo "Please generate a strong, random password (e.g. using 'openssl rand -hex 24') before deploying." >&2
+    exit 1
+fi
+
+# 2. Enforce Groq API key validation if Groq is the selected inference provider
+if [ "${DEFAULT_AI_PROVIDER:-groq}" = "groq" ]; then
+    if [ -z "${GROQ_API_KEY}" ] || [[ "${GROQ_API_KEY}" == *"your_"* ]]; then
+        echo "❌ [FATAL] DEFAULT_AI_PROVIDER is set to 'groq', but GROQ_API_KEY is empty or a placeholder!" >&2
+        echo "Please set a valid Groq API key in .env or choose DEFAULT_AI_PROVIDER=ollama for local inference." >&2
+        exit 1
+    fi
+fi
+
 POSTGRES_DB="${POSTGRES_DB:-ess_chatbot}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 
 if [ -d ".git" ]; then
-    echo "Checking Git updates (preserving local changes)..."
+    echo "Checking Git updates (preserving local uncommitted changes)..."
     git pull origin main || echo "⚠️ Git pull skipped or failed, proceeding with current files."
 fi
 
@@ -50,7 +76,7 @@ until docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POS
 done
 
 if [ $RETRIES -eq $MAX_RETRIES ]; then
-    echo "❌ PostgreSQL took too long to start. Please check 'docker compose logs postgres'."
+    echo "❌ PostgreSQL took too long to start. Please check 'docker compose logs postgres'." >&2
     exit 1
 fi
 echo "✅ PostgreSQL is online and accepting connections!"
@@ -61,8 +87,11 @@ echo "📦 [4/5] Executing Idempotent Schema & Data Migration..."
 echo "========================================================"
 if [ -f "frontend/data/idempotent_migration.sql" ]; then
     echo "Applying idempotent_migration.sql to database '${POSTGRES_DB}'..."
-    docker compose exec -T postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < frontend/data/idempotent_migration.sql
-    echo "✅ Database schema, pgvector HNSW index, and tenant records applied."
+    if ! docker compose exec -T postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < frontend/data/idempotent_migration.sql; then
+        echo "❌ [ERROR] Database migration failed!" >&2
+        exit 1
+    fi
+    echo "✅ Database schema, pgvector HNSW index, and tenant records applied successfully."
 else
     echo "⚠️ frontend/data/idempotent_migration.sql not found, skipping SQL migration."
 fi
@@ -77,6 +106,19 @@ if [ "${DEFAULT_AI_PROVIDER}" = "ollama" ]; then
     docker compose exec -T ollama ollama pull "$CHAT_MODEL" || true
 else
     echo "AI Provider is set to '${DEFAULT_AI_PROVIDER:-groq}'. Skipping local Ollama model pre-pull."
+fi
+
+echo ""
+echo "========================================================"
+echo "🩺 Verifying Application Health Status..."
+echo "========================================================"
+sleep 5
+HEALTH_OUTPUT=$(docker compose exec -T frontend wget -qO- http://127.0.0.1:3000/api/health 2>/dev/null || echo "HEALTH_CHECK_FAILED")
+
+if [[ "${HEALTH_OUTPUT}" == *"healthy"* ]]; then
+    echo "✅ Health check PASSED: Application is healthy and ready for traffic."
+else
+    echo "⚠️ Health check returned non-healthy response: ${HEALTH_OUTPUT}"
 fi
 
 echo ""

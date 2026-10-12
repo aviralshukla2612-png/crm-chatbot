@@ -10,9 +10,39 @@ Write-Host "🚀 [1/5] Pre-Flight Checks & Configuration Validation..." -Foregro
 Write-Host "========================================================" -ForegroundColor Cyan
 
 if (-not (Test-Path ".env")) {
-    Write-Warning ".env file not found. Copying .env.example..."
-    Copy-Item ".env.example" ".env"
-    Write-Host "Created .env with default placeholders." -ForegroundColor Yellow
+    Write-Error "Production '.env' file not found! Create .env from .env.example with strong credentials."
+    exit 1
+}
+
+# Load .env file
+Get-Content ".env" | ForEach-Object {
+    $line = $_.Trim()
+    if ($line -and -not $line.StartsWith("#")) {
+        $parts = $line.Split("=", 2)
+        if ($parts.Length -eq 2) {
+            $key = $parts[0].Trim()
+            $val = $parts[1].Trim(' "')
+            [System.Environment]::SetEnvironmentVariable($key, $val, [System.EnvironmentVariableTarget]::Process)
+        }
+    }
+}
+
+$pgPass = $env:POSTGRES_PASSWORD
+if (-not $pgPass) {
+    Write-Error "POSTGRES_PASSWORD is not set in .env! Production requires a secure database password."
+    exit 1
+}
+
+if ($pgPass -eq "postgrespassword" -or $pgPass.Contains("your_") -or $pgPass -eq "password" -or $pgPass -eq "admin") {
+    Write-Error "Insecure default or placeholder POSTGRES_PASSWORD detected in .env! Generate a secure password before deploying."
+    exit 1
+}
+
+if ($env:DEFAULT_AI_PROVIDER -eq "groq") {
+    if (-not $env:GROQ_API_KEY -or $env:GROQ_API_KEY.Contains("your_")) {
+        Write-Error "DEFAULT_AI_PROVIDER is set to 'groq', but GROQ_API_KEY is empty or a placeholder!"
+        exit 1
+    }
 }
 
 if (Test-Path ".git") {
@@ -48,7 +78,7 @@ while (-not $pgReady -and $retries -lt $maxRetries) {
 }
 
 if (-not $pgReady) {
-    Write-Host "❌ PostgreSQL took too long to start. Please check 'docker compose logs postgres'." -ForegroundColor Red
+    Write-Error "PostgreSQL took too long to start. Check 'docker compose logs postgres'."
     exit 1
 }
 Write-Host "✅ PostgreSQL is online and accepting connections!" -ForegroundColor Green
@@ -60,6 +90,10 @@ Write-Host "========================================================" -Foregroun
 if (Test-Path "frontend/data/idempotent_migration.sql") {
     Write-Host "Applying idempotent_migration.sql..."
     Get-Content "frontend/data/idempotent_migration.sql" | docker compose exec -T postgres psql -U postgres -d ess_chatbot
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Database migration failed!"
+        exit 1
+    }
     Write-Host "✅ Database schema and tenant records applied." -ForegroundColor Green
 }
 

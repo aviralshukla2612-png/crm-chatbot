@@ -1,6 +1,6 @@
 -- =========================================================
 -- ESS CHATBOT SaaS — COMPLETE POSTGRESQL & PGVECTOR MIGRATION
--- Generated: 2026-10-12T09:17:44.131Z
+-- Generated: 2026-10-12T09:26:43.027Z
 -- =========================================================
 BEGIN;
 
@@ -154,38 +154,23 @@ ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Bot" ("id", "organizationId", "name", "description", "avatar", "primaryColor", "status", "systemPrompt", "welcomeMessage", "createdAt", "updatedAt")
 VALUES ('bot_aa', 'org_default', 'aa', 'Official AI assistant for Emperor Smart Solutions.', '⚡', '#4f46e5', 'Active', 'You are the official AI assistant for Emperor Smart Solutions (ESS), founded by Yash Sharma (Founder) and Karan Makwana (Co-Founder). Provide verified facts about services, founders, developer hiring, office location in Ahmedabad, and budget tiers. Never fabricate or invent facts.', 'Hello! I am the AI assistant for Emperor Smart Solutions. How can I help you today?', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "name" = EXCLUDED."name",
-  "systemPrompt" = EXCLUDED."systemPrompt",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
 VALUES ('lead_1791787975361_b7dj', 'org_default', 'aa', 'Vikram Joshi', 'vikram@enterprise.in', '+91 99887 76655', 'Direct Inbound', 'High', 'New', 'Full Stack Next.js + Flutter development quote', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "phone" = EXCLUDED."phone",
-  "email" = EXCLUDED."email",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
 VALUES ('lead_1791608783809_j20l', 'org_default', 'aa', 'Sarah Connor', 'sarah@sky.net', '+1 555-0199', 'Website Embed Visitor', 'High', 'New', 'Hello! My name is Sarah Connor (sarah@sky.net). Do you offer enterprise CRM and ERP software?', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "phone" = EXCLUDED."phone",
-  "email" = EXCLUDED."email",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
 VALUES ('lead_1791608185636_9oft', 'org_default', 'aa', 'John Doe', 'john.doe@innovate.io', '+91 99999 88888', 'Website Embed Visitor', 'High', 'New', 'Hi, my name is John Doe and my email is john.doe@innovate.io. We need pricing for your ERP web application.', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "phone" = EXCLUDED."phone",
-  "email" = EXCLUDED."email",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
 VALUES ('lead_seed_01', 'org_default', 'aa', 'Rohan Varma', 'rohan.v@techlogix.co', '+91 98200 12345', 'TechLogix Global', 'High', 'New', 'Interested in custom ERP & CRM automation pipeline with real-time vector search.', '₹1,50,000', 'Web Chatbot Widget', NOW(), NOW())
-ON CONFLICT ("id") DO UPDATE SET
-  "phone" = EXCLUDED."phone",
-  "email" = EXCLUDED."email",
-  "updatedAt" = NOW();
+ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeDocument" ("id", "organizationId", "botId", "name", "type", "sizeBytes", "status", "chunksCount", "createdAt", "updatedAt")
 VALUES ('doc_emperor_smart_solutions_01', 'org_default', 'all', 'Emperor_Smart_Solutions_Company_Profile.pdf', 'PDF', 5601, 'Ready', 5, NOW(), NOW())

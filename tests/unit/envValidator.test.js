@@ -17,6 +17,30 @@ test("EnvValidator - passes with valid production configuration", () => {
   assert.equal(res.summary.provider, "groq");
 });
 
+test("EnvValidator - fails when default password 'postgrespassword' is used", () => {
+  const env = {
+    NODE_ENV: "production",
+    DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/ess_chatbot",
+    DEFAULT_AI_PROVIDER: "mock",
+  };
+
+  const res = validateEnvironment(env);
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes("insecure default or placeholder password")));
+});
+
+test("EnvValidator - handles URL-encoded special characters in passwords", () => {
+  const env = {
+    NODE_ENV: "production",
+    // Password is "p@ss:word#99!" encoded
+    DATABASE_URL: "postgresql://postgres:p%40ss%3Aword%2399!@postgres:5432/ess_chatbot?schema=public",
+    DEFAULT_AI_PROVIDER: "mock",
+  };
+
+  const res = validateEnvironment(env);
+  assert.equal(res.valid, true);
+});
+
 test("EnvValidator - fails in production when DATABASE_URL is missing", () => {
   const env = {
     NODE_ENV: "production",
@@ -37,7 +61,7 @@ test("EnvValidator - detects placeholder passwords in DATABASE_URL without leaki
 
   const res = validateEnvironment(env);
   assert.equal(res.valid, false);
-  assert.ok(res.errors.some((e) => e.includes("default placeholder password")));
+  assert.ok(res.errors.some((e) => e.includes("insecure default or placeholder password")));
 });
 
 test("EnvValidator - rejects invalid or unsupported provider name", () => {
@@ -50,13 +74,19 @@ test("EnvValidator - rejects invalid or unsupported provider name", () => {
   assert.ok(res.errors.some((e) => e.includes("is not supported")));
 });
 
-test("EnvValidator - requires GROQ_API_KEY when groq is selected", () => {
-  const env = {
+test("EnvValidator - requires GROQ_API_KEY and rejects placeholders when groq is selected", () => {
+  const env1 = {
     DEFAULT_AI_PROVIDER: "groq",
     GROQ_API_KEY: "",
   };
+  const res1 = validateEnvironment(env1);
+  assert.equal(res1.valid, false);
 
-  const res = validateEnvironment(env);
-  assert.equal(res.valid, false);
-  assert.ok(res.errors.some((e) => e.includes("GROQ_API_KEY is required")));
+  const env2 = {
+    DEFAULT_AI_PROVIDER: "groq",
+    GROQ_API_KEY: "gsk_your_actual_groq_api_key_here",
+  };
+  const res2 = validateEnvironment(env2);
+  assert.equal(res2.valid, false);
+  assert.ok(res2.errors.some((e) => e.includes("must not be a placeholder")));
 });

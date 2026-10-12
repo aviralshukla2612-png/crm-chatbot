@@ -6,6 +6,16 @@
 
 const ALLOWED_PROVIDERS = new Set(["groq", "ollama", "vllm", "mock"]);
 
+const INSECURE_DEFAULT_PASSWORDS = new Set([
+  "postgrespassword",
+  "password",
+  "admin",
+  "123456",
+  "root",
+  "your_secure_password_here",
+  "your_strong_postgres_password_here",
+]);
+
 export function validateEnvironment(env = process.env) {
   const errors = [];
   const warnings = [];
@@ -29,11 +39,18 @@ export function validateEnvironment(env = process.env) {
       if (!parsed.hostname) {
         errors.push("DATABASE_URL must specify a database hostname.");
       }
-      if (parsed.password && parsed.password.includes("your_secure_password")) {
-        errors.push("DATABASE_URL contains default placeholder password. Replace with a secure credential.");
+      
+      const pass = decodeURIComponent(parsed.password || "");
+      if (pass) {
+        const passLower = pass.toLowerCase();
+        if (INSECURE_DEFAULT_PASSWORDS.has(passLower) || passLower.includes("placeholder") || passLower.includes("your_")) {
+          errors.push("DATABASE_URL contains an insecure default or placeholder password. Replace with a strong, production-grade credential.");
+        }
+      } else if (isProduction) {
+        errors.push("DATABASE_URL must include a secure password in production.");
       }
     } catch (e) {
-      errors.push("DATABASE_URL format is invalid. Expected: postgresql://[user]:[password]@[host]:[port]/[database]");
+      errors.push("DATABASE_URL format is invalid. Ensure special characters in passwords are percent-encoded (e.g. '@' as '%40').");
     }
   }
 
@@ -44,8 +61,8 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (provider === "groq") {
-    if (!env.GROQ_API_KEY || env.GROQ_API_KEY.includes("your_groq_api_key")) {
-      errors.push("GROQ_API_KEY is required when DEFAULT_AI_PROVIDER is 'groq'.");
+    if (!env.GROQ_API_KEY || env.GROQ_API_KEY.includes("your_groq_api_key") || env.GROQ_API_KEY.includes("your_actual_groq")) {
+      errors.push("GROQ_API_KEY is required and must not be a placeholder when DEFAULT_AI_PROVIDER is 'groq'.");
     }
   } else if (provider === "ollama") {
     const ollamaUrl = env.OLLAMA_URL || "http://127.0.0.1:11434";
@@ -69,7 +86,7 @@ export function validateEnvironment(env = process.env) {
       provider,
       nodeEnv: env.NODE_ENV || "development",
       hasDbUrl: Boolean(dbUrl),
-      hasGroqKey: Boolean(env.GROQ_API_KEY && !env.GROQ_API_KEY.includes("your_groq_api_key")),
+      hasGroqKey: Boolean(env.GROQ_API_KEY && !env.GROQ_API_KEY.includes("your_groq_api_key") && !env.GROQ_API_KEY.includes("your_actual_groq")),
       hasWebhook: Boolean(env.LEAD_WEBHOOK_URL),
     },
   };
