@@ -76,6 +76,16 @@ function saveToDisk(data) {
 export const leadsStore = {
   getLeads(filters = {}) {
     let list = loadFromDisk();
+
+    // Sanitize: filter out invalid entries without contact info (no email AND no phone) or bogus question names
+    list = list.filter((l) => {
+      const hasContact = Boolean(l.email || l.phone);
+      const isBogusName = /^(?:who\s+is|what\s+is|can\s+you|tell\s+me|i\s+want|how\s+much|hello|hi)\b/i.test(l.name || "");
+      if (isBogusName) return false;
+      if (!hasContact) return false;
+      return true;
+    });
+
     if (filters.status && filters.status !== "All" && filters.status !== "All Status") {
       list = list.filter((l) => l.status?.toLowerCase() === filters.status.toLowerCase());
     }
@@ -109,18 +119,20 @@ export const leadsStore = {
     const list = loadFromDisk();
     const now = new Date();
 
-    // Check if lead already exists by email or phone to enrich details
+    // Check if lead already exists by sessionId, email, or phone to enrich details
     const existing = list.find(
       (l) =>
+        (data.sessionId && l.sessionId && l.sessionId === data.sessionId) ||
         (data.email && l.email && l.email.toLowerCase() === data.email.toLowerCase()) ||
         (data.phone && l.phone && l.phone.replace(/\D/g, "") === data.phone.replace(/\D/g, ""))
     );
     if (existing) {
-      if (data.name && (!existing.name || existing.name === "Website Prospect")) {
+      if (data.name && (!existing.name || existing.name === "Website Prospect" || existing.name.length < data.name.length)) {
         existing.name = data.name;
       }
       if (data.phone && !existing.phone) existing.phone = data.phone;
       if (data.email && !existing.email) existing.email = data.email;
+      if (data.sessionId && !existing.sessionId) existing.sessionId = data.sessionId;
       if (data.inquiry) existing.inquiry = data.inquiry;
       if (existing.phone && existing.email) existing.score = "Hot";
       existing.updatedAt = now.toISOString();
@@ -156,6 +168,7 @@ export const leadsStore = {
 
     const newLead = {
       id: data.id || `lead_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      sessionId: data.sessionId || "",
       name: data.name || "Website Prospect",
       email: data.email || "",
       phone: data.phone || "",

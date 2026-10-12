@@ -57,17 +57,64 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // 3. Extract Name: search newest messages first, and filter out verbs
+  // 3. Extract Name: search newest messages first, with strict validation
   let name = "";
-  const skipWords = [
-    "interested", "looking", "here", "ready", "asking", "calling", "wanting",
-    "user", "building", "developing", "creating", "seeking", "planning", "trying",
-    "working", "searching", "wondering", "reaching", "hoping", "inquiring"
-  ];
+
+  const NON_NAME_WORDS = new Set([
+    // Question words
+    "who", "what", "where", "when", "why", "how", "which", "whose", "whom",
+    // Auxiliary & Common verbs
+    "is", "are", "was", "were", "am", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "done",
+    "can", "could", "will", "would", "shall", "should", "may", "might", "must",
+    "want", "need", "like", "build", "make", "create", "develop", "code", "design",
+    "hire", "help", "tell", "give", "show", "find", "get", "got", "send", "know",
+    "see", "look", "ask", "call", "say", "talk", "speak", "discuss", "offer", "provide",
+    "interested", "looking", "ready", "seeking", "planning", "trying", "working",
+    // Pronouns
+    "i", "me", "my", "myself", "you", "your", "yours", "yourself",
+    "he", "him", "his", "she", "her", "hers", "it", "its",
+    "we", "us", "our", "ours", "they", "them", "their", "theirs",
+    "this", "that", "these", "those", "there", "here",
+    // Conjunctions & prepositions
+    "a", "an", "the", "and", "or", "but", "if", "because", "as", "until", "while",
+    "of", "at", "by", "for", "with", "about", "against", "between", "into", "through",
+    "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out",
+    "on", "off", "over", "under", "again", "further", "then", "once", "also", "just", "only",
+    // Greetings / Conversational
+    "hi", "hii", "hello", "hey", "yo", "sup", "whatsup", "greetings", "namaste",
+    "yes", "no", "ok", "okay", "sure", "fine", "yep", "nope", "yeah", "nah",
+    "thanks", "thank", "please", "welcome", "sorry", "bye", "goodbye",
+    "good", "bad", "great", "nice", "cool", "morning", "afternoon", "evening", "night",
+    // Business / Tech / Domain terms / Celebrities
+    "ess", "emperor", "solution", "solutions", "software", "tech", "company", "firm",
+    "website", "web", "site", "app", "apps", "application", "mobile", "flutter", "react",
+    "native", "ios", "android", "node", "python", "backend", "frontend", "api", "ai",
+    "bot", "chatbot", "agent", "agents", "saas", "project", "mvp", "prototype",
+    "quote", "cost", "price", "pricing", "rate", "budget", "money", "cash", "rupees",
+    "rs", "inr", "dollar", "dollars", "k", "lakh", "crore",
+    "info", "details", "contact", "number", "phone", "email", "address", "office",
+    "location", "founder", "founders", "cofounder", "ceo", "cto", "developer", "engineer",
+    "srk", "salman", "khan", "actor", "movie", "film", "star", "celebrity"
+  ]);
+
+  function isValidPersonName(str) {
+    if (!str || typeof str !== "string") return false;
+    const clean = str.trim();
+    if (!/^[A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20}){0,2}$/.test(clean)) return false;
+    const words = clean.toLowerCase().split(/\s+/);
+    for (const w of words) {
+      const stripped = w.replace(/[.']/g, "");
+      if (NON_NAME_WORDS.has(stripped)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   const namePatterns = [
-    /(?:my\s+name\s+is|i\s+am|i'm|this\s+is|call\s+me|myself)\s+([A-Za-z.]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
-    /(?:name\s*[:\-])\s*([A-Za-z.]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
+    /(?:my\s+name\s+is|i\s+am|i'm|this\s+is|call\s+me|myself)\s+([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
+    /(?:name\s*[:\-])\s*([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
   ];
 
   for (const text of recentTexts.slice().reverse()) {
@@ -75,9 +122,8 @@ export function extractLeadDetails(message = "", history = []) {
       const match = text.match(pattern);
       if (match && match[1]) {
         const candidate = match[1].replace(/[.,:;!?]+$/, "").trim();
-        const lower = candidate.toLowerCase();
-        if (!skipWords.includes(lower)) {
-          name = candidate.charAt(0).toUpperCase() + candidate.slice(1);
+        if (isValidPersonName(candidate)) {
+          name = candidate.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
           break;
         }
       }
@@ -91,10 +137,7 @@ export function extractLeadDetails(message = "", history = []) {
       if (msg.includes(phone) || (indianMatch && msg.includes(indianMatch[0]))) {
         const rawPhone = indianMatch ? indianMatch[0] : phone;
         const remainder = msg.replace(rawPhone, "").replace(/[,:\n-]/g, " ").trim();
-        if (
-          /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18})?$/.test(remainder) &&
-          !/^(?:hi|hii|hello|hey|dear|sir|mam|madam|thanks|yes|no)$/i.test(remainder)
-        ) {
+        if (isValidPersonName(remainder)) {
           name = remainder.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
           break;
         }
@@ -102,16 +145,32 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // Check if any recent user turn was a standalone 1-3 word person name (e.g. "Aviral Shukla" or "Aviral")
-  if (!name) {
-    for (const text of userTexts.slice().reverse()) {
-      const clean = text.trim();
-      if (
-        /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18}){0,2}$/.test(clean) &&
-        !/^(?:hi|hii|hello|hey|yes|no|ok|okay|sure|thanks|price|cost|quote|office|address|whatsup|sup|founder|services|developer|engineer|proposal|project)$/i.test(clean)
-      ) {
-        name = clean.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-        break;
+  // Check if any recent user turn was a standalone 1-3 word person name in response to an assistant asking for name
+  if (!name && Array.isArray(history)) {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const turn = history[i];
+      if (turn && turn.role === "user" && typeof turn.content === "string") {
+        const clean = turn.content.trim();
+        if (isValidPersonName(clean)) {
+          const prevAssistant = history.slice(0, i).reverse().find((m) => m && m.role === "assistant");
+          const askedForName = prevAssistant && /name|naam|who are you|introduce|number|whatsapp|assist you better|personalize/i.test(prevAssistant.content || "");
+          if (askedForName) {
+            name = clean.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Also check if current message is a standalone valid name following an assistant prompt asking for name
+  if (!name && Array.isArray(history) && history.length > 0) {
+    const cleanCurrent = (message || "").trim();
+    if (isValidPersonName(cleanCurrent)) {
+      const lastAssistantTurn = [...history].reverse().find((m) => m && m.role === "assistant");
+      const askedForName = lastAssistantTurn && /name|naam|who are you|introduce|number|whatsapp|assist you better|personalize/i.test(lastAssistantTurn.content || "");
+      if (askedForName) {
+        name = cleanCurrent.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
       }
     }
   }

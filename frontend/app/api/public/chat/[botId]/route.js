@@ -318,6 +318,18 @@ Here are our official contact details to speak with our engineering leadership:
 🌐 **Website:** https://emperorsmartsolutions.com${askForLead}`;
     } else if (isContactSubmissionOnly && resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
       deterministicReply = `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+    } else if (
+      !hasTechnicalKeywords &&
+      !resolvedPhone &&
+      !resolvedEmail &&
+      resolvedName &&
+      resolvedName !== "Website Visitor" &&
+      resolvedName !== "Website Prospect" &&
+      (cleanLower === resolvedName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+       trimmedMsg.startsWith("i am ") ||
+       trimmedMsg.startsWith("my name is "))
+    ) {
+      deterministicReply = `Nice to meet you, ${resolvedName}! How can Emperor Smart Solutions assist you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
     }
 
     // --- PHASE 3: REAL-TIME SSE STREAMING (if requested) ---
@@ -337,16 +349,18 @@ Here are our official contact details to speak with our engineering leadership:
             isLead: true,
           });
         }
-        if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
+        const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
+        if (hasActionableContact) {
           const leadData = {
+            sessionId: currentSessionId,
             botId: bot?.id || "bot_aa",
-            name: resolvedName || "Website Prospect",
+            name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
             email: resolvedEmail,
             phone: resolvedPhone,
             company: bot?.company || "Direct Inbound",
             bot: botName,
-            score: leadDetails.score,
-            inquiry: leadDetails.inquiry,
+            score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
+            inquiry: leadDetails.inquiry || "Inquired via live chat widget",
             source: "Web Chatbot Widget",
           };
           leadsStore.createLead(leadData);
@@ -445,17 +459,19 @@ Here are our official contact details to speak with our engineering leadership:
             });
           }
 
-          // Check lead capture using robust multi-turn extractor
-          if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
+          // Check lead capture: require email or phone before creating a CRM lead
+          const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
+          if (hasActionableContact) {
             const leadData = {
+              sessionId: currentSessionId,
               botId: bot?.id || "bot_aa",
-              name: resolvedName || "Website Prospect",
+              name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
               email: resolvedEmail,
               phone: resolvedPhone,
               company: bot?.company || "Direct Inbound",
               bot: botName,
-              score: leadDetails.score,
-              inquiry: leadDetails.inquiry,
+              score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
+              inquiry: leadDetails.inquiry || "Inquired via live chat widget",
               source: "Web Chatbot Widget",
             };
             leadsStore.createLead(leadData);
@@ -500,17 +516,19 @@ Here are our official contact details to speak with our engineering leadership:
       }
     }
 
-    // Capture Lead using robust multi-turn extractor
-    if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
+    // Capture Lead: require email or phone before creating a CRM lead
+    const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
+    if (hasActionableContact) {
       const leadData = {
+        sessionId: currentSessionId,
         botId: bot?.id || "bot_aa",
-        name: resolvedName || "Website Prospect",
+        name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
         email: resolvedEmail,
         phone: resolvedPhone,
         company: bot?.company || "Direct Inbound",
         bot: botName,
-        score: leadDetails.score,
-        inquiry: leadDetails.inquiry,
+        score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
+        inquiry: leadDetails.inquiry || "Inquired via live chat widget",
         source: "Web Chatbot Widget",
       };
       leadsStore.createLead(leadData);

@@ -98,6 +98,12 @@ The visitor has not yet provided their contact details.
   return `You are ${assistantName}, the official AI Sales Consultant and Technology Advisor for ${businessName} (ESS).
 Your mission is to understand the visitor's business goals, answer company questions with verified accuracy, discover customer needs, handle objections with empathy and evidence, and guide suitable prospects toward a consultation.
 
+CRITICAL IDENTITY DIRECTIVE (NEVER IMPERSONATE FOUNDERS):
+- You are an AI Sales Consultant, NOT a human, and NOT the founder.
+- The company's leadership: Yash Sharma is the Founder and Karan Makwana is the Co-Founder.
+- You MUST NEVER impersonate the founders. NEVER say "I am Yash Sharma", "I'm Yash Sharma", "I am Karan", "Myself Yash", or "I am the founder".
+- When introducing yourself, you are ${assistantName || "the AI Sales Consultant for Emperor Smart Solutions"}.
+
 ABOUT EMPEROR SMART SOLUTIONS:
 - Elite digital engineering, custom software, and enterprise AI development company.
 - We build custom mobile apps (Flutter, React Native, iOS, Android), web platforms (Next.js, React, Node.js), scalable cloud backends, and custom AI systems (RAG, autonomous AI agents, enterprise LLM workflows).
@@ -182,6 +188,11 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
   // 0.3 Enforce Rupee only: strip any dollar estimates like (~$600 - $1,500)
   cleaned = cleaned.replace(/\s*\(\s*~?\$[\d,]+(?:\s*-\s*\$?[\d,]+)?\+?\s*\)/gi, "");
   cleaned = cleaned.replace(/\s*~?\$[\d,]+(?:\s*-\s*\$?[\d,]+)?\+?/g, "");
+
+  // 0.4 Founder Impersonation Defense: Never allow AI to claim it is Yash Sharma, Karan Makwana, or the founder
+  cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+Yash\s+Sharma,?\s*(?:the\s+)?(?:founder|co-founder)?\s*(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
+  cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+Karan\s+Makwana,?\s*(?:the\s+)?(?:founder|co-founder)?\s*(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
+  cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+(?:the\s+)?(?:founder|co-founder)\s+(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
 
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
   if (
