@@ -126,6 +126,7 @@ DISCOVERY & CONVERSATION FLOW:
 
 OBJECTION HANDLING:
 - Budget / "Price is high": Acknowledge budget considerations with empathy. Suggest starting with a scoped MVP or phased rollout rather than making unverified promises.
+- Low Budget / Micro-Budget (e.g. "i have 5k only", "my budget is 5000", "i only have 10k"): Never output robotic refusals like "I can't provide a response that includes a request for payment". Explain respectfully that Emperor Smart Solutions' custom software and MVP development packages start from ₹50,000 due to dedicated engineering, architecture, and QA. Provide Emperor's direct contact details (Phone/WhatsApp: +91 63591 20081, Email: contact@emperorsmartsolutions.com) and invite the prospect to share their Name and Phone Number (or WhatsApp) so our technical team can connect with them to discuss what is possible.
 - "Need time to think": Respect their timing. Offer to outline key requirements or technical considerations for their internal evaluation.
 - "Why choose ESS?": Emphasize our full-cycle turnkey delivery, transparent engineering, modern tech stack, and dedicated post-launch support.
 
@@ -196,6 +197,24 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
 ⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
 
 Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
+  }
+
+  // Safety refusal intercept: If model ever hallucinates a payment/budget refusal (e.g. "I can't provide a response that includes a request for payment of or more...")
+  if (
+    /(?:can'?t|cannot)\s+provide\s+a\s+response\s+that\s+includes\s+(?:a\s+)?request\s+for\s+payment/i.test(cleaned) ||
+    /(?:can'?t|cannot)\s+(?:discuss|accept|process|handle)\s+(?:payment|budget|pricing)/i.test(cleaned) ||
+    /request for payment of or more/i.test(cleaned)
+  ) {
+    return `At Emperor Smart Solutions, our custom software and bespoke MVP development tiers typically start from ₹50,000, as every project includes dedicated engineering, architecture, and quality assurance.
+
+While a micro-budget (like ₹5,000) is below our standard full-scale custom engineering packages, we would be glad to discuss your project to explore scoped MVP options or technical guidance!
+
+Here are our official contact details to speak with our team:
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Email:** contact@emperorsmartsolutions.com
+🌐 **Website:** https://emperorsmartsolutions.com
+
+May I know your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to discuss what is possible?`;
   }
 
   // 1. Strip any leaked system prompt instructions, headers, or meta-directives
