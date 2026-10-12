@@ -213,17 +213,30 @@ export async function POST(request, { params }) {
       resolvedName = leadDetails.name;
     }
 
-    const resolvedPhone = visitor?.phone || existingConv?.visitorPhone || leadDetails.phone || "";
-    const resolvedEmail = visitor?.email || existingConv?.visitorEmail || leadDetails.email || "";
+    const isCompanyEmail = (em) =>
+      /emperorsmartsolutions\.com|emperorsmartsolutions@gmail\.com|^contact@|^sales@|^info@|^support@|^careers@/i.test(em || "");
+    const isCompanyPhone = (ph) => /63591\s*20081/.test((ph || "").replace(/\D/g, ""));
+
+    let resolvedPhone = "";
+    if (visitor?.phone && !isCompanyPhone(visitor.phone)) resolvedPhone = visitor.phone;
+    else if (existingConv?.visitorPhone && !isCompanyPhone(existingConv.visitorPhone)) resolvedPhone = existingConv.visitorPhone;
+    else if (leadDetails.phone && !isCompanyPhone(leadDetails.phone)) resolvedPhone = leadDetails.phone;
+
+    let resolvedEmail = "";
+    if (visitor?.email && !isCompanyEmail(visitor.email)) resolvedEmail = visitor.email;
+    else if (existingConv?.visitorEmail && !isCompanyEmail(existingConv.visitorEmail)) resolvedEmail = existingConv.visitorEmail;
+    else if (leadDetails.email && !isCompanyEmail(leadDetails.email)) resolvedEmail = leadDetails.email;
 
     const hasVisitorDetails = Boolean(
       resolvedPhone ||
       resolvedEmail ||
       (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ||
-      sessionHistory.some((m) =>
-        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(m.content || "") ||
-        /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/.test(m.content || "")
-      )
+      sessionHistory
+        .filter((m) => m.role === "user")
+        .some((m) =>
+          (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(m.content || "") && !isCompanyEmail(m.content)) ||
+          (/(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/.test(m.content || "") && !isCompanyPhone(m.content))
+        )
     );
 
     // Build Master System Prompt with personalized visitorName

@@ -258,6 +258,24 @@
       border-bottom-left-radius: 4px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     }
+    #nexus-chatbot-widget-container strong,
+    #nexus-chatbot-widget-container b,
+    .nexus-msg strong,
+    .nexus-msg b,
+    .nexus-msg-bot strong,
+    .nexus-msg-bot b {
+      font-weight: 700 !important;
+      color: #0f172a !important;
+      opacity: 1 !important;
+      filter: none !important;
+      -webkit-text-fill-color: #0f172a !important;
+      display: inline !important;
+    }
+    .nexus-msg-bot a {
+      color: #4f46e5 !important;
+      font-weight: 600 !important;
+      text-decoration: underline !important;
+    }
     .nexus-source-tag {
       display: inline-flex;
       align-items: center;
@@ -463,8 +481,8 @@
     html = html.replace(/^(?:Language & Tone|Core Rules|Verified Knowledge|WHO WE ARE|PUBLIC COMPANY CONTACT|GUIDELINES|ABOUT EMPEROR SMART SOLUTIONS)[^\n]*\n*/gim, "");
     html = html.replace(/^Hello!\s*Welcome to Emperor Smart Solutions\.\s*May I know your name and contact number[^\n]*\n+/gi, "");
 
-    // Convert bold: ***text*** or **text** -> <strong>text</strong>
-    html = html.replace(/\*{2,3}([^*]+)\*{2,3}/g, "<strong>$1</strong>");
+    // Convert bold: ***text*** or **text** -> <strong style="font-weight:700!important;color:#0f172a!important;opacity:1!important;">text</strong>
+    html = html.replace(/\*{2,3}([^*]+)\*{2,3}/g, '<strong style="font-weight:700!important;color:#0f172a!important;opacity:1!important;">$1</strong>');
 
     // Convert markdown links: [Title](https://...) -> <a href="https://..." target="_blank" rel="noopener noreferrer">Title</a>
     html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;font-weight:600;">$1</a>');

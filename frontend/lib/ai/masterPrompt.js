@@ -244,5 +244,10 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
     cleaned = cleaned.replace(/\s*Please share your Name and Phone Number with me[^.?!]*[.?!]?/gi, "");
   }
 
+  // 8. Strip any bizarre email-identity confusion hallucination (e.g. "I noticed your email address is contact@emperorsmartsolutions.com... Would you mind changing it to something more personalized...")
+  cleaned = cleaned.replace(/\s*(?:Also,?\s*)?(?:I noticed that\s+)?(?:you mentioned earlier that\s+)?(?:your name is\s+[^.,]+,\s*)?but your email address is\s+contact@emperorsmartsolutions\.com[^.?!\n]*[.?!\n]?/gi, "");
+  cleaned = cleaned.replace(/\s*Would you mind (?:me )?changing it to something more personalized[^.?!\n]*[.?!\n]?/gi, "");
+  cleaned = cleaned.replace(/\s*Just a suggestion, and I'd be happy to make the change if you'd like\.?/gi, "");
+
   return cleaned.trim();
 }

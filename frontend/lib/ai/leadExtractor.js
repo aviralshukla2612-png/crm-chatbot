@@ -4,20 +4,27 @@
  */
 
 export function extractLeadDetails(message = "", history = []) {
-  // Combine recent message turns to extract across multi-turn dialogue
-  const recentTexts = [
-    ...history.slice(-6).map((m) => (typeof m === "string" ? m : m.content || "")),
+  // Combine ONLY USER messages from recent turns (NEVER extract from assistant replies!)
+  const userTexts = [
+    ...history
+      .filter((m) => (typeof m === "object" ? m.role === "user" : true))
+      .slice(-6)
+      .map((m) => (typeof m === "string" ? m : m.content || "")),
     message,
   ].filter(Boolean);
 
-  const fullText = recentTexts.join("\n");
+  const recentTexts = userTexts;
+  const fullText = userTexts.join("\n");
 
-  // 1. Extract Email: search newest messages first
+  // Company contact patterns to NEVER extract as visitor leads
+  const isCompanyEmail = (em) =>
+    /emperorsmartsolutions\.com|emperorsmartsolutions@gmail\.com|^contact@|^sales@|^info@|^support@|^careers@/i.test(em || "");
+  // 1. Extract Email: search newest user messages first
   let email = "";
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
-  for (const text of recentTexts.slice().reverse()) {
+  for (const text of userTexts.slice().reverse()) {
     const match = text.match(emailRegex);
-    if (match) {
+    if (match && !isCompanyEmail(match[0].trim())) {
       email = match[0].trim();
       break;
     }
@@ -29,7 +36,7 @@ export function extractLeadDetails(message = "", history = []) {
   const globalPhoneRegex = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
 
   let indianMatch = null;
-  for (const text of recentTexts.slice().reverse()) {
+  for (const text of userTexts.slice().reverse()) {
     const indMatch = text.match(indianPhoneRegex);
     if (indMatch) {
       indianMatch = indMatch;
