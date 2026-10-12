@@ -87,6 +87,10 @@ echo "🐳 [2/5] Building & Launching Docker Services..."
 echo "========================================================"
 mkdir -p frontend/data
 
+# Stop legacy containers from older compose project names to prevent port collisions
+docker stop ollama postgres-vector nexus-frontend open-webui fastapi-rag 2>/dev/null || true
+docker rm ollama postgres-vector nexus-frontend open-webui fastapi-rag 2>/dev/null || true
+
 docker compose up -d --build --remove-orphans
 
 echo ""

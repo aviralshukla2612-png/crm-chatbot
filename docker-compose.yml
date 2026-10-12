@@ -69,9 +69,6 @@ services:
     restart: unless-stopped
     networks:
       - ess_internal
-    ports:
-      # Bound strictly to loopback for host debugging; internal containers reach via http://ollama:11434
-      - "127.0.0.1:11434:11434"
     environment:
       - OLLAMA_MAX_LOADED_MODELS=2
       - OLLAMA_KEEP_ALIVE=24h
