@@ -102,17 +102,17 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // Check if assistant previously asked for the visitor's name/number and visitor replied with just their name
+  // Check if any recent user turn was a standalone 1-3 word person name (e.g. "Aviral Shukla" or "Aviral")
   if (!name) {
-    const lastAssistantTurn = [...history].reverse().find((m) => (typeof m === "object" && m.role === "assistant"));
-    const askedForName = lastAssistantTurn && /name|naam|who are you|introduce|number|whatsapp/i.test(lastAssistantTurn.content || "");
-    const cleanMsg = (message || "").trim();
-    if (
-      askedForName &&
-      /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18}){0,2}$/.test(cleanMsg) &&
-      !/^(?:hi|hii|hello|hey|yes|no|ok|okay|sure|thanks|price|cost|quote|office|address)$/i.test(cleanMsg)
-    ) {
-      name = cleanMsg.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    for (const text of userTexts.slice().reverse()) {
+      const clean = text.trim();
+      if (
+        /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18}){0,2}$/.test(clean) &&
+        !/^(?:hi|hii|hello|hey|yes|no|ok|okay|sure|thanks|price|cost|quote|office|address|whatsup|sup|founder|services|developer|engineer|proposal|project)$/i.test(clean)
+      ) {
+        name = clean.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+        break;
+      }
     }
   }
 

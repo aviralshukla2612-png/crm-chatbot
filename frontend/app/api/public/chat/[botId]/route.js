@@ -279,6 +279,8 @@ export async function POST(request, { params }) {
       /\b(?:salman khan|shah\s*rukh|srk|aamir khan|akshay|deepika|katrina|alia|virat kohli|dhoni|rohit sharma|messi|ronaldo)\b/i.test(message) ||
       /\b(?:recipe for|how to cook|how to bake|movie review|box office|song lyrics)\b/i.test(message);
 
+    const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
+
     let deterministicReply = null;
     if (isPureGreeting && !hasTechnicalKeywords) {
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
@@ -286,19 +288,34 @@ export async function POST(request, { params }) {
       } else {
         deterministicReply = `Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?`;
       }
+    } else if (isFirstMessageQuery) {
+      let firstUserMsg = "";
+      if (existingConv && Array.isArray(existingConv.messages)) {
+        const firstM = existingConv.messages.find((m) => m.role === "user");
+        if (firstM) firstUserMsg = firstM.content;
+      }
+      if (!firstUserMsg && Array.isArray(history)) {
+        const firstM = history.find((m) => m.role === "user");
+        if (firstM) firstUserMsg = firstM.content;
+      }
+      if (!firstUserMsg) {
+        const userMessages = sessionHistory.filter((m) => m.role === "user");
+        firstUserMsg = userMessages.length > 0 ? userMessages[0].content : message;
+      }
+      deterministicReply = `Your first message was:\n\n"${firstUserMsg}"`;
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide celebrity or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isLowBudgetQuery) {
-      deterministicReply = `At Emperor Smart Solutions, our custom software and bespoke MVP development packages typically start from ₹50,000, as all projects include dedicated engineering, UI/UX architecture, and quality assurance testing.
+      const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
+        ? (resolvedPhone ? "" : "\n\nCould you please share your **Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?")
+        : "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?";
 
-While a micro-budget (like ₹5,000) is below our standard full-cycle custom engineering packages, we would be happy to discuss your specific requirements to see if a phased rollout, scoped MVP, or technical consultation is possible!
+      deterministicReply = `We completely respect your budget! While our full-scale custom software and bespoke applications typically start from ₹50,000 to cover comprehensive architecture, UI/UX, and quality engineering, we would be delighted to learn about your goals and explore a lightweight MVP, pre-built modules, or a phased roadmap that fits your budget!
 
-Here are our official contact details to speak with our team:
+Here are our official contact details to speak with our engineering leadership:
 📞 **Phone & WhatsApp:** +91 63591 20081
 📧 **Email:** contact@emperorsmartsolutions.com
-🌐 **Website:** https://emperorsmartsolutions.com
-
-Could you please share your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?`;
+🌐 **Website:** https://emperorsmartsolutions.com${askForLead}`;
     } else if (isContactSubmissionOnly && resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
       deterministicReply = `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
     }
@@ -312,12 +329,12 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
       if (deterministicReply) {
         conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
         conversationsStore.addMessage(currentSessionId, { role: "assistant", content: deterministicReply });
-        if (resolvedName && resolvedName !== "Website Visitor" && existingConv) {
+        if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
           conversationsStore.updateConversation(currentSessionId, {
             visitorName: resolvedName,
-            visitorPhone: resolvedPhone || existingConv.visitorPhone,
-            visitorEmail: resolvedEmail || existingConv.visitorEmail,
-            isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+            visitorPhone: resolvedPhone || undefined,
+            visitorEmail: resolvedEmail || undefined,
+            isLead: true,
           });
         }
         if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
@@ -408,7 +425,7 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
             const askedForContact = /(?:name|phone|whatsapp|contact number|email)/i.test(accumulatedReply) &&
               /(?:share|provide|tell|know|reach|call|give|leave|drop|connect|send)/i.test(accumulatedReply);
 
-            if (!hasVisitorDetails && !askedForContact) {
+            if (!hasVisitorDetails && !askedForContact && !resolvedName) {
               const leadAsk = "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal?";
               writer.write(encoder.encode(`data: ${JSON.stringify({ token: leadAsk })}\n\n`));
               validated += leadAsk;
@@ -419,12 +436,12 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
           conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
           conversationsStore.addMessage(currentSessionId, { role: "assistant", content: validated });
 
-          if (resolvedName && resolvedName !== "Website Visitor" && existingConv) {
+          if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
             conversationsStore.updateConversation(currentSessionId, {
               visitorName: resolvedName,
-              visitorPhone: resolvedPhone || existingConv.visitorPhone,
-              visitorEmail: resolvedEmail || existingConv.visitorEmail,
-              isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+              visitorPhone: resolvedPhone || undefined,
+              visitorEmail: resolvedEmail || undefined,
+              isLead: true,
             });
           }
 
@@ -478,7 +495,7 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
       const askedForContact = /(?:name|phone|whatsapp|contact number|email)/i.test(botReply) &&
         /(?:share|provide|tell|know|reach|call|give|leave|drop|connect|send)/i.test(botReply);
 
-      if (!hasVisitorDetails && !askedForContact) {
+      if (!hasVisitorDetails && !askedForContact && !resolvedName) {
         botReply += "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal?";
       }
     }
@@ -508,12 +525,12 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our techn
         role: "assistant",
         content: botReply,
       });
-      if (resolvedName && resolvedName !== "Website Visitor") {
+      if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         conversationsStore.updateConversation(currentSessionId, {
           visitorName: resolvedName,
           visitorPhone: resolvedPhone || reloadedConv.visitorPhone,
           visitorEmail: resolvedEmail || reloadedConv.visitorEmail,
-          isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+          isLead: true,
         });
       }
     } else {

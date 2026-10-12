@@ -205,16 +205,14 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
     /(?:can'?t|cannot)\s+(?:discuss|accept|process|handle)\s+(?:payment|budget|pricing)/i.test(cleaned) ||
     /request for payment of or more/i.test(cleaned)
   ) {
-    return `At Emperor Smart Solutions, our custom software and bespoke MVP development tiers typically start from ₹50,000, as every project includes dedicated engineering, architecture, and quality assurance.
+    return `We completely respect your budget! While our full-scale custom software and bespoke applications typically start from ₹50,000 to cover comprehensive architecture, UI/UX, and quality engineering, we would be delighted to learn about your goals and explore a lightweight MVP, pre-built modules, or a phased roadmap that fits your budget!
 
-While a micro-budget (like ₹5,000) is below our standard full-scale custom engineering packages, we would be glad to discuss your project to explore scoped MVP options or technical guidance!
-
-Here are our official contact details to speak with our team:
+Here are our official contact details to speak with our engineering leadership:
 📞 **Phone & WhatsApp:** +91 63591 20081
 📧 **Email:** contact@emperorsmartsolutions.com
 🌐 **Website:** https://emperorsmartsolutions.com
 
-May I know your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to discuss what is possible?`;
+Could you please share your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?`;
   }
 
   // 1. Strip any leaked system prompt instructions, headers, or meta-directives
