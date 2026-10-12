@@ -235,6 +235,13 @@ export async function POST(request, { params }) {
       });
     }
 
+    const verifiedSources = relevantChunks
+      .filter((c) => (c.score || 0) > 0.8)
+      .map((c) => ({
+        title: c.pageTitle,
+        url: c.pageUrl,
+      }));
+
     // 7. Store conversation continuity in real-time
     const reloadedConv = conversationsStore.getConversation(currentSessionId);
     if (reloadedConv) {
@@ -242,7 +249,7 @@ export async function POST(request, { params }) {
       conversationsStore.addMessage(currentSessionId, {
         role: "assistant",
         content: botReply,
-        sources: relevantChunks.map((c) => ({ title: c.pageTitle, url: c.pageUrl })),
+        sources: verifiedSources,
       });
     } else {
       conversationsStore.createConversation({
@@ -256,21 +263,16 @@ export async function POST(request, { params }) {
         lastMessage: message,
         messages: [
           { role: "user", content: message, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
-          { role: "assistant", content: botReply, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+          { role: "assistant", content: botReply, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), sources: verifiedSources },
         ],
       });
     }
-
-    const sources = relevantChunks.map((c) => ({
-      title: c.pageTitle,
-      url: c.pageUrl,
-    }));
 
     return corsResponse(
       NextResponse.json({
         success: true,
         reply: botReply,
-        sources: sources,
+        sources: verifiedSources,
         sessionId: currentSessionId,
       })
     );

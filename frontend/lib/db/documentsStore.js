@@ -134,6 +134,12 @@ export const documentsStore = {
   },
 
   searchDocuments(botId, query, topK = 4) {
+    const cleanQ = (query || "").trim().toLowerCase();
+    // Do not return document sources for pure greetings or small talk
+    if (/^(hi+|hello+|hey+|hola|namaste|greetings|good\s*(morning|afternoon|evening|day))[\s!.,?]*$/i.test(cleanQ)) {
+      return [];
+    }
+
     const all = loadDocumentsFromDisk();
     // Filter docs relevant to this bot
     const relevantDocs = all.filter((d) => !botId || !d.botId || d.botId === botId || d.botId === "all" || botId.includes(d.botId) || (d.botId && botId.includes(d.botId.replace("bot_", ""))));
@@ -163,8 +169,8 @@ export const documentsStore = {
       return scoredChunks.slice(0, topK);
     }
 
-    // Fallback: If no direct keyword match, provide the first 2 chunks of document knowledge as context
-    if (relevantDocs.length > 0 && relevantDocs[0].chunks?.length > 0) {
+    // Only fallback for substantive queries longer than 15 chars, not for greetings or short chat
+    if (cleanQ.length > 15 && relevantDocs.length > 0 && relevantDocs[0].chunks?.length > 0) {
       return relevantDocs[0].chunks.slice(0, 2).map((chunk) => ({
         pageTitle: relevantDocs[0].name,
         pageUrl: relevantDocs[0].name,
