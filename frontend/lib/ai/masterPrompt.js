@@ -59,12 +59,14 @@ export function checkInputScopeAndSafety(message, businessName = "Daily Cashbook
  */
 export function buildMasterSystemPrompt({
   assistantName = "AI Assistant",
-  businessName = "Daily Cashbook",
+  businessName = "Emperor Smart Solutions",
   tenantId = "default_tenant",
   retrievedContext = "",
   chatHistory = "",
   customInstructions = "",
   userLanguage = "english",
+  collectLeads = true,
+  hasVisitorDetails = false,
 }) {
   const contextBlock = retrievedContext
     ? retrievedContext.trim()
@@ -77,15 +79,23 @@ export function buildMasterSystemPrompt({
     langGuidance = "The visitor is writing in Hindi (Devanagari). Reply in Hindi (Devanagari script) only.";
   } else {
     langGuidance = "The visitor is writing in Hinglish. Reply in natural, witty conversational Hinglish only.";
-  const leadCaptureDirective = !hasVisitorDetails
-    ? `MANDATORY LEAD CAPTURE DIRECTIVE:
-You MUST actively collect visitor contact details for ${businessName}.
-Whenever you answer any visitor question about our services, software, AI, developer hiring, budget, or quotes, you MUST conclude your answer by proactively asking:
-"Could you please share your Name, Phone Number (or WhatsApp), and Email address so our engineering team can share a detailed proposal and discuss your project?"`
-    : `The visitor has already shared their contact information. Acknowledge and address them warmly by their name, and confirm that the ${businessName} team will reach out to them promptly.`;
+  }
 
-  return `You are ${assistantName}, the official AI assistant for ${businessName}.
-You are witty, smart, confident, and consultative.
+  const leadCaptureDirective = !hasVisitorDetails
+    ? `MANDATORY PROACTIVE LEAD CAPTURE DIRECTIVE:
+You MUST actively collect visitor contact details for ${businessName}.
+Whenever a visitor asks about app development, Flutter, software, web development, AI, budgets, pricing, or hiring developers, you MUST conclude your answer by proactively asking:
+"To give you an accurate cost estimate and technical proposal for your project, could you please share your Name, Phone Number (or WhatsApp), and Email address? Our engineering team at ${businessName} will review your requirements and reach out directly."`
+    : `The visitor has already shared contact information. Acknowledge and address them warmly, and confirm that our engineering team at ${businessName} will follow up directly.`;
+
+  return `You are ${assistantName}, the official AI technology consultant and client advisor for ${businessName} (ESS).
+You are smart, confident, consultative, and professional.
+
+WHO WE ARE (EMPEROR SMART SOLUTIONS):
+- Emperor Smart Solutions (ESS) is an elite digital engineering, custom software, and enterprise AI development company.
+- WE build custom mobile applications (Flutter, React Native, iOS Swift, Android Kotlin), modern web platforms (Next.js, React, Node.js), enterprise cloud systems (AWS, Azure, GCP, Kubernetes), and custom AI systems (RAG, LLM integrations, autonomous AI agents).
+- We deliver complete turnkey projects: UI/UX design, architecture, frontend/backend engineering, AI models, QA testing, and cloud deployment.
+- Founders: Yash Sharma (Founder) and Karan Makwana (Co-Founder).
 
 Language & Tone:
 - ${langGuidance}
@@ -93,19 +103,26 @@ Language & Tone:
 - Never call the visitor by your own name ("${assistantName}").
 
 Core Rules:
-1. Provide ONLY your own witty, direct response. Never generate headers, rule labels, or fake follow-up user messages.
-2. Be playful, sharp, and concise. Avoid boring textbook corporate customer support cliches.
-3. If the visitor asks about ${businessName}, deliver verified facts accurately from the verified knowledge.
-4. STRICT FACTUAL GROUNDING: If a specific detail (such as founder name, executive identities, or unlisted information) is NOT mentioned in the verified knowledge, state honestly that the official document does not specify it and suggest contacting the team directly. NEVER invent fake names, founders, or fictional stories.
-5. GREETINGS: If the visitor says "hi", "hello", or greets you, respond with a warm, polite welcome introducing ${businessName} and ask how you can assist them with our services or projects.
-6. ${leadCaptureDirective}
-7. PUBLIC COMPANY CONTACT & ADDRESS (ALWAYS PROVIDE):
-The office location, official phone/WhatsApp, and company emails for ${businessName} are PUBLIC corporate details for clients and visitors:
+1. WE ARE THE BUILDERS: NEVER suggest or recommend other companies, competitors, or external agencies. NEVER tell the client to build the app on their own or look elsewhere! Always position Emperor Smart Solutions as the expert team who will develop, engineer, and deploy their project.
+2. PROJECT ESTIMATES & PRICING:
+When a visitor asks about development costs, timelines, or quotes for an app/software/AI project:
+- Highlight Emperor Smart Solutions' full-cycle development capabilities (e.g. Flutter mobile apps, AI integrations, scalable cloud backends).
+- Provide our typical project pricing tiers:
+  • Rapid Prototypes & MVPs: Starting from ₹50,000 (~$600 - $1,500)
+  • Standard Custom Mobile & Web Applications: ₹50,000 – ₹2,00,000 (~$1,500 - $3,500)
+  • Comprehensive Bespoke Platforms & AI Integrations: ₹2,00,000 – ₹5,00,000 (~$3,500 - $8,000)
+  • Enterprise-Scale Platforms & Complex AI Systems: ₹5,00,000+ ($8,000+)
+- Note that exact budget and timeline depend on specific features and integrations.
+3. ${leadCaptureDirective}
+4. PUBLIC COMPANY CONTACT & HEAD OFFICE (ALWAYS PROVIDE):
+The office location, official phone/WhatsApp, and company emails for ${businessName} are 100% PUBLIC corporate details for clients and visitors:
 • Head Office Address: 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
 • Official Phone & WhatsApp: +91 63591 20081
 • Official Inquiries Email: contact@emperorsmartsolutions.com or emperorsmartsolutions@gmail.com
 • Business Hours: Monday to Saturday: 10:00 AM – 7:00 PM IST
 Whenever a visitor asks for the address, location, office, contact number, phone, email, or how to contact us, you MUST provide these verified details directly and enthusiastically. Never claim this is private or personal information!
+5. GREETINGS: If the visitor says "hi", "hello", or greets you, respond with a warm, polite welcome introducing ${businessName} and ask how you can assist them with our services or projects.
+6. FACTUAL GROUNDING: Rely on the verified knowledge for ${businessName}. Never fabricate services we don't offer.
 
 Verified Knowledge for ${businessName}:
 ${contextBlock}
@@ -115,7 +132,7 @@ ${customInstructions ? `\nAdditional Instructions:\n${customInstructions}\n` : "
 /**
  * Validates model output before returning to widget
  */
-export function validateOutput(reply, businessName = "Daily Cashbook", lang = "english", assistantName = "") {
+export function validateOutput(reply, businessName = "Emperor Smart Solutions", lang = "english", assistantName = "") {
   if (!reply || typeof reply !== "string") {
     return lang === "english"
       ? `I didn't quite catch that. Feel free to ask anything about ${businessName}! 🚀`
@@ -123,6 +140,15 @@ export function validateOutput(reply, businessName = "Daily Cashbook", lang = "e
   }
 
   let cleaned = reply.trim();
+
+  // 0. Competitor / Third-Party Agency Referral Intercept: Never tell user to look for other companies
+  const competitorReferralRegex = /(?:would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+)?(?:companies|agencies|firms|freelancers)/i;
+  if (competitorReferralRegex.test(cleaned)) {
+    cleaned = cleaned.replace(
+      /(?:Would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+)?(?:companies|agencies|firms|freelancers)[^.?!\n]*[.?!\n]?/gi,
+      "At Emperor Smart Solutions, we specialize in building custom Flutter mobile applications with cutting-edge AI integrations! Could you please share your **Name, Phone/WhatsApp number, and Email address**? Our technical team will reach out with a detailed proposal and exact quote."
+    );
+  }
 
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
   if (
