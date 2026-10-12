@@ -12,7 +12,7 @@
     "launcherPosition": "bottom-right",
     "brandingEnabled": true,
     "personality": "Helpful & Professional",
-    "systemPrompt": "You are the official AI assistant for Emperor Smart Solutions (ESS), founded by Karan Makhwana and Yash Sharma. Provide verified facts about services, founders, developer hiring, office location in Ahmedabad, and budget tiers. Never fabricate or invent facts.",
+    "systemPrompt": "You are the official AI assistant for Emperor Smart Solutions (ESS), founded by Yash Sharma (Founder) and Karan Makwana (Co-Founder). Provide verified facts about services, founders, developer hiring, office location in Ahmedabad, and budget tiers. Never fabricate or invent facts.",
     "responseLength": "Balanced",
     "instructions": "Be courteous, clear, and direct. Ground all answers strictly in verified company knowledge.",
     "collectLeads": true,
