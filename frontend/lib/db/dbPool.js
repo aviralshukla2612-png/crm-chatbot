@@ -23,12 +23,23 @@ export function getDbPool() {
       console.error("[DB_CONFIG_ERROR] Database environment validation failed:", envStatus.errors.join("; "));
     }
 
-    pool = new Pool({
-      connectionString: DATABASE_URL,
+    const poolConfig = {
       max: parseInt(process.env.DB_POOL_MAX || "20", 10),
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 4000,
-    });
+      connectionTimeoutMillis: 5000,
+    };
+
+    if (process.env.POSTGRES_HOST && process.env.POSTGRES_PASSWORD) {
+      poolConfig.host = process.env.POSTGRES_HOST;
+      poolConfig.port = parseInt(process.env.POSTGRES_PORT || "5432", 10);
+      poolConfig.database = process.env.POSTGRES_DB || "ess_chatbot";
+      poolConfig.user = process.env.POSTGRES_USER || "postgres";
+      poolConfig.password = process.env.POSTGRES_PASSWORD;
+    } else {
+      poolConfig.connectionString = process.env.DATABASE_URL || DATABASE_URL;
+    }
+
+    pool = new Pool(poolConfig);
 
     pool.on("error", (err) => {
       console.error("[DB_POOL_ERROR] Unexpected error on idle client:", err.message);
@@ -244,8 +255,10 @@ export async function queryDb(sql, params = []) {
   try {
     const p = getDbPool();
     const result = await p.query(sql, params);
+    isConnected = true;
     return { ok: true, rows: result.rows, rowCount: result.rowCount };
   } catch (err) {
+    console.error(`[DB_QUERY_FAIL] ${err.message}`);
     return { ok: false, error: err.message, rows: [], rowCount: 0 };
   }
 }

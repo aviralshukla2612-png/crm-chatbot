@@ -10,17 +10,22 @@ const DEFAULT_PROVIDER = (process.env.DEFAULT_AI_PROVIDER || (process.env.GROQ_A
 export async function GET() {
   const startTime = Date.now();
   let dbStatus = "local_fallback";
+  let dbError = null;
   try {
     const dbRes = await queryDb("SELECT 1 AS live;");
     if (dbRes.ok) {
       dbStatus = "connected";
+    } else {
+      dbError = dbRes.error || "Connection failed";
     }
   } catch (err) {
     dbStatus = "local_fallback";
+    dbError = err.message;
   }
 
   const dependencies = {
     database: dbStatus,
+    ...(dbError ? { databaseError: dbError } : {}),
     inference: {
       activeProvider: DEFAULT_PROVIDER,
       status: "ready",
