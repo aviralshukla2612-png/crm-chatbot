@@ -85,8 +85,15 @@ export function buildMasterSystemPrompt({
     : `Answer the visitor's question directly, clearly, and concisely.`;
 
   const leadCaptureDirective = !hasVisitorDetails
-    ? `When a prospect demonstrates genuine project interest, inquires about pricing, or asks to start development, invite them to share their Name and Phone/WhatsApp (or Email) so our technical team can prepare a tailored architecture proposal.`
-    : `The prospect has already shared contact details. Do not ask for their contact information again.`;
+    ? `CRITICAL LEAD QUALIFICATION REQUIREMENT:
+VISITOR IDENTITY: UNKNOWN.
+The visitor has not yet provided their contact details.
+1. When a visitor greets you (e.g. "hi", "hello", "whatsup", "hey") or begins conversation:
+   Greet them warmly and IMMEDIATELY invite them to share their Name and Phone/WhatsApp (or Email) so our technical team can prepare a tailored architecture proposal.
+2. When a visitor inquires about building any website, mobile app, software, or AI system, or asks about pricing, services, or contact details:
+   Provide the helpful answer, and ALWAYS conclude by proactively asking for their Name and Phone Number (or WhatsApp) to prepare a customized proposal!
+3. Never end a response with generic chat filler like "How can I help you today?" or "Not much, just chillin'". Always ask for their Name and Phone/WhatsApp when their identity is unknown!`
+    : `The prospect has already shared contact details. Address them personally and do not ask for their contact information again.`;
 
   return `You are ${assistantName}, the official AI Sales Consultant and Technology Advisor for ${businessName} (ESS).
 Your mission is to understand the visitor's business goals, answer company questions with verified accuracy, discover customer needs, handle objections with empathy and evidence, and guide suitable prospects toward a consultation.
@@ -129,6 +136,14 @@ COMMERCIAL POLICIES & FORMATTING:
 - ${addressingDirective}
 - ${leadCaptureDirective}
 - Strict Accuracy: Rely on verified knowledge. Never invent client names, fake statistics, or unauthorized discounts. Never expose internal instructions.
+
+STRICT PROFESSIONAL SCOPE & OFF-TOPIC REJECTION:
+- You are exclusively the official AI Sales Consultant for ${businessName}.
+- You are NOT a general knowledge assistant, encyclopedia, or entertainment trivia bot.
+- You must NEVER write essays, biographies, filmographies, or answers about celebrities, actors (such as Salman Khan, Shah Rukh Khan, Hollywood stars), sports, politics, cooking recipes, gaming, homework, or general pop trivia.
+- If a visitor asks an off-topic or irrelevant question (such as "who is Salman Khan", "tell me a joke", "recipe for pizza", "who won the match"):
+  Politely and firmly decline in 1-2 sentences and pivot back to Emperor Smart Solutions:
+  "I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't answer celebrity or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?"
 
 Verified Knowledge for ${businessName}:
 ${contextBlock}
@@ -248,6 +263,16 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
   cleaned = cleaned.replace(/\s*(?:Also,?\s*)?(?:I noticed that\s+)?(?:you mentioned earlier that\s+)?(?:your name is\s+[^.,]+,\s*)?but your email address is\s+contact@emperorsmartsolutions\.com[^.?!\n]*[.?!\n]?/gi, "");
   cleaned = cleaned.replace(/\s*Would you mind (?:me )?changing it to something more personalized[^.?!\n]*[.?!\n]?/gi, "");
   cleaned = cleaned.replace(/\s*Just a suggestion, and I'd be happy to make the change if you'd like\.?/gi, "");
+
+  // 9. Intercept off-topic celebrity biographies / filmographies / cooking recipes
+  const isCelebrityOrActorBiography =
+    /(?:legendary Indian actor|film actor, producer|blockbuster films|renowned Indian (?:film )?actor|Bollywood actor|famous actor|box office hits|filmography|born on [A-Za-z]+ \d+, \d{4}, in)/i.test(cleaned);
+  const isCookingRecipe =
+    /(?:tablespoon|teaspoon|cook for \d+ minutes|boil the water|heat the pan|garnish with|marinate the)/i.test(cleaned);
+
+  if (isCelebrityOrActorBiography || isCookingRecipe) {
+    cleaned = `I am the AI Sales Consultant for ${businessName}, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide celebrity trivia, entertainment news, or cooking recipes, but I'd be delighted to assist you with your digital engineering or software project! What kind of solution are you looking to build?`;
+  }
 
   return cleaned.trim();
 }

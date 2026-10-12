@@ -261,12 +261,16 @@ export async function POST(request, { params }) {
 
     // Fast-path deterministic handling for greetings and contact introductions
     const cleanLower = message.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    const isPureGreeting = ["hi", "hii", "hello", "hey", "namaste", "greetings"].includes(cleanLower);
+    const trimmedMsg = message.trim().toLowerCase();
+    const isPureGreeting =
+      /^(?:hi+|hello+|hey+|what'?s?\s*up|sup|yo|greetings|namaste|good\s*(?:morning|afternoon|evening|day))\b/i.test(trimmedMsg) ||
+      /^(?:hi+|hello+|hey+)\b/i.test(trimmedMsg) ||
+      ["whatsup", "whats up", "sup", "yo", "hi", "hii", "hello", "hey", "namaste", "greetings"].includes(cleanLower);
     const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address|where|who)\b/i));
     const isContactSubmissionOnly = !hasTechnicalKeywords && (resolvedPhone || resolvedEmail) && ((leadDetails.phone && message.includes(leadDetails.phone)) || (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
 
     let deterministicReply = null;
-    if (isPureGreeting) {
+    if (isPureGreeting && !hasTechnicalKeywords) {
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         deterministicReply = `Hi ${resolvedName}! Great to hear from you. How can Emperor Smart Solutions assist you with your project today?`;
       } else {
@@ -363,7 +367,16 @@ export async function POST(request, { params }) {
           }
 
           // Post-validate output with resolvedName
-          const validated = validateOutput(accumulatedReply, businessName, lang, botName, resolvedName);
+          let validated = validateOutput(accumulatedReply, businessName, lang, botName, resolvedName);
+
+          const askedForContact = /(?:name|phone|whatsapp|contact number|email)/i.test(accumulatedReply) &&
+            /(?:share|provide|tell|know|reach|call|give|leave|drop|connect|send)/i.test(accumulatedReply);
+
+          if (!hasVisitorDetails && !askedForContact) {
+            const leadAsk = "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal?";
+            writer.write(encoder.encode(`data: ${JSON.stringify({ token: leadAsk })}\n\n`));
+            validated += leadAsk;
+          }
 
           // Save message to conversation store
           conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
@@ -424,6 +437,13 @@ export async function POST(request, { params }) {
       });
 
       botReply = validateOutput(botReply, businessName, lang, botName, resolvedName);
+
+      const askedForContact = /(?:name|phone|whatsapp|contact number|email)/i.test(botReply) &&
+        /(?:share|provide|tell|know|reach|call|give|leave|drop|connect|send)/i.test(botReply);
+
+      if (!hasVisitorDetails && !askedForContact) {
+        botReply += "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal?";
+      }
     }
 
     // Capture Lead using robust multi-turn extractor
