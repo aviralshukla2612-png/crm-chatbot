@@ -23,26 +23,23 @@ if command -v sed >/dev/null 2>&1; then
     sed -i 's/\r$//' .env 2>/dev/null || true
 fi
 
-# Safely load .env variables without executing shell commands or choking on comments
-while IFS= read -r line || [ -n "$line" ]; do
-    clean_line=$(echo "$line" | tr -d '\r')
-    # Skip comments and empty lines
-    case "$clean_line" in
-        \#*|"") continue ;;
-        *=*)
-            key="${clean_line%%=*}"
-            val="${clean_line#*=}"
-            # Trim whitespace from key
-            key=$(echo "$key" | xargs 2>/dev/null || echo "$key")
-            # Strip enclosing double or single quotes from value
-            val="${val%\"}"
-            val="${val#\"}"
-            val="${val%\'}"
-            val="${val#\'}"
-            export "$key"="$val"
-            ;;
-    esac
-done < .env
+# Safely extract .env values without shell export syntax errors or comment interference
+get_env_val() {
+    local var_name="$1"
+    grep -E "^[[:space:]]*${var_name}=" .env 2>/dev/null | cut -d '=' -f 2- | tr -d '\r' | sed -e 's/^[[:space:]]*["'"'"']//' -e 's/["'"'"'][[:space:]]*$//' | tail -n 1
+}
+
+POSTGRES_PASSWORD=$(get_env_val "POSTGRES_PASSWORD")
+DEFAULT_AI_PROVIDER=$(get_env_val "DEFAULT_AI_PROVIDER")
+GROQ_API_KEY=$(get_env_val "GROQ_API_KEY")
+POSTGRES_DB=$(get_env_val "POSTGRES_DB")
+POSTGRES_USER=$(get_env_val "POSTGRES_USER")
+CHAT_MODEL=$(get_env_val "CHAT_MODEL")
+
+POSTGRES_DB="${POSTGRES_DB:-ess_chatbot}"
+POSTGRES_USER="${POSTGRES_USER:-postgres}"
+DEFAULT_AI_PROVIDER="${DEFAULT_AI_PROVIDER:-groq}"
+CHAT_MODEL="${CHAT_MODEL:-llama3.2:1b}"
 
 # 1. Enforce strict database password validation (no default or placeholder passwords)
 if [ -z "${POSTGRES_PASSWORD}" ]; then
