@@ -449,6 +449,28 @@
     });
   }
 
+  function formatMessage(text) {
+    if (!text || typeof text !== "string") return "";
+    let html = text;
+
+    // Convert bold: ***text*** or **text** -> <strong>text</strong>
+    html = html.replace(/\*{2,3}([^*]+)\*{2,3}/g, "<strong>$1</strong>");
+
+    // Convert markdown links: [Title](https://...) -> <a href="https://..." target="_blank" rel="noopener noreferrer">Title</a>
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;font-weight:600;">$1</a>');
+
+    // Auto-link standalone https:// URLs
+    html = html.replace(/(^|[\s(])(https:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;font-weight:600;">$2</a>');
+
+    // Bullet points: * Item or - Item
+    html = html.replace(/^[*-]\s+(.+)$/gm, "• $1");
+
+    // Newlines to <br/>
+    html = html.replace(/\n/g, "<br/>");
+
+    return html;
+  }
+
   // 8. Render Message Feed
   function renderMessages() {
     const list = document.getElementById("nexus-messages-list");
@@ -470,7 +492,7 @@
       if (m.role === "user") {
         el.style.background = botConfig.primaryColor;
       }
-      el.innerHTML = m.content.replace(/\n/g, "<br/>");
+      el.innerHTML = formatMessage(m.content);
 
       list.appendChild(el);
     });
@@ -578,7 +600,7 @@
                   botMsg.content += parsed.token;
                   const msgs = chatWindow.querySelectorAll(".nexus-msg-bot");
                   const lastMsg = msgs[msgs.length - 1];
-                  if (lastMsg) lastMsg.innerHTML = botMsg.content.replace(/\n/g, "<br/>");
+                  if (lastMsg) lastMsg.innerHTML = formatMessage(botMsg.content);
                   const list = document.getElementById("nexus-messages-list");
                   if (list) list.scrollTop = list.scrollHeight;
                 }

@@ -122,27 +122,32 @@ ${addressingDirective}
 
 2. WE ARE THE BUILDERS: NEVER suggest or recommend other companies, competitors, or external agencies. NEVER tell the client to build the app on their own or look elsewhere! Always position Emperor Smart Solutions as the expert team who will develop, engineer, and deploy their project.
 
-3. PROJECT ESTIMATES & PRICING:
+3. PROJECT ESTIMATES & PRICING (RUPEES ONLY):
 When a visitor asks about development costs, timelines, or quotes for an app/software/AI project:
 - Highlight Emperor Smart Solutions' full-cycle development capabilities (e.g. Flutter mobile apps, AI integrations, scalable cloud backends).
-- Provide our typical project pricing tiers:
-  • Rapid Prototypes & MVPs: Starting from ₹50,000 (~$600 - $1,500)
-  • Standard Custom Mobile & Web Applications: ₹50,000 – ₹2,00,000 (~$1,500 - $3,500)
-  • Comprehensive Bespoke Platforms & AI Integrations: ₹2,00,000 – ₹5,00,000 (~$3,500 - $8,000)
-  • Enterprise-Scale Platforms & Complex AI Systems: ₹5,00,000+ ($8,000+)
+- MANDATORY CURRENCY RULE: Quote ALL pricing strictly in Indian Rupees (₹) only. NEVER quote in US Dollars ($) or include dollar signs.
+- Provide our typical project pricing tiers in Indian Rupees:
+  • Rapid Prototypes & MVPs: Starting from ₹50,000
+  • Standard Custom Mobile & Web Applications: ₹50,000 to ₹2,00,000
+  • Comprehensive Bespoke Platforms & AI Integrations: ₹2,00,000 to ₹5,00,000
+  • Enterprise-Scale Platforms & Complex AI Systems: ₹5,00,000+
 - Note that exact budget and timeline depend on specific features and integrations.
 
 4. ${leadCaptureDirective}
 
-5. PUBLIC COMPANY CONTACT & HEAD OFFICE (ALWAYS PROVIDE):
-The office location, official phone/WhatsApp, and company emails for ${businessName} are 100% PUBLIC corporate details for clients and visitors:
+5. PUBLIC COMPANY CONTACT, ADDRESS & SECURE HTTPS WEBSITE:
+The office location, official phone/WhatsApp, official website, and company emails for ${businessName} are 100% PUBLIC corporate details for clients and visitors:
+• Official Website Link: https://emperorsmartsolutions.com (MANDATORY: ALWAYS provide the secure HTTPS link https://emperorsmartsolutions.com. NEVER use unencrypted http://)
 • Head Office Address: 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
 • Official Phone & WhatsApp: +91 63591 20081
 • Official Inquiries Email: contact@emperorsmartsolutions.com or emperorsmartsolutions@gmail.com
 • Business Hours: Monday to Saturday: 10:00 AM – 7:00 PM IST
-Whenever a visitor asks for the address, location, office, contact number, phone, email, or how to contact us, you MUST provide these verified details directly and enthusiastically. Never claim this is private or personal information!
+Whenever a visitor asks for the website, link, address, location, office, contact number, phone, email, or how to contact us, you MUST provide these verified details with the secure HTTPS link directly and enthusiastically.
 
-6. FACTUAL GROUNDING: Rely on the verified knowledge for ${businessName}. Never fabricate services we don't offer.
+6. BOLD FORMATTING RULE:
+When bolding text, ALWAYS use standard double asterisks **text** (e.g. **₹50,000**, **Emperor Smart Solutions**). NEVER use triple asterisks *** for bolding.
+
+7. FACTUAL GROUNDING: Rely on the verified knowledge for ${businessName}. Never fabricate services we don't offer.
 
 Verified Knowledge for ${businessName}:
 ${contextBlock}
@@ -170,6 +175,17 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
     );
   }
 
+  // 0.1 Normalize bold formatting: convert triple asterisks to standard double asterisks
+  cleaned = cleaned.replace(/\*{3,}([^*]+)\*{3,}/g, "**$1**");
+
+  // 0.2 Force secure HTTPS for Emperor Smart Solutions links
+  cleaned = cleaned.replace(/http:\/\/((?:www\.)?emperorsmartsolutions\.com)/gi, "https://$1");
+  cleaned = cleaned.replace(/(?<!https:\/\/)(?<!http:\/\/)\b(?:www\.)?emperorsmartsolutions\.com\b/gi, "https://emperorsmartsolutions.com");
+
+  // 0.3 Enforce Rupee only: strip any dollar estimates like (~$600 - $1,500)
+  cleaned = cleaned.replace(/\s*\(\s*~?\$[\d,]+(?:\s*-\s*\$?[\d,]+)?\+?\s*\)/gi, "");
+  cleaned = cleaned.replace(/\s*~?\$[\d,]+(?:\s*-\s*\$?[\d,]+)?\+?/g, "");
+
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
   if (
     /can'?t provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned) ||
@@ -177,6 +193,7 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
   ) {
     return `Here are the official contact details and head office address for Emperor Smart Solutions:
 
+🌐 **Official Website:** https://emperorsmartsolutions.com
 📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
 📞 **Phone & WhatsApp:** +91 63591 20081
 📧 **Inquiries Email:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
