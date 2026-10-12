@@ -317,14 +317,37 @@ export async function POST(request, { params }) {
       // Asynchronous streaming inference pipeline
       (async () => {
         try {
+          let preambleBuffer = "";
+          let preambleFlushed = false;
+          const PREAMBLE_THRESHOLD = 180;
+
           accumulatedReply = await executeChatInference({
             messages: llmMessages,
             temperature: 0.3,
             num_predict: 512,
             onToken: (token) => {
-              writer.write(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+              if (!preambleFlushed) {
+                preambleBuffer += token;
+                if (preambleBuffer.length >= PREAMBLE_THRESHOLD || preambleBuffer.includes("\n\n")) {
+                  const cleanedPreamble = validateOutput(preambleBuffer, businessName, lang, botName, resolvedName);
+                  if (cleanedPreamble) {
+                    writer.write(encoder.encode(`data: ${JSON.stringify({ token: cleanedPreamble })}\n\n`));
+                  }
+                  preambleFlushed = true;
+                  preambleBuffer = "";
+                }
+              } else {
+                writer.write(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
+              }
             },
           });
+
+          if (!preambleFlushed && preambleBuffer) {
+            const cleanedPreamble = validateOutput(preambleBuffer, businessName, lang, botName, resolvedName);
+            if (cleanedPreamble) {
+              writer.write(encoder.encode(`data: ${JSON.stringify({ token: cleanedPreamble })}\n\n`));
+            }
+          }
 
           // Post-validate output with resolvedName
           const validated = validateOutput(accumulatedReply, businessName, lang, botName, resolvedName);

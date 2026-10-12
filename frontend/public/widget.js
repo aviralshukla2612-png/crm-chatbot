@@ -453,6 +453,16 @@
     if (!text || typeof text !== "string") return "";
     let html = text;
 
+    // Filter out leaked system prompt directives or meta headers
+    html = html.replace(/^(?:(?:You are|The visitor is|The user is)\s+writing in[^\n]*\n*)+/gim, "");
+    html = html.replace(/^(?:VISITOR\s*(?:IDENTITY|DETAILS)?:?[^\n]*\n*)+/gim, "");
+    html = html.replace(/^(?:MANDATORY\s+)?[A-Z0-9_\s-]+(?:RULE|DIRECTIVE|INSTRUCTION):[^\n]*\n*/gim, "");
+    html = html.replace(/^[•*-]\s*(?:If the visitor|Greet them|Whenever a visitor|The visitor|You MUST)[^\n]*\n*/gim, "");
+    html = html.replace(/^Greet them warmly[^\n]*\n*/gim, "");
+    html = html.replace(/^Example:\s*"[^"]*"\s*\n*/gim, "");
+    html = html.replace(/^(?:Language & Tone|Core Rules|Verified Knowledge|WHO WE ARE|PUBLIC COMPANY CONTACT|GUIDELINES|ABOUT EMPEROR SMART SOLUTIONS)[^\n]*\n*/gim, "");
+    html = html.replace(/^Hello!\s*Welcome to Emperor Smart Solutions\.\s*May I know your name and contact number[^\n]*\n+/gi, "");
+
     // Convert bold: ***text*** or **text** -> <strong>text</strong>
     html = html.replace(/\*{2,3}([^*]+)\*{2,3}/g, "<strong>$1</strong>");
 
