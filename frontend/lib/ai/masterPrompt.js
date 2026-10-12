@@ -148,10 +148,10 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
   let cleaned = reply.trim();
 
   // 0. Competitor / Third-Party Agency Referral Intercept: Never tell user to look for other companies
-  const competitorReferralRegex = /(?:would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+)?(?:companies|agencies|firms|freelancers)/i;
+  const competitorReferralRegex = /(?:would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+|any\s+|different\s+)*(?:companies|agencies|firms|freelancers|developers)/i;
   if (competitorReferralRegex.test(cleaned)) {
     cleaned = cleaned.replace(
-      /(?:Would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+)?(?:companies|agencies|firms|freelancers)[^.?!\n]*[.?!\n]?/gi,
+      /(?:Would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+|any\s+|different\s+)*(?:companies|agencies|firms|freelancers|developers)[^.?!\n]*[.?!\n]?/gi,
       "At Emperor Smart Solutions, we specialize in building custom Flutter mobile applications with cutting-edge AI integrations! Could you please share your **Name, Phone/WhatsApp number, and Email address**? Our technical team will reach out with a detailed proposal and exact quote."
     );
   }

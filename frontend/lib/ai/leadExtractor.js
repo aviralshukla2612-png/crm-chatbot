@@ -12,56 +12,70 @@ export function extractLeadDetails(message = "", history = []) {
 
   const fullText = recentTexts.join("\n");
 
-  // 1. Extract Email
+  // 1. Extract Email: search newest messages first
+  let email = "";
   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
-  const emailMatch = fullText.match(emailRegex);
-  const email = emailMatch ? emailMatch[0].trim() : "";
-
-  // 2. Extract Phone (Indian 10-digit mobile starting with 6-9, with optional +91/0, plus global formats)
-  let phone = "";
-  // Indian standard format: +91 98765 43210, 9876543210, 09876543210, +91-9876543210
-  const indianPhoneRegex = /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/;
-  // International standard format: +1 (555) 0199, etc.
-  const globalPhoneRegex = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
-
-  const indianMatch = fullText.match(indianPhoneRegex);
-  if (indianMatch) {
-    // Format cleanly
-    const digits = indianMatch[0].replace(/\D/g, "");
-    if (digits.length === 10) {
-      phone = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-    } else if (digits.length === 12 && digits.startsWith("91")) {
-      phone = `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
-    } else {
-      phone = indianMatch[0].trim();
-    }
-  } else {
-    const globalMatch = fullText.match(globalPhoneRegex);
-    if (globalMatch) {
-      phone = globalMatch[0].trim();
+  for (const text of recentTexts.slice().reverse()) {
+    const match = text.match(emailRegex);
+    if (match) {
+      email = match[0].trim();
+      break;
     }
   }
 
-  // 3. Extract Name
-  let name = "";
+  // 2. Extract Phone (Indian 10-digit mobile starting with 6-9, with optional +91/0, plus global formats)
+  let phone = "";
+  const indianPhoneRegex = /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/;
+  const globalPhoneRegex = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
 
-  // Explicit name patterns: "My name is John Doe", "I am Rohan", "Name: Yash"
-  const namePatterns = [
-    /(?:my\s+name\s+is|i\s+am|i'm|this\s+is|call\s+me|myself)\s+([A-Za-z]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
-    /(?:name\s*[:\-])\s*([A-Za-z]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
+  let indianMatch = null;
+  for (const text of recentTexts.slice().reverse()) {
+    const indMatch = text.match(indianPhoneRegex);
+    if (indMatch) {
+      indianMatch = indMatch;
+      const digits = indMatch[0].replace(/\D/g, "");
+      if (digits.length === 10) {
+        phone = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+      } else if (digits.length === 12 && digits.startsWith("91")) {
+        phone = `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+      } else {
+        phone = indMatch[0].trim();
+      }
+      break;
+    }
+    const globMatch = text.match(globalPhoneRegex);
+    if (globMatch) {
+      phone = globMatch[0].trim();
+      break;
+    }
+  }
+
+  // 3. Extract Name: search newest messages first, and filter out verbs
+  let name = "";
+  const skipWords = [
+    "interested", "looking", "here", "ready", "asking", "calling", "wanting",
+    "user", "building", "developing", "creating", "seeking", "planning", "trying",
+    "working", "searching", "wondering", "reaching", "hoping", "inquiring"
   ];
 
-  for (const pattern of namePatterns) {
-    const match = fullText.match(pattern);
-    if (match && match[1]) {
-      const candidate = match[1].trim();
-      const lower = candidate.toLowerCase();
-      // Skip false positives
-      if (!["interested", "looking", "here", "ready", "asking", "calling", "wanting", "user"].includes(lower)) {
-        name = candidate.charAt(0).toUpperCase() + candidate.slice(1);
-        break;
+  const namePatterns = [
+    /(?:my\s+name\s+is|i\s+am|i'm|this\s+is|call\s+me|myself)\s+([A-Za-z.]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
+    /(?:name\s*[:\-])\s*([A-Za-z.]{2,20}(?:\s+[A-Za-z]{2,20})?)/i,
+  ];
+
+  for (const text of recentTexts.slice().reverse()) {
+    for (const pattern of namePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const candidate = match[1].replace(/[.,:;!?]+$/, "").trim();
+        const lower = candidate.toLowerCase();
+        if (!skipWords.includes(lower)) {
+          name = candidate.charAt(0).toUpperCase() + candidate.slice(1);
+          break;
+        }
       }
     }
+    if (name) break;
   }
 
   // If no explicit pattern, check for input containing phone: e.g. "Aviral, 9876543210" or "Aviral 9876543210"
