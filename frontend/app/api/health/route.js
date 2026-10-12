@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isDbConnected } from "@/lib/db/dbPool";
+import { queryDb, isDbConnected } from "@/lib/db/dbPool";
 import { botsStore } from "@/lib/db/botsStore";
 import { leadsStore } from "@/lib/db/leadsStore";
 import { documentsStore } from "@/lib/db/documentsStore";
@@ -9,8 +9,18 @@ const DEFAULT_PROVIDER = (process.env.DEFAULT_AI_PROVIDER || (process.env.GROQ_A
 
 export async function GET() {
   const startTime = Date.now();
+  let dbStatus = "local_fallback";
+  try {
+    const dbRes = await queryDb("SELECT 1 AS live;");
+    if (dbRes.ok) {
+      dbStatus = "connected";
+    }
+  } catch (err) {
+    dbStatus = "local_fallback";
+  }
+
   const dependencies = {
-    database: isDbConnected() ? "connected" : "local_fallback",
+    database: dbStatus,
     inference: {
       activeProvider: DEFAULT_PROVIDER,
       status: "ready",
