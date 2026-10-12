@@ -949,12 +949,6 @@ export default function CreateBotWizard() {
                       }}
                     >
                       <div className="whitespace-pre-line">{msg.content}</div>
-                      {msg.sources && msg.sources.length > 0 && (
-                        <div className="mt-2.5 pt-1.5 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
-                          <FileText className="w-3 h-3 text-indigo-500 shrink-0" />
-                          <span>Source: {msg.sources[0]}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -1033,12 +1027,6 @@ export default function CreateBotWizard() {
                   }`}
                 >
                   <div className="whitespace-pre-line">{msg.content}</div>
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-2 pt-1 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-slate-400">
-                      <FileText className="w-3 h-3 text-indigo-500 shrink-0" />
-                      <span>Source: {msg.sources[0]}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

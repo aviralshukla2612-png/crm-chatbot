@@ -472,13 +472,6 @@
       }
       el.innerHTML = m.content.replace(/\n/g, "<br/>");
 
-      if (m.sources && m.sources.length > 0) {
-        const srcEl = document.createElement("div");
-        srcEl.className = "nexus-source-tag";
-        srcEl.innerHTML = `<span>📄</span> <span>Source: ${m.sources[0].title || m.sources[0].url || "Website Knowledge"}</span>`;
-        el.appendChild(srcEl);
-      }
-
       list.appendChild(el);
     });
 

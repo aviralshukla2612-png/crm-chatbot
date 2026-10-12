@@ -272,7 +272,7 @@ export async function POST(request, { params }) {
       NextResponse.json({
         success: true,
         reply: botReply,
-        sources: verifiedSources,
+        sources: [],
         sessionId: currentSessionId,
       })
     );
