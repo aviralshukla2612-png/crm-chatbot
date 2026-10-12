@@ -127,12 +127,28 @@ export const leadsStore = {
       saveToDisk(list);
       sseBroker.broadcast("lead_updated", existing);
 
-      // Async write to PostgreSQL
+      // Upsert to PostgreSQL so records missing in DB are guaranteed created
       try {
+        const targetBotId = (existing.bot === "aa" || !existing.botId) ? "bot_aa" : (existing.botId || existing.bot);
         queryDb(
-          `UPDATE "Lead" SET "name" = $1, "phone" = $2, "email" = $3, "score" = $4, "inquiry" = $5, "updatedAt" = NOW() WHERE "id" = $6 OR "email" = $7`,
-          [existing.name, existing.phone, existing.email, existing.score, existing.inquiry, existing.id, existing.email]
-        ).catch((err) => console.warn("[DB_LEAD_UPDATE_FAIL]", err.message));
+          `INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
+           VALUES ($1, 'org_default', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+           ON CONFLICT ("id") DO UPDATE 
+           SET "name" = EXCLUDED."name", "phone" = EXCLUDED."phone", "email" = EXCLUDED."email", "score" = EXCLUDED."score", "inquiry" = EXCLUDED."inquiry", "updatedAt" = NOW()`,
+          [
+            existing.id,
+            targetBotId,
+            existing.name,
+            existing.email || "",
+            existing.phone || "",
+            existing.company || "Direct Inbound",
+            existing.score || "Hot",
+            existing.status || "New",
+            existing.inquiry || "",
+            existing.budget || "₹50,000+",
+            existing.source || "Web Chatbot Widget",
+          ]
+        );
       } catch (e) {}
 
       return existing;
