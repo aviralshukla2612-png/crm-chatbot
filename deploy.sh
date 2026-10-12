@@ -18,9 +18,11 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
-# Sanitize any Windows CRLF carriage returns in .env file
+# Sanitize .env file: strip Windows CRLF and any errant backslashes before comments
 if command -v sed >/dev/null 2>&1; then
     sed -i 's/\r$//' .env 2>/dev/null || true
+    sed -i 's/^\\#/#/' .env 2>/dev/null || true
+    sed -i 's/^\\\\#/#/' .env 2>/dev/null || true
 fi
 
 # Safely extract .env values without shell export syntax errors or comment interference
