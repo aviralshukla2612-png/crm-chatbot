@@ -246,12 +246,68 @@ export async function POST(request, { params }) {
       { role: "user", content: message },
     ];
 
+    // Fast-path deterministic handling for greetings and contact introductions
+    const cleanLower = message.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const isPureGreeting = ["hi", "hii", "hello", "hey", "namaste", "greetings"].includes(cleanLower);
+    const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address|where|who)\b/i));
+    const isContactSubmissionOnly = !hasTechnicalKeywords && (resolvedPhone || resolvedEmail) && ((leadDetails.phone && message.includes(leadDetails.phone)) || (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
+
+    let deterministicReply = null;
+    if (isPureGreeting) {
+      if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+        deterministicReply = `Hi ${resolvedName}! Great to hear from you. How can Emperor Smart Solutions assist you with your project today?`;
+      } else {
+        deterministicReply = `Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?`;
+      }
+    } else if (isContactSubmissionOnly && resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+      deterministicReply = `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+    }
+
     // --- PHASE 3: REAL-TIME SSE STREAMING (if requested) ---
     const isSseRequested =
       Boolean(requestStream) ||
       request.headers.get("accept")?.includes("text/event-stream");
 
     if (isSseRequested) {
+      if (deterministicReply) {
+        conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
+        conversationsStore.addMessage(currentSessionId, { role: "assistant", content: deterministicReply });
+        if (resolvedName && resolvedName !== "Website Visitor" && existingConv) {
+          conversationsStore.updateConversation(currentSessionId, {
+            visitorName: resolvedName,
+            visitorPhone: resolvedPhone || existingConv.visitorPhone,
+            visitorEmail: resolvedEmail || existingConv.visitorEmail,
+            isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+          });
+        }
+        if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
+          const leadData = {
+            botId: bot?.id || "bot_aa",
+            name: resolvedName || "Website Prospect",
+            email: resolvedEmail,
+            phone: resolvedPhone,
+            company: bot?.company || "Direct Inbound",
+            bot: botName,
+            score: leadDetails.score,
+            inquiry: leadDetails.inquiry,
+            source: "Web Chatbot Widget",
+          };
+          leadsStore.createLead(leadData);
+          triggerLeadWebhookAsync(bot, leadData);
+        }
+        return new Response(
+          `data: ${JSON.stringify({ token: deterministicReply })}\n\ndata: [DONE]\n\n`,
+          {
+            headers: {
+              "Content-Type": "text/event-stream; charset=utf-8",
+              "Cache-Control": "no-cache, no-transform",
+              Connection: "keep-alive",
+              "Access-Control-Allow-Origin": "*",
+            },
+          }
+        );
+      }
+
       const responseStream = new TransformStream();
       const writer = responseStream.writable.getWriter();
       const encoder = new TextEncoder();
@@ -323,13 +379,16 @@ export async function POST(request, { params }) {
     }
 
     // --- STANDARD JSON RESPONSE PIPELINE ---
-    let botReply = await executeChatInference({
-      messages: llmMessages,
-      temperature: 0.3,
-      num_predict: 512,
-    });
+    let botReply = deterministicReply;
+    if (!botReply) {
+      botReply = await executeChatInference({
+        messages: llmMessages,
+        temperature: 0.3,
+        num_predict: 512,
+      });
 
-    botReply = validateOutput(botReply, businessName, lang, botName, resolvedName);
+      botReply = validateOutput(botReply, businessName, lang, botName, resolvedName);
+    }
 
     // Capture Lead using robust multi-turn extractor
     if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {

@@ -99,7 +99,8 @@ MANDATORY FIRST-TURN QUALIFICATION INSTRUCTION:
 You MUST actively collect visitor contact details for ${businessName}.
 Whenever a visitor asks about app development, Flutter, software, web development, AI, budgets, pricing, or hiring developers, you MUST conclude your answer by proactively asking:
 "To give you an accurate cost estimate and technical proposal for your project, could you please share your Name, Phone Number (or WhatsApp), and Email address? Our engineering team at ${businessName} will review your requirements and reach out directly."`
-    : `The visitor has already shared contact information. Acknowledge and address them warmly${visitorName ? ` by name (${visitorName})` : ""}, and confirm that our engineering team at ${businessName} will follow up directly.`;
+    : `VISITOR DETAILS ALREADY PROVIDED:
+DO NOT ASK FOR NAME, PHONE NUMBER, OR EMAIL. The visitor has already provided their contact information. Acknowledge and address them warmly by name (${visitorName || "valued client"}), answer their question directly, and confirm that our engineering team at ${businessName} will follow up directly.`;
 
   return `You are ${assistantName}, the official AI technology consultant and client advisor for ${businessName} (ESS).
 You are smart, confident, consultative, and professional.
@@ -229,6 +230,11 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
     if (!new RegExp(`\\b${escapedVisitorName}\\b`, "i").test(cleaned)) {
       cleaned = cleaned.replace(/^(?:Hi|Hello|Hey|Hii)\s*(?:there|friend|user|guest)?\s*[!.,:]?\s*/i, `Hi ${visitorName}! `);
     }
+
+    // 7. Strip any hallucinated requests asking for name/phone again when visitorName is already known
+    cleaned = cleaned.replace(/\s*\(?And don'?t worry,?\s+I'?ll address you by your name[^)]*\)?/gi, "");
+    cleaned = cleaned.replace(/\s*(?:Before we proceed,?\s*)?(?:I just need to confirm your identity\.?\s*)?(?:Could you please|Please)\s+(?:tell me|share|provide)\s+(?:your\s+)?(?:Name and Phone Number|contact details|phone number)[^.?!]*[.?!]?/gi, "");
+    cleaned = cleaned.replace(/\s*Please share your Name and Phone Number with me[^.?!]*[.?!]?/gi, "");
   }
 
   return cleaned.trim();
