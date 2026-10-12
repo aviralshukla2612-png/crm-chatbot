@@ -266,7 +266,9 @@ export async function POST(request, { params }) {
       /^(?:hi+|hello+|hey+|what'?s?\s*up|sup|yo|greetings|namaste|good\s*(?:morning|afternoon|evening|day))\b/i.test(trimmedMsg) ||
       /^(?:hi+|hello+|hey+)\b/i.test(trimmedMsg) ||
       ["whatsup", "whats up", "sup", "yo", "hi", "hii", "hello", "hey", "namaste", "greetings"].includes(cleanLower);
-    const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address|where|who)\b/i));
+    const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address)\b/i));
+    const hasSoftwareOrCompanyContext = Boolean(message.toLowerCase().match(/\b(flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|database|postgres|aws|cloud|ai|rag|llm|agent|chatbot|automation|erp|crm|saas|mvp|prototype|architecture|ui|ux|design|dev|code|coding|software|website|web|app|apps|application|mobile|ios|android|ecommerce|e-commerce|store|portal|platform|custom\s*software|cost|price|pricing|quote|budget|hire|developer|engineer|timeline|sprint|estimate|proposal|package|5k|10k|50k|rupees|inr|rs|ess|emperor|smart\s*solutions|yash|karan|sharma|makwana|shitiratna|panchvati|navrangpura|ahmedabad|consultation|meeting|demo)\b/i));
+
     const isContactSubmissionOnly = !hasTechnicalKeywords && (resolvedPhone || resolvedEmail) && ((leadDetails.phone && message.includes(leadDetails.phone)) || (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
 
     const isLowBudgetQuery =
@@ -284,9 +286,10 @@ export async function POST(request, { params }) {
        /\b(?:founder|co-founder|owner|ceo|cto)\s+of\s+(?:ess|emperor)/i.test(message));
 
     const isEntertainmentOrTrivia =
-      /\b(?:act|acted|acting|actor|actress|cast|movie|film|cinema|trailer|song|songs|lyrics|singer|album|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
+      /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
+      /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
       /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i.test(message) ||
-      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella)\b/i.test(message) ||
+      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i.test(message) ||
       /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message) ||
       /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
       /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
@@ -294,7 +297,8 @@ export async function POST(request, { params }) {
 
     const isCelebrityOrTriviaQuery =
       isExternalEntityQuery ||
-      (isEntertainmentOrTrivia && !isEssLeadershipQuery && !hasTechnicalKeywords);
+      (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
+      (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && !isContactSubmissionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message));
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
