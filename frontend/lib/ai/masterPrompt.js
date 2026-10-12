@@ -223,6 +223,28 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
     /(?:can'?t|cannot)\s+provide\s+(?:the\s+)?(?:physical\s+address|personal\s+contact|contact\s+details|contact\s+information|contact\s+info|contact|phone|email|number|address)/i.test(cleaned) ||
     /(?:private\s+and\s+sensitive|sensitive\s+information|confidential\s+information)/i.test(cleaned)
   ) {
+    if (lang === "hindi") {
+      return `Emperor Smart Solutions के आधिकारिक संपर्क विवरण और मुख्य कार्यालय का पता इस प्रकार है:
+
+🌐 **आधिकारिक वेबसाइट:** https://emperorsmartsolutions.com
+📍 **मुख्य कार्यालय:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **फ़ोन और WhatsApp:** +91 63591 20081
+📧 **ईमेल:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **कार्य समय:** सोमवार से शनिवार: 10:00 AM – 7:00 PM IST
+
+आप हमारे कार्यालय आ सकते हैं या सीधे WhatsApp/ईमेल द्वारा संपर्क कर सकते हैं! हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`;
+    }
+    if (lang === "hinglish") {
+      return `Emperor Smart Solutions ke official contact details aur head office address yeh hain:
+
+🌐 **Official Website:** https://emperorsmartsolutions.com
+📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Inquiries Email:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
+
+Aap hamare office visit kar sakte hain ya directly WhatsApp/email par connect kar sakte hain! Hum aapke project mein kaise help kar sakte hain?`;
+    }
     return `Here are the official contact details and head office address for Emperor Smart Solutions:
 
 🌐 **Official Website:** https://emperorsmartsolutions.com
@@ -232,6 +254,35 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
 ⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
 
 Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
+  }
+
+  // Founder missing info hallucination intercept
+  if (
+    /(?:yeh|ye)\s+jankari\s+nahi\s+di\s+gayi/i.test(cleaned) ||
+    /(?:founder|leadership|founders|owner)\s+(?:details?|information)\s+(?:is|are|was|were)?\s+not\s+(?:provided|given|available)/i.test(cleaned)
+  ) {
+    if (lang === "hindi") {
+      return `Emperor Smart Solutions (ESS) के संस्थापक और नेतृत्व हैं:
+
+1. **Yash Sharma** — Founder (संस्थापक)
+2. **Karan Makwana** — Co-Founder (सह-संस्थापक)
+
+Emperor Smart Solutions एक प्रमुख कस्टम सॉफ्टवेयर इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है, जिसका मुख्यालय अहमदाबाद, गुजरात में स्थित है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`;
+    }
+    if (lang === "hinglish") {
+      return `Emperor Smart Solutions (ESS) ke founders aur leadership yeh hain:
+
+1. **Yash Sharma** — Founder
+2. **Karan Makwana** — Co-Founder
+
+Emperor Smart Solutions ek premier custom software engineering aur enterprise AI development company hai, jiska head office Ahmedabad, Gujarat mein hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`;
+    }
+    return `The founders and leadership of Emperor Smart Solutions (ESS) are:
+
+1. **Yash Sharma** — Founder
+2. **Karan Makwana** — Co-Founder
+
+Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
   }
 
   // Safety refusal intercept: If model ever hallucinates a payment/budget refusal (e.g. "I can't provide a response that includes a request for payment of or more...")

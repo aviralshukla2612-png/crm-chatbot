@@ -296,9 +296,15 @@ export async function POST(request, { params }) {
 
     const isEssLeadershipQuery =
       !isExternalEntityQuery &&
-      (/\b(?:who\s+(?:is|are)\s+(?:the\s+)?(?:founder|co-founder|founder's|ceo|cto|owner|leader|team)\b)/i.test(message) ||
+      (/\b(?:who\s+(?:is|are)\s+(?:the\s+)?(?:founder|co-founder|founder's|ceo|cto|owner|leader|team|boss)\b)/i.test(message) ||
        /\b(?:yash\s+sharma|karan\s+makwana)\b/i.test(message) ||
-       /\b(?:founder|co-founder|owner|ceo|cto)\s+of\s+(?:ess|emperor)/i.test(message));
+       /\b(?:founder|co-founder|owner|ceo|cto|leader|boss)\s+of\s+(?:ess|emperor)/i.test(message) ||
+       /\b(?:kisne|kone)\s+(?:banaya|banayi|start\s*ki|start\s*kiya|shuru\s*kiya|shuru\s*ki|create\s*kiya|setup\s*kiya|found\s*kiya)\b/i.test(message) ||
+       /\b(?:kiski|kiska)\s+(?:company|firm|agency|startup|hai)\b/i.test(message) ||
+       /\b(?:founder|owner|malik|ceo|cto|leader)\s+(?:kaun|kon)\s+(?:hai|h)\b/i.test(message) ||
+       /\b(?:kaun|kon)\s+(?:hai|h)\s+(?:founder|owner|malik|ceo)\b/i.test(message) ||
+       /\b(?:ess|emperor)\s+(?:kisne|kiska|kiski|kaun)\b/i.test(message) ||
+       /[\u0900-\u097F].*(?:संस्थापक|मालिक|किसने बनाया|किसकी कंपनी)/i.test(message));
 
     const isEntertainmentOrTrivia =
       /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
@@ -311,8 +317,8 @@ export async function POST(request, { params }) {
       /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
 
     const isContactDetailsQuery =
-      /\b(?:contact\s*(?:details?|number|info|information)?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human)\b/i.test(message) &&
-      (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company)\b/i.test(message) || message.trim().length <= 25);
+      /\b(?:c?o[in]*tact|cont[ae]ct|details?|dertails?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|pata|number|no)\b/i.test(message) &&
+      (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company|chahiye|chaiye|vchaiye|mangta|batao|dedo|de\s*do|bhejo|kahan|kidhar|kaha|kya\s+hai)\b/i.test(message) || message.trim().length <= 35);
 
     const isLanguageSwitchQuery =
       !hasTechnicalKeywords &&
@@ -377,7 +383,28 @@ export async function POST(request, { params }) {
       }
       deterministicReply = `Your first message was:\n\n"${firstUserMsg}"`;
     } else if (isContactDetailsQuery) {
-      deterministicReply = `Here are the official contact details and head office address for Emperor Smart Solutions:
+      if (lang === "hindi") {
+        deterministicReply = `Emperor Smart Solutions के आधिकारिक संपर्क विवरण और मुख्य कार्यालय का पता इस प्रकार है:
+
+🌐 **आधिकारिक वेबसाइट:** https://emperorsmartsolutions.com
+📍 **मुख्य कार्यालय:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **फ़ोन और WhatsApp:** +91 63591 20081
+📧 **ईमेल:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **कार्य समय:** सोमवार से शनिवार: 10:00 AM – 7:00 PM IST
+
+आप हमारे कार्यालय आ सकते हैं या सीधे WhatsApp/ईमेल द्वारा संपर्क कर सकते हैं! हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Emperor Smart Solutions ke official contact details aur head office address yeh hain:
+
+🌐 **Official Website:** https://emperorsmartsolutions.com
+📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Inquiries Email:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
+
+Aap hamare office visit kar sakte hain ya directly WhatsApp/email par connect kar sakte hain! Hum aapke project mein kaise help kar sakte hain?`;
+      } else {
+        deterministicReply = `Here are the official contact details and head office address for Emperor Smart Solutions:
 
 🌐 **Official Website:** https://emperorsmartsolutions.com
 📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
@@ -386,28 +413,77 @@ export async function POST(request, { params }) {
 ⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
 
 Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
+      }
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isEssLeadershipQuery) {
-      deterministicReply = `The founders and leadership of Emperor Smart Solutions (ESS) are:
+      if (lang === "hindi") {
+        deterministicReply = `Emperor Smart Solutions (ESS) के संस्थापक और नेतृत्व हैं:
+
+1. **Yash Sharma** — Founder (संस्थापक)
+2. **Karan Makwana** — Co-Founder (सह-संस्थापक)
+
+Emperor Smart Solutions एक प्रमुख कस्टम सॉफ्टवेयर इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है, जिसका मुख्यालय अहमदाबाद, गुजरात में स्थित है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Emperor Smart Solutions (ESS) ke founders aur leadership yeh hain:
+
+1. **Yash Sharma** — Founder
+2. **Karan Makwana** — Co-Founder
+
+Emperor Smart Solutions ek premier custom software engineering aur enterprise AI development company hai, jiska head office Ahmedabad, Gujarat mein hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`;
+      } else {
+        deterministicReply = `The founders and leadership of Emperor Smart Solutions (ESS) are:
 
 1. **Yash Sharma** — Founder
 2. **Karan Makwana** — Co-Founder
 
 Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
+      }
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
-        ? (resolvedPhone ? "" : "\n\nCould you please share your **Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?")
-        : "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?";
+        ? (resolvedPhone ? "" : (
+            lang === "hindi"
+              ? "\n\nक्या आप अपना **फ़ोन नंबर (या WhatsApp)** साझा कर सकते हैं ताकि हमारे तकनीकी विशेषज्ञ सीधे आपसे संपर्क कर सकें?"
+              : lang === "hinglish"
+              ? "\n\nKya aap apna **Phone Number (ya WhatsApp)** share kar sakte hain taaki hamari technical team aapse directly connect kar sake?"
+              : "\n\nCould you please share your **Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?"
+          ))
+        : (
+            lang === "hindi"
+              ? "\n\nक्या आप अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा कर सकते हैं ताकि हमारे तकनीकी विशेषज्ञ सीधे आपसे संपर्क कर सकें?"
+              : lang === "hinglish"
+              ? "\n\nKya aap apna **Name aur Phone Number (ya WhatsApp)** share kar sakte hain taaki hamari technical team aapse directly connect kar sake?"
+              : "\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?"
+          );
 
-      deterministicReply = `We completely respect your budget! While our full-scale custom software and bespoke applications typically start from ₹50,000 to cover comprehensive architecture, UI/UX, and quality engineering, we would be delighted to learn about your goals and explore a lightweight MVP, pre-built modules, or a phased roadmap that fits your budget!
+      if (lang === "hindi") {
+        deterministicReply = `हम आपके बजट का पूरा सम्मान करते हैं! हालांकि हमारे पूर्ण-स्तरीय कस्टम सॉफ़्टवेयर और एप्लिकेशन व्यापक आर्किटेक्चर, UI/UX और गुणवत्ता इंजीनियरिंग सुनिश्चित करने के लिए आमतौर पर ₹50,000 से शुरू होते हैं, लेकिन हमें आपके प्रोजेक्ट के लक्ष्यों को समझने और एक हल्के MVP या चरणबद्ध रोडमैप पर चर्चा करने में खुशी होगी जो आपके बजट के अनुकूल हो!
+
+हमारे आधिकारिक संपर्क विवरण:
+📞 **फ़ोन और WhatsApp:** +91 63591 20081
+📧 **ईमेल:** contact@emperorsmartsolutions.com
+🌐 **वेबसाइट:** https://emperorsmartsolutions.com${askForLead}`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Hum aapke budget ki poori respect karte hain! Halanki hamare custom software aur applications comprehensive architecture, UI/UX, aur quality engineering ensure karne ke liye normally ₹50,000 se start hote hain, par hum aapke goals ko samajhkar ek scoped MVP ya phased roadmap explore karne mein khush honge jo aapke budget mein fit ho sake!
+
+Official contact details:
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Email:** contact@emperorsmartsolutions.com
+🌐 **Website:** https://emperorsmartsolutions.com${askForLead}`;
+      } else {
+        deterministicReply = `We completely respect your budget! While our full-scale custom software and bespoke applications typically start from ₹50,000 to cover comprehensive architecture, UI/UX, and quality engineering, we would be delighted to learn about your goals and explore a lightweight MVP, pre-built modules, or a phased roadmap that fits your budget!
 
 Here are our official contact details to speak with our engineering leadership:
 📞 **Phone & WhatsApp:** +91 63591 20081
 📧 **Email:** contact@emperorsmartsolutions.com
 🌐 **Website:** https://emperorsmartsolutions.com${askForLead}`;
+      }
     } else if (isContactSubmissionOnly && resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
-      deterministicReply = `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+      deterministicReply = lang === "hindi"
+        ? `नमस्ते ${resolvedName}! अपने संपर्क विवरण साझा करने के लिए धन्यवाद। आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
+        : lang === "hinglish"
+        ? `Hi ${resolvedName}! Apne contact details share karne ke liye shukriya. Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
+        : `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
     } else if (
       !hasTechnicalKeywords &&
       !resolvedPhone &&
@@ -417,9 +493,14 @@ Here are our official contact details to speak with our engineering leadership:
       resolvedName !== "Website Prospect" &&
       (cleanLower === resolvedName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
        trimmedMsg.startsWith("i am ") ||
-       trimmedMsg.startsWith("my name is "))
+       trimmedMsg.startsWith("my name is ") ||
+       trimmedMsg.startsWith("mera naam "))
     ) {
-      deterministicReply = `Nice to meet you, ${resolvedName}! How can Emperor Smart Solutions assist you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+      deterministicReply = lang === "hindi"
+        ? `आपसे मिलकर खुशी हुई, ${resolvedName}! आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
+        : lang === "hinglish"
+        ? `Aapse milkar accha laga, ${resolvedName}! Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
+        : `Nice to meet you, ${resolvedName}! How can Emperor Smart Solutions assist you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
     }
 
     // --- PHASE 3: REAL-TIME SSE STREAMING (if requested) ---
