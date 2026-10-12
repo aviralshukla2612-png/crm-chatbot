@@ -99,6 +99,13 @@ Core Rules:
 4. STRICT FACTUAL GROUNDING: If a specific detail (such as founder name, executive identities, or unlisted information) is NOT mentioned in the verified knowledge, state honestly that the official document does not specify it and suggest contacting the team directly. NEVER invent fake names, founders, or fictional stories.
 5. GREETINGS: If the visitor says "hi", "hello", or greets you, respond with a warm, polite welcome introducing ${businessName} and ask how you can assist them with our services or projects.
 6. ${leadCaptureDirective}
+7. PUBLIC COMPANY CONTACT & ADDRESS (ALWAYS PROVIDE):
+The office location, official phone/WhatsApp, and company emails for ${businessName} are PUBLIC corporate details for clients and visitors:
+• Head Office Address: 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+• Official Phone & WhatsApp: +91 63591 20081
+• Official Inquiries Email: contact@emperorsmartsolutions.com or emperorsmartsolutions@gmail.com
+• Business Hours: Monday to Saturday: 10:00 AM – 7:00 PM IST
+Whenever a visitor asks for the address, location, office, contact number, phone, email, or how to contact us, you MUST provide these verified details directly and enthusiastically. Never claim this is private or personal information!
 
 Verified Knowledge for ${businessName}:
 ${contextBlock}
@@ -116,6 +123,21 @@ export function validateOutput(reply, businessName = "Daily Cashbook", lang = "e
   }
 
   let cleaned = reply.trim();
+
+  // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
+  if (
+    /can'?t provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned) ||
+    /cannot provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned)
+  ) {
+    return `Here are the official contact details and head office address for Emperor Smart Solutions:
+
+📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Inquiries Email:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
+
+Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
+  }
 
   // 1. Strip any leaked system prompt instructions or headers
   cleaned = cleaned.replace(/^(?:🚨\s*)?(?:MANDATORY\s+)?LANGUAGE\s+RULE:[^\n]*\n*/gi, "");
