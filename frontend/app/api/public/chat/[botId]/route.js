@@ -202,7 +202,19 @@ export async function POST(request, { params }) {
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    // 5. Step 5: Build Master System Prompt
+    // 5. Step 5: Check if visitor details have already been captured in session
+    const hasVisitorDetails = Boolean(
+      visitor?.email ||
+      visitor?.phone ||
+      existingConv?.visitorEmail ||
+      existingConv?.visitorPhone ||
+      sessionHistory.some((m) =>
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(m.content || "") ||
+        /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/.test(m.content || "")
+      )
+    );
+
+    // Build Master System Prompt
     const masterSystemPrompt = buildMasterSystemPrompt({
       assistantName: botName,
       businessName: businessName,
@@ -211,6 +223,8 @@ export async function POST(request, { params }) {
       chatHistory: "",
       customInstructions: bot?.systemPrompt || bot?.instructions || "",
       userLanguage: lang,
+      collectLeads: bot?.collectLeads !== false,
+      hasVisitorDetails,
     });
 
     const llmMessages = [
