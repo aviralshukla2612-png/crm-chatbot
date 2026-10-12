@@ -64,23 +64,34 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // If no explicit pattern, check for "Name, Phone" input: e.g. "Rohan Varma, 9876543210" or "Rohan: 9876543210"
+  // If no explicit pattern, check for input containing phone: e.g. "Aviral, 9876543210" or "Aviral 9876543210"
   if (!name && phone) {
-    for (const msg of recentTexts.reverse()) {
+    for (const msg of recentTexts.slice().reverse()) {
       if (msg.includes(phone) || (indianMatch && msg.includes(indianMatch[0]))) {
-        const parts = msg.split(/[,:\n-]/);
-        if (parts.length >= 2) {
-          const potentialName = parts[0].trim();
-          if (
-            /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18})?$/.test(potentialName) &&
-            !potentialName.toLowerCase().includes("hi") &&
-            !potentialName.toLowerCase().includes("hello")
-          ) {
-            name = potentialName;
-            break;
-          }
+        const rawPhone = indianMatch ? indianMatch[0] : phone;
+        const remainder = msg.replace(rawPhone, "").replace(/[,:\n-]/g, " ").trim();
+        if (
+          /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18})?$/.test(remainder) &&
+          !/^(?:hi|hii|hello|hey|dear|sir|mam|madam|thanks|yes|no)$/i.test(remainder)
+        ) {
+          name = remainder.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+          break;
         }
       }
+    }
+  }
+
+  // Check if assistant previously asked for the visitor's name/number and visitor replied with just their name
+  if (!name) {
+    const lastAssistantTurn = [...history].reverse().find((m) => (typeof m === "object" && m.role === "assistant"));
+    const askedForName = lastAssistantTurn && /name|naam|who are you|introduce|number|whatsapp/i.test(lastAssistantTurn.content || "");
+    const cleanMsg = (message || "").trim();
+    if (
+      askedForName &&
+      /^[A-Za-z]{2,18}(?:\s+[A-Za-z]{2,18}){0,2}$/.test(cleanMsg) &&
+      !/^(?:hi|hii|hello|hey|yes|no|ok|okay|sure|thanks|price|cost|quote|office|address)$/i.test(cleanMsg)
+    ) {
+      name = cleanMsg.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
     }
   }
 
@@ -137,8 +148,8 @@ export function extractLeadDetails(message = "", history = []) {
   }
 
   return {
-    hasLeadData: Boolean(phone || email),
-    name: name || "Website Prospect",
+    hasLeadData: Boolean(phone || email || name),
+    name: name || "",
     email,
     phone,
     inquiry,

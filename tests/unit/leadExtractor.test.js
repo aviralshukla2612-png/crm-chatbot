@@ -33,3 +33,19 @@ test("LeadExtractor - ignores generic conversation without lead info", () => {
   assert.equal(result.phone, "");
   assert.equal(result.email, "");
 });
+
+test("LeadExtractor - extracts name and phone from 'Aviral 9876543210'", () => {
+  const result = extractLeadDetails("Aviral 9876543210");
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Aviral");
+  assert.equal(result.phone, "+91 98765 43210");
+});
+
+test("LeadExtractor - extracts standalone name when assistant previously asked for name", () => {
+  const history = [
+    { role: "assistant", content: "Hello! May I know your name and contact number so I can assist you better?" }
+  ];
+  const result = extractLeadDetails("Aviral Shukla", history);
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Aviral Shukla");
+});

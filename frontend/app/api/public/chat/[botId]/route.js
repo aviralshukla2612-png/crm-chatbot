@@ -202,19 +202,31 @@ export async function POST(request, { params }) {
       .map((c) => `[Source: ${c.pageTitle || c.pageUrl}]:\n${c.content}`)
       .join("\n\n");
 
-    // 5. Step 5: Check if visitor details have already been captured in session
+    // 5. Step 5: Extract lead details and resolve visitor identity
+    const leadDetails = extractLeadDetails(message, sessionHistory);
+
+    let resolvedName = visitor?.name || "";
+    if (!resolvedName && existingConv?.visitorName && existingConv.visitorName !== "Website Visitor" && existingConv.visitorName !== "Website Prospect") {
+      resolvedName = existingConv.visitorName;
+    }
+    if (!resolvedName && leadDetails.name) {
+      resolvedName = leadDetails.name;
+    }
+
+    const resolvedPhone = visitor?.phone || existingConv?.visitorPhone || leadDetails.phone || "";
+    const resolvedEmail = visitor?.email || existingConv?.visitorEmail || leadDetails.email || "";
+
     const hasVisitorDetails = Boolean(
-      visitor?.email ||
-      visitor?.phone ||
-      existingConv?.visitorEmail ||
-      existingConv?.visitorPhone ||
+      resolvedPhone ||
+      resolvedEmail ||
+      (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ||
       sessionHistory.some((m) =>
         /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(m.content || "") ||
         /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/.test(m.content || "")
       )
     );
 
-    // Build Master System Prompt
+    // Build Master System Prompt with personalized visitorName
     const masterSystemPrompt = buildMasterSystemPrompt({
       assistantName: botName,
       businessName: businessName,
@@ -225,6 +237,7 @@ export async function POST(request, { params }) {
       userLanguage: lang,
       collectLeads: bot?.collectLeads !== false,
       hasVisitorDetails,
+      visitorName: resolvedName,
     });
 
     const llmMessages = [
@@ -257,21 +270,29 @@ export async function POST(request, { params }) {
             },
           });
 
-          // Post-validate output
-          const validated = validateOutput(accumulatedReply, businessName, lang, botName);
+          // Post-validate output with resolvedName
+          const validated = validateOutput(accumulatedReply, businessName, lang, botName, resolvedName);
 
           // Save message to conversation store
           conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
           conversationsStore.addMessage(currentSessionId, { role: "assistant", content: validated });
 
+          if (resolvedName && resolvedName !== "Website Visitor" && existingConv) {
+            conversationsStore.updateConversation(currentSessionId, {
+              visitorName: resolvedName,
+              visitorPhone: resolvedPhone || existingConv.visitorPhone,
+              visitorEmail: resolvedEmail || existingConv.visitorEmail,
+              isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+            });
+          }
+
           // Check lead capture using robust multi-turn extractor
-          const leadDetails = extractLeadDetails(message, sessionHistory);
-          if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
+          if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
             const leadData = {
               botId: bot?.id || "bot_aa",
-              name: visitor.name || leadDetails.name,
-              email: visitor.email || leadDetails.email,
-              phone: visitor.phone || leadDetails.phone,
+              name: resolvedName || "Website Prospect",
+              email: resolvedEmail,
+              phone: resolvedPhone,
               company: bot?.company || "Direct Inbound",
               bot: botName,
               score: leadDetails.score,
@@ -308,16 +329,15 @@ export async function POST(request, { params }) {
       num_predict: 512,
     });
 
-    botReply = validateOutput(botReply, businessName, lang, botName);
+    botReply = validateOutput(botReply, businessName, lang, botName, resolvedName);
 
     // Capture Lead using robust multi-turn extractor
-    const leadDetails = extractLeadDetails(message, sessionHistory);
-    if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
+    if (leadDetails.hasLeadData || resolvedEmail || resolvedPhone || (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")) {
       const leadData = {
         botId: bot?.id || "bot_aa",
-        name: visitor.name || leadDetails.name,
-        email: visitor.email || leadDetails.email,
-        phone: visitor.phone || leadDetails.phone,
+        name: resolvedName || "Website Prospect",
+        email: resolvedEmail,
+        phone: resolvedPhone,
         company: bot?.company || "Direct Inbound",
         bot: botName,
         score: leadDetails.score,
@@ -336,15 +356,23 @@ export async function POST(request, { params }) {
         role: "assistant",
         content: botReply,
       });
+      if (resolvedName && resolvedName !== "Website Visitor") {
+        conversationsStore.updateConversation(currentSessionId, {
+          visitorName: resolvedName,
+          visitorPhone: resolvedPhone || reloadedConv.visitorPhone,
+          visitorEmail: resolvedEmail || reloadedConv.visitorEmail,
+          isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
+        });
+      }
     } else {
       conversationsStore.createConversation({
         id: currentSessionId,
         botId: bot?.id || botId,
         botName: botName,
-        visitorName: visitor.name || leadDetails.name || (leadDetails.email ? leadDetails.email.split("@")[0] : "Website Visitor"),
-        visitorEmail: visitor.email || leadDetails.email || "",
-        visitorPhone: visitor.phone || leadDetails.phone || "",
-        isLead: Boolean(leadDetails.hasLeadData || visitor.email || visitor.phone),
+        visitorName: resolvedName || "Website Visitor",
+        visitorEmail: resolvedEmail,
+        visitorPhone: resolvedPhone,
+        isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),
         lastMessage: message,
         messages: [
           { role: "user", content: message, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },

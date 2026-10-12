@@ -67,6 +67,7 @@ export function buildMasterSystemPrompt({
   userLanguage = "english",
   collectLeads = true,
   hasVisitorDetails = false,
+  visitorName = "",
 }) {
   const contextBlock = retrievedContext
     ? retrievedContext.trim()
@@ -81,12 +82,24 @@ export function buildMasterSystemPrompt({
     langGuidance = "The visitor is writing in Hinglish. Reply in natural, witty conversational Hinglish only.";
   }
 
+  const addressingDirective = visitorName
+    ? `VISITOR IDENTITY: The visitor's name is "${visitorName}".
+MANDATORY ADDRESSING INSTRUCTION:
+- You MUST address the visitor directly and warmly by their name "${visitorName}" in your response (for example: "Hi ${visitorName}!", "Hello ${visitorName}, ...", "Certainly ${visitorName}, ...").
+- If the visitor greets you with "hi", "hello", "hii", or "hey", reply warmly using their name: "Hi ${visitorName}! Great to hear from you. How can I assist you with your project today?"
+- Never ask for their name again, as you already know it.`
+    : `VISITOR IDENTITY: UNKNOWN.
+MANDATORY FIRST-TURN QUALIFICATION INSTRUCTION:
+- If the visitor greets you ("hi", "hello", "hii", "hey") or has not yet shared their contact details:
+  Greet them warmly and IMMEDIATELY ask for their Name and Phone Number (or WhatsApp) so you can address them personally and connect them with the right engineering specialists!
+  Example: "Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?"`;
+
   const leadCaptureDirective = !hasVisitorDetails
     ? `MANDATORY PROACTIVE LEAD CAPTURE DIRECTIVE:
 You MUST actively collect visitor contact details for ${businessName}.
 Whenever a visitor asks about app development, Flutter, software, web development, AI, budgets, pricing, or hiring developers, you MUST conclude your answer by proactively asking:
 "To give you an accurate cost estimate and technical proposal for your project, could you please share your Name, Phone Number (or WhatsApp), and Email address? Our engineering team at ${businessName} will review your requirements and reach out directly."`
-    : `The visitor has already shared contact information. Acknowledge and address them warmly, and confirm that our engineering team at ${businessName} will follow up directly.`;
+    : `The visitor has already shared contact information. Acknowledge and address them warmly${visitorName ? ` by name (${visitorName})` : ""}, and confirm that our engineering team at ${businessName} will follow up directly.`;
 
   return `You are ${assistantName}, the official AI technology consultant and client advisor for ${businessName} (ESS).
 You are smart, confident, consultative, and professional.
@@ -103,8 +116,12 @@ Language & Tone:
 - Never call the visitor by your own name ("${assistantName}").
 
 Core Rules:
-1. WE ARE THE BUILDERS: NEVER suggest or recommend other companies, competitors, or external agencies. NEVER tell the client to build the app on their own or look elsewhere! Always position Emperor Smart Solutions as the expert team who will develop, engineer, and deploy their project.
-2. PROJECT ESTIMATES & PRICING:
+1. PERSONALIZED ADDRESSING & GREETINGS:
+${addressingDirective}
+
+2. WE ARE THE BUILDERS: NEVER suggest or recommend other companies, competitors, or external agencies. NEVER tell the client to build the app on their own or look elsewhere! Always position Emperor Smart Solutions as the expert team who will develop, engineer, and deploy their project.
+
+3. PROJECT ESTIMATES & PRICING:
 When a visitor asks about development costs, timelines, or quotes for an app/software/AI project:
 - Highlight Emperor Smart Solutions' full-cycle development capabilities (e.g. Flutter mobile apps, AI integrations, scalable cloud backends).
 - Provide our typical project pricing tiers:
@@ -113,15 +130,17 @@ When a visitor asks about development costs, timelines, or quotes for an app/sof
   • Comprehensive Bespoke Platforms & AI Integrations: ₹2,00,000 – ₹5,00,000 (~$3,500 - $8,000)
   • Enterprise-Scale Platforms & Complex AI Systems: ₹5,00,000+ ($8,000+)
 - Note that exact budget and timeline depend on specific features and integrations.
-3. ${leadCaptureDirective}
-4. PUBLIC COMPANY CONTACT & HEAD OFFICE (ALWAYS PROVIDE):
+
+4. ${leadCaptureDirective}
+
+5. PUBLIC COMPANY CONTACT & HEAD OFFICE (ALWAYS PROVIDE):
 The office location, official phone/WhatsApp, and company emails for ${businessName} are 100% PUBLIC corporate details for clients and visitors:
 • Head Office Address: 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
 • Official Phone & WhatsApp: +91 63591 20081
 • Official Inquiries Email: contact@emperorsmartsolutions.com or emperorsmartsolutions@gmail.com
 • Business Hours: Monday to Saturday: 10:00 AM – 7:00 PM IST
 Whenever a visitor asks for the address, location, office, contact number, phone, email, or how to contact us, you MUST provide these verified details directly and enthusiastically. Never claim this is private or personal information!
-5. GREETINGS: If the visitor says "hi", "hello", or greets you, respond with a warm, polite welcome introducing ${businessName} and ask how you can assist them with our services or projects.
+
 6. FACTUAL GROUNDING: Rely on the verified knowledge for ${businessName}. Never fabricate services we don't offer.
 
 Verified Knowledge for ${businessName}:
@@ -132,7 +151,7 @@ ${customInstructions ? `\nAdditional Instructions:\n${customInstructions}\n` : "
 /**
  * Validates model output before returning to widget
  */
-export function validateOutput(reply, businessName = "Emperor Smart Solutions", lang = "english", assistantName = "") {
+export function validateOutput(reply, businessName = "Emperor Smart Solutions", lang = "english", assistantName = "", visitorName = "") {
   if (!reply || typeof reply !== "string") {
     return lang === "english"
       ? `I didn't quite catch that. Feel free to ask anything about ${businessName}! 🚀`
@@ -203,6 +222,14 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
 
   // 5. Strip repetitive emoji templates at end
   cleaned = cleaned.replace(/\s*[🤦‍♂️🤷‍♂️]\s*[💀🔥]\s*$/gi, "");
+
+  // 6. Personalize greeting if visitorName is known and reply has generic greeting
+  if (visitorName && visitorName !== "Website Visitor" && visitorName !== "Website Prospect") {
+    const escapedVisitorName = visitorName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`\\b${escapedVisitorName}\\b`, "i").test(cleaned)) {
+      cleaned = cleaned.replace(/^(?:Hi|Hello|Hey|Hii)\s*(?:there|friend|user|guest)?\s*[!.,:]?\s*/i, `Hi ${visitorName}! `);
+    }
+  }
 
   return cleaned.trim();
 }
