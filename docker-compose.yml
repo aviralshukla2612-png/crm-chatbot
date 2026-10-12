@@ -17,7 +17,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-ess_chatbot}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ess_chatbot}?schema=public
       - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-groq}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
@@ -48,7 +48,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ess_chatbot}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgvector_data:/var/lib/postgresql/data
     networks:
@@ -100,7 +100,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=${POSTGRES_DB:-ess_chatbot}
       - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASS=${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be set in .env}
+      - DB_PASS=${POSTGRES_PASSWORD}
       - OLLAMA_URL=http://ollama:11434
       - LLM_MODEL=${CHAT_MODEL:-llama3.2:1b}
       - EMBED_MODEL=nomic-embed-text
