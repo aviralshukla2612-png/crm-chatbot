@@ -58,19 +58,47 @@ export class InferenceProvider {
     const startTime = Date.now();
 
     try {
-      const selectedProvider = provider || (process.env.GROQ_API_KEY ? "groq" : "ollama");
+      const defaultEnvProvider = (process.env.DEFAULT_AI_PROVIDER || "").toLowerCase();
+      const hasValidGroqKey = Boolean(
+        process.env.GROQ_API_KEY &&
+        process.env.GROQ_API_KEY.trim().length > 10 &&
+        !process.env.GROQ_API_KEY.includes("your_groq_api_key")
+      );
 
-      switch (selectedProvider.toLowerCase()) {
+      let selectedProvider = (provider || defaultEnvProvider || (hasValidGroqKey ? "groq" : "ollama")).toLowerCase();
+
+      // If groq was requested but no valid key exists, fallback immediately to local Ollama
+      if (selectedProvider === "groq" && !hasValidGroqKey) {
+        console.warn("[INFERENCE] GROQ_API_KEY is missing or placeholder. Using local Ollama...");
+        selectedProvider = "ollama";
+      }
+
+      switch (selectedProvider) {
         case "groq":
-          return await InferenceProvider._callGroq({
-            model: model || process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-            messages,
-            temperature,
-            maxTokens,
-            stream,
-            onToken,
-            timeoutMs,
-          });
+          try {
+            return await InferenceProvider._callGroq({
+              model: model || process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+              messages,
+              temperature,
+              maxTokens,
+              stream,
+              onToken,
+              timeoutMs,
+            });
+          } catch (groqErr) {
+            console.warn(`[INFERENCE_FALLBACK] Groq error (${groqErr.message}). Automatically falling back to local Ollama container...`);
+            return await InferenceProvider._callOllama({
+              model: process.env.CHAT_MODEL || "llama3.2:1b",
+              endpoint: process.env.OLLAMA_URL || "http://127.0.0.1:11434",
+              messages,
+              temperature,
+              maxTokens,
+              stopTokens,
+              stream,
+              onToken,
+              timeoutMs,
+            });
+          }
 
         case "vllm":
           return await InferenceProvider._callVllm({
