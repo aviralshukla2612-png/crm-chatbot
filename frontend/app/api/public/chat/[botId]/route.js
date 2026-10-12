@@ -215,7 +215,7 @@ export async function POST(request, { params }) {
     }
 
     // Step 5: Output Validation
-    botReply = validateOutput(botReply, businessName, lang);
+    botReply = validateOutput(botReply, businessName, lang, botName);
 
     // 4. Capture Lead if Visitor Details Provided or extracted from message
     const emailInMsg = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
