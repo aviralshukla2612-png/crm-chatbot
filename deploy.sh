@@ -117,7 +117,7 @@ echo "📦 [4/5] Executing Idempotent Schema & Data Migration..."
 echo "========================================================"
 if [ -f "frontend/data/idempotent_migration.sql" ]; then
     echo "Applying idempotent_migration.sql to database '${POSTGRES_DB}'..."
-    if ! docker compose exec -T postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < frontend/data/idempotent_migration.sql; then
+    if ! docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < frontend/data/idempotent_migration.sql; then
         echo "❌ [ERROR] Database migration failed!" >&2
         exit 1
     fi

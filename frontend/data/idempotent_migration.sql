@@ -1,6 +1,6 @@
 -- =========================================================
 -- ESS CHATBOT SaaS — COMPLETE POSTGRESQL & PGVECTOR MIGRATION
--- Generated: 2026-10-12T09:26:43.027Z
+-- Generated: 2026-10-12T09:46:50.305Z
 -- =========================================================
 BEGIN;
 
@@ -157,27 +157,27 @@ VALUES ('bot_aa', 'org_default', 'aa', 'Official AI assistant for Emperor Smart 
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-VALUES ('lead_1791787975361_b7dj', 'org_default', 'aa', 'Vikram Joshi', 'vikram@enterprise.in', '+91 99887 76655', 'Direct Inbound', 'High', 'New', 'Full Stack Next.js + Flutter development quote', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
+VALUES ('lead_1791787975361_b7dj', 'org_default', 'bot_aa', 'Vikram Joshi', 'vikram@enterprise.in', '+91 99887 76655', 'Direct Inbound', 'High', 'New', 'Full Stack Next.js + Flutter development quote', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-VALUES ('lead_1791608783809_j20l', 'org_default', 'aa', 'Sarah Connor', 'sarah@sky.net', '+1 555-0199', 'Website Embed Visitor', 'High', 'New', 'Hello! My name is Sarah Connor (sarah@sky.net). Do you offer enterprise CRM and ERP software?', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
+VALUES ('lead_1791608783809_j20l', 'org_default', 'bot_aa', 'Sarah Connor', 'sarah@sky.net', '+1 555-0199', 'Website Embed Visitor', 'High', 'New', 'Hello! My name is Sarah Connor (sarah@sky.net). Do you offer enterprise CRM and ERP software?', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-VALUES ('lead_1791608185636_9oft', 'org_default', 'aa', 'John Doe', 'john.doe@innovate.io', '+91 99999 88888', 'Website Embed Visitor', 'High', 'New', 'Hi, my name is John Doe and my email is john.doe@innovate.io. We need pricing for your ERP web application.', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
+VALUES ('lead_1791608185636_9oft', 'org_default', 'bot_aa', 'John Doe', 'john.doe@innovate.io', '+91 99999 88888', 'Website Embed Visitor', 'High', 'New', 'Hi, my name is John Doe and my email is john.doe@innovate.io. We need pricing for your ERP web application.', '₹50,000+', 'Web Chatbot Widget', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-VALUES ('lead_seed_01', 'org_default', 'aa', 'Rohan Varma', 'rohan.v@techlogix.co', '+91 98200 12345', 'TechLogix Global', 'High', 'New', 'Interested in custom ERP & CRM automation pipeline with real-time vector search.', '₹1,50,000', 'Web Chatbot Widget', NOW(), NOW())
+VALUES ('lead_seed_01', 'org_default', 'bot_aa', 'Rohan Varma', 'rohan.v@techlogix.co', '+91 98200 12345', 'TechLogix Global', 'High', 'New', 'Interested in custom ERP & CRM automation pipeline with real-time vector search.', '₹1,50,000', 'Web Chatbot Widget', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeDocument" ("id", "organizationId", "botId", "name", "type", "sizeBytes", "status", "chunksCount", "createdAt", "updatedAt")
-VALUES ('doc_emperor_smart_solutions_01', 'org_default', 'all', 'Emperor_Smart_Solutions_Company_Profile.pdf', 'PDF', 5601, 'Ready', 5, NOW(), NOW())
+VALUES ('doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 'Emperor_Smart_Solutions_Company_Profile.pdf', 'PDF', 5601, 'Ready', 5, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('chk_doc_emperor_smart_solutions_01_0', 'doc_emperor_smart_solutions_01', 'org_default', 'all', 0, 'Company Identity & Leadership — Emperor Smart Solutions:
+VALUES ('chk_doc_emperor_smart_solutions_01_0', 'doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 0, 'Company Identity & Leadership — Emperor Smart Solutions:
 Emperor Smart Solutions (ESS) was founded by Yash Sharma (Founder) and Karan Makwana (Co-Founder).
 It is an ISO 27001 & ISO 9001 certified digital engineering and enterprise AI company with 50+ projects delivered and 30+ happy clients.
 • Founder: Yash Sharma
@@ -189,7 +189,7 @@ It is an ISO 27001 & ISO 9001 certified digital engineering and enterprise AI co
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('chk_doc_emperor_smart_solutions_01_1', 'doc_emperor_smart_solutions_01', 'org_default', 'all', 1, 'Core Engineering Services — Emperor Smart Solutions:
+VALUES ('chk_doc_emperor_smart_solutions_01_1', 'doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 1, 'Core Engineering Services — Emperor Smart Solutions:
 1. Custom Software & Web: Next.js, React, Node.js, Flutter, React Native, iOS, Android, microservices.
 2. Enterprise AI & Machine Learning: RAG As A Service, custom LLM fine-tuning (Llama 3, GPT-4o, Claude 3.5), autonomous agents (LangChain, LlamaIndex), Vibe Coding (Cursor AI, Claude Code).
 3. Cloud & DevOps: AWS, Azure, GCP, Kubernetes (EKS, AKS, GKE), Terraform IaC, CI/CD, PostgreSQL, Redis.
@@ -199,7 +199,7 @@ VALUES ('chk_doc_emperor_smart_solutions_01_1', 'doc_emperor_smart_solutions_01'
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('chk_doc_emperor_smart_solutions_01_2', 'doc_emperor_smart_solutions_01', 'org_default', 'all', 2, 'Developer Hiring & Engagement Models:
+VALUES ('chk_doc_emperor_smart_solutions_01_2', 'doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 2, 'Developer Hiring & Engagement Models:
 Emperor Smart Solutions offers flexible hiring models (Dedicated Pods, Hourly T&M, Fixed-Price Milestones):
 • Trending AI Developers: Cursor AI, Lovable, Claude Code, Gemini AI, LangChain/RAG Engineers
 • Full-Stack & Frontend: Next.js, React, Vue, Angular, MERN/MEAN
@@ -209,7 +209,7 @@ Emperor Smart Solutions offers flexible hiring models (Dedicated Pods, Hourly T&
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('chk_doc_emperor_smart_solutions_01_3', 'doc_emperor_smart_solutions_01', 'org_default', 'all', 3, 'Pricing & Typical Budget Tiers — Emperor Smart Solutions:
+VALUES ('chk_doc_emperor_smart_solutions_01_3', 'doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 3, 'Pricing & Typical Budget Tiers — Emperor Smart Solutions:
 • Rapid Prototypes: Under ₹50,000
 • Standard Web & Mobile Modules: ₹50,000 – ₹2,00,000
 • Comprehensive Bespoke Applications: ₹2,00,000 – ₹5,00,000
@@ -218,7 +218,7 @@ All projects include 100% bilateral NDA protection and 24-hour response SLA.', N
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('chk_doc_emperor_smart_solutions_01_4', 'doc_emperor_smart_solutions_01', 'org_default', 'all', 4, 'Industries & Proven Case Studies:
+VALUES ('chk_doc_emperor_smart_solutions_01_4', 'doc_emperor_smart_solutions_01', 'org_default', 'bot_aa', 4, 'Industries & Proven Case Studies:
 • Retail & eCommerce (Osia Hypermart: 150-store chain cloud POS, 99.99% uptime)
 • FinTech & Trading (AI loan approval engine: reduced latency from 48h to under 3 min)
 • Healthcare (HIPAA Telehealth & WebRTC platform serving 50,000+ monthly appointments)

@@ -185,10 +185,16 @@ WITH (m = 16, ef_construction = 64);
 
   // 1. Audit and Migrate Bots
   const botsFile = findDataFile("bots.json");
+  const botNameToId = new Map();
+  let defaultBotId = "bot_aa";
+
   if (fs.existsSync(botsFile)) {
     try {
       const bots = JSON.parse(fs.readFileSync(botsFile, "utf8"));
       report.bots.read = bots.length;
+      if (bots.length > 0 && bots[0].id) {
+        defaultBotId = bots[0].id;
+      }
       for (const bot of bots) {
         if (!bot.id || !bot.name) {
           report.bots.failed++;
@@ -196,6 +202,9 @@ WITH (m = 16, ef_construction = 64);
           continue;
         }
         report.bots.valid++;
+        botNameToId.set(bot.id.toLowerCase(), bot.id);
+        botNameToId.set(bot.name.toLowerCase(), bot.id);
+
         const orgId = bot.organizationId || "org_default";
         report.sqlStatements.push(`
 -- Organization & Bot: ${bot.name} (${bot.id})
@@ -213,6 +222,15 @@ ON CONFLICT ("id") DO NOTHING;
     }
   }
 
+  function resolveBotId(raw) {
+    if (!raw) return defaultBotId;
+    const str = String(raw).trim();
+    if (str === "all" || str === "*") return defaultBotId;
+    if (botNameToId.has(str.toLowerCase())) return botNameToId.get(str.toLowerCase());
+    if (botNameToId.has("bot_" + str.toLowerCase())) return botNameToId.get("bot_" + str.toLowerCase());
+    return defaultBotId;
+  }
+
   // 2. Audit and Migrate Leads
   const leadsFile = findDataFile("leads.json");
   if (fs.existsSync(leadsFile)) {
@@ -225,9 +243,10 @@ ON CONFLICT ("id") DO NOTHING;
           continue;
         }
         report.leads.valid++;
+        const targetBotId = resolveBotId(lead.bot || lead.botId);
         report.sqlStatements.push(`
 INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-VALUES ('${lead.id}', 'org_default', '${lead.bot || "bot_aa"}', '${(lead.name || "Prospect").replace(/'/g, "''")}', '${(lead.email || "").replace(/'/g, "''")}', '${(lead.phone || "").replace(/'/g, "''")}', '${(lead.company || "").replace(/'/g, "''")}', '${lead.score || "High"}', '${lead.status || "New"}', '${(lead.inquiry || "").replace(/'/g, "''")}', '${lead.budget || "₹50,000+"}', '${lead.source || "Widget"}', NOW(), NOW())
+VALUES ('${lead.id}', 'org_default', '${targetBotId}', '${(lead.name || "Prospect").replace(/'/g, "''")}', '${(lead.email || "").replace(/'/g, "''")}', '${(lead.phone || "").replace(/'/g, "''")}', '${(lead.company || "").replace(/'/g, "''")}', '${lead.score || "High"}', '${lead.status || "New"}', '${(lead.inquiry || "").replace(/'/g, "''")}', '${lead.budget || "₹50,000+"}', '${lead.source || "Widget"}', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
         `.trim());
       }
@@ -248,9 +267,10 @@ ON CONFLICT ("id") DO NOTHING;
           continue;
         }
         report.documents.valid++;
+        const targetBotId = resolveBotId(doc.botId);
         report.sqlStatements.push(`
 INSERT INTO "KnowledgeDocument" ("id", "organizationId", "botId", "name", "type", "sizeBytes", "status", "chunksCount", "createdAt", "updatedAt")
-VALUES ('${doc.id}', 'org_default', '${doc.botId || "bot_aa"}', '${doc.name.replace(/'/g, "''")}', '${doc.type || "PDF"}', ${doc.content ? doc.content.length : 0}, 'Ready', ${doc.chunksCount || (doc.chunks ? doc.chunks.length : 0)}, NOW(), NOW())
+VALUES ('${doc.id}', 'org_default', '${targetBotId}', '${doc.name.replace(/'/g, "''")}', '${doc.type || "PDF"}', ${doc.content ? doc.content.length : 0}, 'Ready', ${doc.chunksCount || (doc.chunks ? doc.chunks.length : 0)}, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
         `.trim());
 
@@ -259,7 +279,7 @@ ON CONFLICT ("id") DO NOTHING;
             const chunkId = `chk_${doc.id}_${idx}`;
             report.sqlStatements.push(`
 INSERT INTO "KnowledgeChunk" ("id", "documentId", "organizationId", "botId", "chunkIndex", "content", "createdAt")
-VALUES ('${chunkId}', '${doc.id}', 'org_default', '${doc.botId || "bot_aa"}', ${idx}, '${chunk.replace(/'/g, "''")}', NOW())
+VALUES ('${chunkId}', '${doc.id}', 'org_default', '${targetBotId}', ${idx}, '${chunk.replace(/'/g, "''")}', NOW())
 ON CONFLICT ("id") DO NOTHING;
             `.trim());
           });
@@ -279,9 +299,10 @@ ON CONFLICT ("id") DO NOTHING;
       for (const conv of convs) {
         if (!conv.id) continue;
         report.conversations.valid++;
+        const targetBotId = resolveBotId(conv.botId);
         report.sqlStatements.push(`
 INSERT INTO "Conversation" ("id", "organizationId", "botId", "visitorName", "visitorEmail", "visitorPhone", "status", "isLead", "lastMessage", "createdAt", "updatedAt")
-VALUES ('${conv.id}', 'org_default', '${conv.botId || "bot_aa"}', '${(conv.visitorName || "").replace(/'/g, "''")}', '${(conv.visitorEmail || "").replace(/'/g, "''")}', '${(conv.visitorPhone || "").replace(/'/g, "''")}', '${conv.status || "Active"}', ${Boolean(conv.isLead)}, '${(conv.lastMessage || "").replace(/'/g, "''")}', NOW(), NOW())
+VALUES ('${conv.id}', 'org_default', '${targetBotId}', '${(conv.visitorName || "").replace(/'/g, "''")}', '${(conv.visitorEmail || "").replace(/'/g, "''")}', '${(conv.visitorPhone || "").replace(/'/g, "''")}', '${conv.status || "Active"}', ${Boolean(conv.isLead)}, '${(conv.lastMessage || "").replace(/'/g, "''")}', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
         `.trim());
       }
