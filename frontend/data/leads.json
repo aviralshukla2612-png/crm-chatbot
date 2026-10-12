@@ -1,5 +1,21 @@
 [
   {
+    "id": "lead_1791787975361_b7dj",
+    "name": "Vikram Joshi",
+    "email": "vikram@enterprise.in",
+    "phone": "+91 99887 76655",
+    "company": "Direct Inbound",
+    "bot": "aa",
+    "score": "High",
+    "status": "New",
+    "created": "Oct 12, 2026",
+    "createdAt": "2026-10-12T06:52:55.361Z",
+    "updatedAt": "2026-10-12T06:52:55.361Z",
+    "inquiry": "Full Stack Next.js + Flutter development quote",
+    "budget": "₹50,000+",
+    "source": "Web Chatbot Widget"
+  },
+  {
     "id": "lead_1791608783809_j20l",
     "name": "Sarah Connor",
     "email": "sarah@sky.net",

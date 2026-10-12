@@ -2,7 +2,16 @@ import fs from "fs";
 import path from "path";
 import { sseBroker } from "./sseBroker.js";
 
-const DATA_FILE = path.join(process.cwd(), "data", "leads.json");
+function resolveDataFile() {
+  const frontendPath = path.join(process.cwd(), "frontend", "data", "leads.json");
+  if (fs.existsSync(frontendPath)) return frontendPath;
+  const directPath = path.join(process.cwd(), "data", "leads.json");
+  if (fs.existsSync(directPath)) return directPath;
+  if (process.cwd().endsWith("frontend")) return directPath;
+  return frontendPath;
+}
+
+const DATA_FILE = resolveDataFile();
 
 const SEED_LEADS = [
   {
@@ -99,19 +108,24 @@ export const leadsStore = {
     const list = loadFromDisk();
     const now = new Date();
 
-    // Prevent duplicate lead spam with identical email within recent window
-    if (data.email) {
-      const existing = list.find(
-        (l) => l.email && l.email.toLowerCase() === data.email.toLowerCase()
-      );
-      if (existing) {
-        // Update inquiry and timestamp
-        existing.inquiry = data.inquiry || existing.inquiry;
-        existing.updatedAt = now.toISOString();
-        saveToDisk(list);
-        sseBroker.broadcast("lead_updated", existing);
-        return existing;
+    // Check if lead already exists by email or phone to enrich details
+    const existing = list.find(
+      (l) =>
+        (data.email && l.email && l.email.toLowerCase() === data.email.toLowerCase()) ||
+        (data.phone && l.phone && l.phone.replace(/\D/g, "") === data.phone.replace(/\D/g, ""))
+    );
+    if (existing) {
+      if (data.name && (!existing.name || existing.name === "Website Prospect")) {
+        existing.name = data.name;
       }
+      if (data.phone && !existing.phone) existing.phone = data.phone;
+      if (data.email && !existing.email) existing.email = data.email;
+      if (data.inquiry) existing.inquiry = data.inquiry;
+      if (existing.phone && existing.email) existing.score = "Hot";
+      existing.updatedAt = now.toISOString();
+      saveToDisk(list);
+      sseBroker.broadcast("lead_updated", existing);
+      return existing;
     }
 
     const newLead = {

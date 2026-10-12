@@ -9,6 +9,7 @@ import {
   validateOutput,
   detectLanguage,
 } from "@/lib/ai/masterPrompt";
+import { extractLeadDetails } from "@/lib/ai/leadExtractor";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 
@@ -370,16 +371,18 @@ export async function POST(request, { params }) {
           conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
           conversationsStore.addMessage(currentSessionId, { role: "assistant", content: validated });
 
-          // Check lead capture
-          const emailMatch = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          const phoneMatch = message.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-          if (emailMatch || phoneMatch || visitor.email || visitor.phone) {
+          // Check lead capture using robust multi-turn extractor
+          const leadDetails = extractLeadDetails(message, sessionHistory);
+          if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
             const leadData = {
-              name: visitor.name || (emailMatch ? emailMatch[0].split("@")[0] : "Website Visitor"),
-              email: visitor.email || (emailMatch ? emailMatch[0] : ""),
-              phone: visitor.phone || (phoneMatch ? phoneMatch[0] : ""),
+              name: visitor.name || leadDetails.name,
+              email: visitor.email || leadDetails.email,
+              phone: visitor.phone || leadDetails.phone,
+              company: bot?.company || "Direct Inbound",
               bot: botName,
-              inquiry: message,
+              score: leadDetails.score,
+              inquiry: leadDetails.inquiry,
+              source: "Web Chatbot Widget",
             };
             leadsStore.createLead(leadData);
             triggerLeadWebhookAsync(bot, leadData);
@@ -413,20 +416,17 @@ export async function POST(request, { params }) {
 
     botReply = validateOutput(botReply, businessName, lang, botName);
 
-    // Capture Lead
-    const emailInMsg = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    const phoneInMsg = message.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-    const hasContact = visitor.email || visitor.phone || emailInMsg || phoneInMsg;
-
-    if (hasContact || visitor.name) {
+    // Capture Lead using robust multi-turn extractor
+    const leadDetails = extractLeadDetails(message, sessionHistory);
+    if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
       const leadData = {
-        name: visitor.name || (emailInMsg ? emailInMsg[0].split("@")[0] : "Website Visitor"),
-        email: visitor.email || (emailInMsg ? emailInMsg[0] : ""),
-        phone: visitor.phone || (phoneInMsg ? phoneInMsg[0] : ""),
-        company: "Website Embed Visitor",
+        name: visitor.name || leadDetails.name,
+        email: visitor.email || leadDetails.email,
+        phone: visitor.phone || leadDetails.phone,
+        company: bot?.company || "Direct Inbound",
         bot: botName,
-        score: "High",
-        inquiry: message,
+        score: leadDetails.score,
+        inquiry: leadDetails.inquiry,
         source: "Web Chatbot Widget",
       };
       leadsStore.createLead(leadData);
