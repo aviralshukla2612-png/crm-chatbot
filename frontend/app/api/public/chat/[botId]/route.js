@@ -283,11 +283,18 @@ export async function POST(request, { params }) {
        /\b(?:yash\s+sharma|karan\s+makwana)\b/i.test(message) ||
        /\b(?:founder|co-founder|owner|ceo|cto)\s+of\s+(?:ess|emperor)/i.test(message));
 
+    const isEntertainmentOrTrivia =
+      /\b(?:act|acted|acting|actor|actress|cast|movie|film|cinema|trailer|song|songs|lyrics|singer|album|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
+      /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i.test(message) ||
+      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella)\b/i.test(message) ||
+      /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message) ||
+      /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
+      /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
+      /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
+
     const isCelebrityOrTriviaQuery =
       isExternalEntityQuery ||
-      (/\bwho (?:is|was|are|were)\b/i.test(message) && !isEssLeadershipQuery) ||
-      /\b(?:salman khan|shah\s*rukh|srk|aamir khan|akshay|deepika|katrina|alia|virat kohli|dhoni|rohit sharma|messi|ronaldo|elon musk|sundar pichai|mukesh ambani|ratan tata|anand mahindra|bill gates|steve jobs|mark zuckerberg)\b/i.test(message) ||
-      /\b(?:recipe for|how to cook|how to bake|movie review|box office|song lyrics|capital of|weather in|tell me a joke)\b/i.test(message);
+      (isEntertainmentOrTrivia && !isEssLeadershipQuery && !hasTechnicalKeywords);
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 

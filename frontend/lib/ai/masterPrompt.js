@@ -194,6 +194,15 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
   cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+Karan\s+Makwana,?\s*(?:the\s+)?(?:founder|co-founder)?\s*(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
   cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+(?:the\s+)?(?:founder|co-founder)\s+(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
 
+  // 0.5 Off-Topic Content Intercept (Movies, Cast, Recipes, Trivia essays)
+  const isOffTopicReply =
+    /\b(?:cast of|film|movie|bollywood|hollywood|directed by|starring|played by|actor|actress|box office|character of|ingredients|recipe for|tablespoon|teaspoon|preheat|oven|cup of)\b/i.test(cleaned) &&
+    !/\b(?:software|flutter|next\.?js|react|api|engineering|custom|development|emperor|ess)\b/i.test(cleaned);
+
+  if (isOffTopicReply) {
+    return `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide entertainment, movie, or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+  }
+
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
   if (
     /can'?t provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned) ||
