@@ -109,12 +109,12 @@ export async function POST(request, { params }) {
     if (existingConv && Array.isArray(existingConv.messages)) {
       sessionHistory = existingConv.messages
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .slice(-10)
+        .slice(-20)
         .map((m) => ({ role: m.role, content: m.content }));
     } else if (Array.isArray(history) && history.length > 0) {
       sessionHistory = history
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .slice(-10)
+        .slice(-20)
         .map((m) => ({ role: m.role, content: m.content }));
     }
 
@@ -155,14 +155,14 @@ export async function POST(request, { params }) {
           keep_alive: "24h", // Keep model preloaded in RAM, eliminating cold-start disk delay
           messages: [
             { role: "system", content: masterSystemPrompt },
-            ...sessionHistory.slice(-4), // Keep active prompt lean for faster CPU evaluation
+            ...sessionHistory.slice(-16), // Retain up to 16 previous messages (8 turns) for deep conversational memory
             { role: "user", content: message },
           ],
           stream: false,
           options: {
             temperature: 0.3,
-            num_predict: 120, // Snappy answers, finishes generation in 1-2 seconds
-            num_ctx: 1024,    // Faster prompt evaluation on CPU (4x speedup)
+            num_predict: 512, // Ample room for comprehensive and detailed answers
+            num_ctx: 4096,    // Extended context window for memory + knowledge base
             stop: [
               "\nUser:",
               "\nUser ",

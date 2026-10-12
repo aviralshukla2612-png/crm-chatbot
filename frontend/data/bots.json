@@ -2,26 +2,35 @@
   {
     "id": "bot_aa",
     "name": "aa",
-    "company": "My Organization",
-    "description": "Custom AI chatbot assistant.",
-    "avatar": "🤖",
+    "company": "Sunrise Care Clinic",
+    "description": "Healthcare AI assistant for Sunrise Care Clinic.",
+    "avatar": "🩺",
     "status": "Active",
     "primaryColor": "#4f46e5",
-    "welcomeMessage": "Hello! I am aa, your custom AI assistant. How can I help you today?",
-    "placeholderText": "Type a message...",
+    "welcomeMessage": "Hello! I am your AI assistant for Sunrise Care Clinic. How can I help you today?",
+    "placeholderText": "Ask about appointments, timings, or clinic services...",
     "launcherPosition": "bottom-right",
     "brandingEnabled": true,
     "personality": "Helpful & Professional",
-    "systemPrompt": "You are aa, a helpful and polite customer assistant. Answer visitor inquiries accurately. Always be professional, concise, and helpful.",
+    "systemPrompt": "You are the AI assistant for Sunrise Care Clinic. Provide verified clinic information about timings, services, appointments, and safety guidelines. Never diagnose or prescribe medicines.",
     "responseLength": "Balanced",
-    "instructions": "Be courteous, clear, and direct.",
+    "instructions": "Be courteous, clear, and direct. Follow medical safety rules strictly.",
     "collectLeads": true,
     "conversationsCount": 0,
     "questionsCount": 0,
     "leadsCount": 0,
-    "sourcesCount": 0,
+    "sourcesCount": 1,
     "createdDate": "Oct 9, 2026",
     "lastActive": "Just now",
-    "documents": []
+    "documents": [
+      {
+        "id": "doc_healthcare_sunrise_01",
+        "name": "Healthcare_AI_Chatbot_Knowledge_Base.pdf",
+        "type": "PDF",
+        "size": "45 KB",
+        "status": "Ready",
+        "chunks": 5
+      }
+    ]
   }
 ]

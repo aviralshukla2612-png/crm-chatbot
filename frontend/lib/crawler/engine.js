@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { validateUrlForSSRF } from "../security/ssrf.js";
 import { websitesDb } from "../db/websites.js";
+import { documentsStore } from "../db/documentsStore.js";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 const EMBED_MODEL = process.env.EMBED_MODEL || "nomic-embed-text";
@@ -372,31 +373,48 @@ export async function executeWebsiteIngestion(jobId) {
 }
 
 /**
- * Searches website knowledge with strict tenant and bot isolation
+ * Searches website and document knowledge with strict tenant and bot isolation
  */
-export async function searchWebsiteKnowledge(botId, query, topK = 3) {
-  // Filter vectors by botId first (Zero-overhead if no knowledge is ingested yet)
+export async function searchWebsiteKnowledge(botId, query, topK = 4) {
+  // 1. Search persistent document knowledge first
+  let docResults = [];
+  try {
+    docResults = documentsStore.searchDocuments(botId, query, topK);
+  } catch (err) {
+    console.warn("[KNOWLEDGE_DOC_SEARCH_WARN]", err.message);
+  }
+
+  // 2. Search in-memory crawled website vector store
   const botPoints = vectorStorePoints.filter((p) => p.botId === botId);
-  if (botPoints.length === 0) return [];
+  let websiteResults = [];
 
-  const queryVec = await generateEmbedding(query);
-
-  // Compute cosine similarity
-  const scored = botPoints.map((point) => {
-    let dot = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < 768; i++) {
-      const a = queryVec[i] || 0;
-      const b = point.embedding[i] || 0;
-      dot += a * b;
-      normA += a * a;
-      normB += b * b;
+  if (botPoints.length > 0) {
+    try {
+      const queryVec = await generateEmbedding(query);
+      websiteResults = botPoints.map((point) => {
+        let dot = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < 768; i++) {
+          const a = queryVec[i] || 0;
+          const b = point.embedding[i] || 0;
+          dot += a * b;
+          normA += a * a;
+          normB += b * b;
+        }
+        const score = dot / (Math.sqrt(normA) * Math.sqrt(normB) || 1);
+        return { ...point, score };
+      });
+      websiteResults.sort((a, b) => b.score - a.score);
+    } catch (e) {
+      console.warn("[KNOWLEDGE_WEBSITE_SEARCH_WARN]", e.message);
     }
-    const score = dot / (Math.sqrt(normA) * Math.sqrt(normB) || 1);
-    return { ...point, score };
-  });
+  }
 
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, topK);
+  // Combine document chunks and website chunks
+  const combined = [...docResults, ...websiteResults];
+  if (combined.length === 0) return [];
+
+  combined.sort((a, b) => (b.score || 0) - (a.score || 0));
+  return combined.slice(0, topK);
 }
