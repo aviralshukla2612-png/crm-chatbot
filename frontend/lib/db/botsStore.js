@@ -1,7 +1,16 @@
 import fs from "fs";
 import path from "path";
 
-const DATA_FILE = path.join(process.cwd(), "data", "bots.json");
+function resolveDataFile() {
+  const frontendPath = path.join(process.cwd(), "frontend", "data", "bots.json");
+  if (fs.existsSync(frontendPath)) return frontendPath;
+  const directPath = path.join(process.cwd(), "data", "bots.json");
+  if (fs.existsSync(directPath)) return directPath;
+  if (process.cwd().endsWith("frontend")) return directPath;
+  return frontendPath;
+}
+
+const DATA_FILE = resolveDataFile();
 
 // Default seed bot matching user's created bot 'aa'
 const DEFAULT_BOTS = [

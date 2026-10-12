@@ -55,6 +55,10 @@ model Bot {
   websiteSources WebsiteSource[]
   ingestionJobs  IngestionJob[]
   installations  WidgetInstallation[]
+  conversations  Conversation[]
+  leads          Lead[]
+  documents      KnowledgeDocument[]
+  webhooks       WebhookConfig[]
 
   @@index([organizationId])
 }
@@ -154,4 +158,143 @@ model WidgetInstallation {
 
   @@unique([botId, domain])
   @@index([botId])
+}
+
+model Conversation {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  visitorName     String        @default("Website Visitor")
+  visitorEmail    String?
+  visitorPhone    String?
+  visitorLocation String?
+  status          String        @default("Active") // Active, Closed, Archived
+  isLead          Boolean       @default(false)
+  leadScore       String?       // Hot, High, Medium, Low
+  lastMessage     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  messages        Message[]
+
+  @@index([organizationId, botId])
+  @@index([createdAt])
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  conversationId  String
+  role            String        // user, assistant, system
+  content         String
+  tokens          Int?
+  latencyMs       Int?
+  createdAt       DateTime      @default(now())
+
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model Lead {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  name            String        @default("Website Prospect")
+  email           String?
+  phone           String?
+  company         String?       @default("Direct Inbound")
+  score           String        @default("Medium") // Hot, High, Medium, Low
+  status          String        @default("New")    // New, Contacted, Qualified, Closed
+  inquiry         String?
+  budget          String?       @default("₹50,000+")
+  source          String        @default("Web Chatbot Widget")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, botId])
+  @@index([createdAt])
+}
+
+model KnowledgeDocument {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  name            String
+  type            String        @default("PDF") // PDF, TXT, DOCX, CSV
+  sizeBytes       Int           @default(0)
+  status          String        @default("Ready") // Uploading, Processing, Ready, Failed
+  chunksCount     Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  chunks          KnowledgeChunk[]
+
+  @@index([organizationId, botId])
+}
+
+model KnowledgeChunk {
+  id              String        @id @default(cuid())
+  documentId      String
+  organizationId  String
+  botId           String
+  chunkIndex      Int           @default(0)
+  content         String
+  contentHash     String?
+  createdAt       DateTime      @default(now())
+
+  document        KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([organizationId, botId])
+}
+
+model WebhookConfig {
+  id              String        @id @default(cuid())
+  organizationId  String
+  botId           String
+  url             String
+  secret          String        // HMAC signing secret
+  events          String[]      @default(["lead_created", "lead_updated"])
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  deliveries      WebhookDelivery[]
+
+  @@index([organizationId, botId])
+}
+
+model WebhookDelivery {
+  id              String        @id @default(cuid())
+  webhookConfigId String
+  event           String
+  statusCode      Int?
+  responseBody    String?
+  success         Boolean       @default(false)
+  attemptCount    Int           @default(1)
+  createdAt       DateTime      @default(now())
+
+  webhookConfig   WebhookConfig @relation(fields: [webhookConfigId], references: [id], onDelete: Cascade)
+
+  @@index([webhookConfigId])
+}
+
+model AuditLog {
+  id              String        @id @default(cuid())
+  organizationId  String
+  userId          String?
+  action          String        // CREATE_BOT, UPDATE_PROMPT, DELETE_DOCUMENT, EXPORT_LEADS
+  resourceType    String
+  resourceId      String
+  ipAddress       String?
+  metadata        String?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([createdAt])
 }

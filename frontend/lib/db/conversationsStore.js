@@ -2,7 +2,16 @@ import fs from "fs";
 import path from "path";
 import { sseBroker } from "./sseBroker.js";
 
-const DATA_FILE = path.join(process.cwd(), "data", "conversations.json");
+function resolveDataFile() {
+  const frontendPath = path.join(process.cwd(), "frontend", "data", "conversations.json");
+  if (fs.existsSync(frontendPath)) return frontendPath;
+  const directPath = path.join(process.cwd(), "data", "conversations.json");
+  if (fs.existsSync(directPath)) return directPath;
+  if (process.cwd().endsWith("frontend")) return directPath;
+  return frontendPath;
+}
+
+const DATA_FILE = resolveDataFile();
 
 const SEED_CONVERSATIONS = [
   {
