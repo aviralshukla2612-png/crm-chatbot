@@ -206,8 +206,8 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
 
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private
   if (
-    /can'?t provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned) ||
-    /cannot provide (?:the )?(?:physical address|personal contact|contact information|address)/i.test(cleaned)
+    /(?:can'?t|cannot)\s+provide\s+(?:the\s+)?(?:physical\s+address|personal\s+contact|contact\s+details|contact\s+information|contact\s+info|contact|phone|email|number|address)/i.test(cleaned) ||
+    /(?:private\s+and\s+sensitive|sensitive\s+information|confidential\s+information)/i.test(cleaned)
   ) {
     return `Here are the official contact details and head office address for Emperor Smart Solutions:
 

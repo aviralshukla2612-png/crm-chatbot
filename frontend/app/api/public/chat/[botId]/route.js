@@ -295,10 +295,15 @@ export async function POST(request, { params }) {
       /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
       /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
 
+    const isContactDetailsQuery =
+      /\b(?:contact\s*(?:details?|number|info|information)?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human)\b/i.test(message) &&
+      (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company)\b/i.test(message) || message.trim().length <= 25);
+
     const isCelebrityOrTriviaQuery =
-      isExternalEntityQuery ||
+      !isContactDetailsQuery &&
+      (isExternalEntityQuery ||
       (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
-      (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && !isContactSubmissionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message));
+      (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && !isContactSubmissionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
@@ -324,6 +329,16 @@ export async function POST(request, { params }) {
         firstUserMsg = userMessages.length > 0 ? userMessages[0].content : message;
       }
       deterministicReply = `Your first message was:\n\n"${firstUserMsg}"`;
+    } else if (isContactDetailsQuery) {
+      deterministicReply = `Here are the official contact details and head office address for Emperor Smart Solutions:
+
+🌐 **Official Website:** https://emperorsmartsolutions.com
+📍 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+📞 **Phone & WhatsApp:** +91 63591 20081
+📧 **Inquiries Email:** contact@emperorsmartsolutions.com | emperorsmartsolutions@gmail.com
+⏰ **Business Hours:** Monday to Saturday: 10:00 AM – 7:00 PM IST
+
+Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isEssLeadershipQuery) {
