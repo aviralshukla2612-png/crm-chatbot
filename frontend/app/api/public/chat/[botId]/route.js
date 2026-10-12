@@ -134,7 +134,7 @@ export async function POST(request, { params }) {
       businessName: businessName,
       tenantId: tenantId,
       retrievedContext: contextText,
-      chatHistory: formattedHistoryText,
+      chatHistory: "", // Handled directly via structured messages array below
       customInstructions: bot?.systemPrompt || bot?.instructions || "",
       userLanguage: lang,
     });
@@ -163,6 +163,20 @@ export async function POST(request, { params }) {
             temperature: 0.3,
             num_predict: 120, // Snappy answers, finishes generation in 1-2 seconds
             num_ctx: 1024,    // Faster prompt evaluation on CPU (4x speedup)
+            stop: [
+              "\nUser:",
+              "\nUser ",
+              "User:",
+              "\nHuman:",
+              "Human:",
+              "\nAssistant:",
+              "Assistant:",
+              "\nYou:",
+              "\nVisitor:",
+              "<|eot_id|>",
+              "<|im_end|>",
+              "<|end_of_text|>",
+            ],
           },
         }),
         signal: controller.signal,

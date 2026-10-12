@@ -87,12 +87,29 @@ async def generate_rag_response(user_query: str, chat_history: list = None) -> d
                     "num_thread": 4,
                     "num_ctx": 1536,
                     "num_predict": 160,
-                    "temperature": 0.4
+                    "temperature": 0.4,
+                    "stop": [
+                        "\nUser:",
+                        "\nUser ",
+                        "User:",
+                        "\nHuman:",
+                        "Human:",
+                        "\nAssistant:",
+                        "Assistant:",
+                        "\nYou:",
+                        "<|eot_id|>",
+                        "<|im_end|>",
+                        "<|end_of_text|>",
+                    ]
                 }
             }
         )
         if res.status_code == 200:
             llm_reply = res.json().get("message", {}).get("content", "")
+            # Truncate any hallucinated turns if leaked
+            for marker in ["\nUser:", "\nHuman:", "\nAssistant:", "\nYou:"]:
+                if marker in llm_reply:
+                    llm_reply = llm_reply.split(marker)[0].strip()
             return {
                 "response": llm_reply,
                 "sources": matched_chunks

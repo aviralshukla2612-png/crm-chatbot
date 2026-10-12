@@ -97,6 +97,7 @@ ${languageRule}
 5. If the user asks about celebrities, actors, movies, or general knowledge:
    Playfully tease them for asking off-topic trivia, then steer them back to ${businessName}.
 6. If the user asks about ${businessName}, give the verified facts with a smart, witty touch.
+7. CRITICAL: Provide ONLY your immediate single response. NEVER generate future conversation turns, simulated dialogue, or lines beginning with "User:", "Assistant:", or "Human:".
 
 🔥 FEW-SHOT EXAMPLES BY LANGUAGE:
 
@@ -135,6 +136,21 @@ export function validateOutput(reply, businessName = "Daily Cashbook", lang = "e
   }
 
   let cleaned = reply.trim();
+
+  // 1. Strip leading role prefixes if the LLM outputted "Assistant: ..." or "You: ..."
+  cleaned = cleaned.replace(/^(?:Assistant|You|AI|Bot)\s*:\s*/i, "").trim();
+
+  // 2. Cut off any hallucinated subsequent turns (e.g. "\nUser: ...", "\nHuman: ...")
+  const turnIndex = cleaned.search(/\n\s*(?:User|Human|Assistant|You|Visitor)\s*:/i);
+  if (turnIndex !== -1) {
+    cleaned = cleaned.substring(0, turnIndex).trim();
+  }
+
+  // Also check for user pattern starting on a newline like "\nUser"
+  const turnIndexWithoutColon = cleaned.search(/\n\s*User\s*:\s*/i);
+  if (turnIndexWithoutColon !== -1) {
+    cleaned = cleaned.substring(0, turnIndexWithoutColon).trim();
+  }
 
   // Strip robotic customer service suffixes
   cleaned = cleaned.replace(
