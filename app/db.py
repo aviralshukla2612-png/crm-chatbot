@@ -48,7 +48,14 @@ def init_db():
         );
     """)
     
+    # 3. Create HNSW index for sub-10ms approximate nearest neighbor vector search
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_hnsw_idx 
+        ON knowledge_chunks USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 64);
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
-    print("Database & vector table initialized successfully.")
+    print("Database, vector table, and HNSW index initialized successfully.")

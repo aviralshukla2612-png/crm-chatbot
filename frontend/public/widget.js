@@ -519,7 +519,7 @@
     renderMessages();
   });
 
-  // 10. Chat Inference
+  // 10. Chat Inference with Real-Time SSE Streaming
   async function sendMessage() {
     const input = document.getElementById("nexus-user-input");
     const sendBtn = document.getElementById("nexus-send-button");
@@ -535,25 +535,63 @@
     try {
       const res = await fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "text/event-stream",
+        },
         body: JSON.stringify({
           message: text,
-          history: messages.slice(-4),
+          history: messages.slice(-8),
           sessionId: activeSessionId,
+          stream: true,
         }),
       });
 
-      const data = await res.json();
-      if (data.reply) {
-        messages.push({
-          role: "assistant",
-          content: data.reply,
-          sources: data.sources || [],
-        });
+      const contentType = res.headers.get("content-type") || "";
+
+      // Stream handling (SSE)
+      if (contentType.includes("text/event-stream") && res.body) {
+        isLoading = false;
+        const botMsg = { role: "assistant", content: "" };
+        messages.push(botMsg);
+        renderMessages();
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data: ")) {
+              const payload = trimmed.slice(6);
+              if (payload === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(payload);
+                if (parsed.token) {
+                  botMsg.content += parsed.token;
+                  const msgs = chatWindow.querySelectorAll(".nexus-msg-bot");
+                  const lastMsg = msgs[msgs.length - 1];
+                  if (lastMsg) lastMsg.innerHTML = botMsg.content.replace(/\n/g, "<br/>");
+                  const list = document.getElementById("nexus-messages-list");
+                  if (list) list.scrollTop = list.scrollHeight;
+                }
+              } catch (e) {}
+            }
+          }
+        }
       } else {
+        const data = await res.json();
         messages.push({
           role: "assistant",
-          content: "Hello! I am ready to answer your questions. Please ask anything about our services.",
+          content: data.reply || "Hello! I am ready to answer your questions. Please ask anything about our services.",
+          sources: data.sources || [],
         });
       }
     } catch (e) {
