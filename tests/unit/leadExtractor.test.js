@@ -1,0 +1,35 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { extractLeadDetails } from "../../frontend/lib/ai/leadExtractor.js";
+
+test("LeadExtractor - extracts Indian 10-digit mobile and name", () => {
+  const result = extractLeadDetails("My name is Rahul Sharma and my number is 9876543210");
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Rahul Sharma");
+  assert.equal(result.phone, "+91 98765 43210");
+  assert.equal(result.score, "High");
+});
+
+test("LeadExtractor - extracts multi-turn dialogue with email and phone", () => {
+  const history = [
+    { role: "user", content: "I want to build a mobile Flutter app" },
+    { role: "assistant", content: "I would be happy to help. May I know your name and contact?" },
+    { role: "user", content: "I am Rohan Patel" },
+  ];
+  const currentMsg = "6359120081, email is rohan@corp.in";
+  const result = extractLeadDetails(currentMsg, history);
+
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Rohan Patel");
+  assert.equal(result.email, "rohan@corp.in");
+  assert.equal(result.phone, "+91 63591 20081");
+  assert.equal(result.score, "Hot");
+  assert.ok(result.inquiry.includes("Mobile App Development"));
+});
+
+test("LeadExtractor - ignores generic conversation without lead info", () => {
+  const result = extractLeadDetails("Where is your office located?");
+  assert.equal(result.hasLeadData, false);
+  assert.equal(result.phone, "");
+  assert.equal(result.email, "");
+});

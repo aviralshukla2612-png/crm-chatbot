@@ -10,6 +10,9 @@ import {
   detectLanguage,
 } from "@/lib/ai/masterPrompt";
 import { extractLeadDetails } from "@/lib/ai/leadExtractor";
+import { InferenceProvider } from "@/lib/ai/inferenceProvider";
+import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
+import { checkDomainAuthorization } from "@/lib/security/domainGuard";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 
@@ -31,39 +34,23 @@ function checkRateLimit(ipOrId, maxRequests = 30, windowMs = 60000) {
 }
 
 // --- PHASE 4: DOMAIN WHITELISTING (Origin Locking) ---
-function checkDomainAuthorization(request, bot) {
-  const allowed = bot?.allowedDomains;
-  if (!Array.isArray(allowed) || allowed.length === 0 || allowed.includes("*")) {
-    return { allowed: true };
-  }
-  const origin = request.headers.get("origin") || request.headers.get("referer");
-  if (!origin) return { allowed: true }; // allow direct server/curl calls
-  try {
-    const originHost = new URL(origin).hostname.toLowerCase();
-    const isMatch = allowed.some((d) => {
-      const clean = d.trim().toLowerCase();
-      return originHost === clean || originHost.endsWith(`.${clean}`);
-    });
-    return { allowed: isMatch, host: originHost };
-  } catch (e) {
-    return { allowed: true };
-  }
-}
+// Guard logic imported from @/lib/security/domainGuard
 
-// --- PHASE 5: ASYNC LEAD WEBHOOK NOTIFICATION ---
+// --- PHASE 5: ASYNC LEAD WEBHOOK NOTIFICATION (HMAC SHA-256 + Backoff Retries) ---
 function triggerLeadWebhookAsync(bot, leadPayload) {
   const webhookUrl = bot?.webhookUrl || process.env.LEAD_WEBHOOK_URL;
   if (!webhookUrl) return;
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      event: "lead_captured",
-      timestamp: new Date().toISOString(),
+  const webhookSecret = bot?.webhookSecret || process.env.LEAD_WEBHOOK_SECRET || "";
+
+  WebhookDispatcher.dispatch({
+    url: webhookUrl,
+    secret: webhookSecret,
+    event: "lead_captured",
+    payload: {
       bot: { id: bot?.id, name: bot?.name, company: bot?.company },
       lead: leadPayload,
-    }),
-    signal: AbortSignal.timeout(5000),
+    },
+    maxRetries: 3,
   }).catch((err) => console.warn("[LEAD_WEBHOOK_FAIL]", err.message));
 }
 
@@ -96,129 +83,20 @@ async function resolveOllamaModel() {
   return "llama3.2:1b";
 }
 
-// --- PHASE 2: HYBRID INFERENCE ROUTER (Groq LPU Cloud + Local Ollama Fallback) ---
+// --- PHASE 2: UNIFIED INFERENCE PROVIDER ROUTER ---
 async function executeChatInference({
   messages,
   temperature = 0.3,
   num_predict = 512,
   onToken = null,
 }) {
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-  // 1. If GROQ_API_KEY is configured, route to Groq LPU (500+ tokens/sec, massive concurrency)
-  if (GROQ_API_KEY) {
-    try {
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-          messages,
-          temperature,
-          max_tokens: num_predict,
-          stream: Boolean(onToken),
-        }),
-        signal: AbortSignal.timeout(25000),
-      });
-
-      if (groqRes.ok) {
-        if (onToken && groqRes.body) {
-          const reader = groqRes.body.getReader();
-          const decoder = new TextDecoder();
-          let fullText = "";
-          let buffer = "";
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith("data: ") && trimmed !== "data: [DONE]") {
-                try {
-                  const json = JSON.parse(trimmed.slice(6));
-                  const delta = json.choices?.[0]?.delta?.content || "";
-                  if (delta) {
-                    fullText += delta;
-                    onToken(delta);
-                  }
-                } catch (e) {}
-              }
-            }
-          }
-          return fullText;
-        } else {
-          const data = await groqRes.json();
-          return data.choices?.[0]?.message?.content || "";
-        }
-      }
-    } catch (err) {
-      console.warn("[GROQ_FALLBACK_TO_OLLAMA]", err.message);
-    }
-  }
-
-  // 2. Primary / Local Fallback: Local Ollama
-  const activeModel = await resolveOllamaModel();
-  const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: activeModel,
-      keep_alive: "24h",
-      messages,
-      stream: Boolean(onToken),
-      options: {
-        temperature,
-        num_predict,
-        num_ctx: 2048,
-        stop: ["\nUser:", "User:", "\nHuman:", "\nAssistant:", "\nYou:", "<|eot_id|>"],
-      },
-    }),
-    signal: AbortSignal.timeout(60000),
+  return await InferenceProvider.generate({
+    messages,
+    temperature,
+    maxTokens: num_predict,
+    stream: Boolean(onToken),
+    onToken,
   });
-
-  if (!ollamaRes.ok) {
-    throw new Error(`Ollama error HTTP ${ollamaRes.status}`);
-  }
-
-  if (onToken && ollamaRes.body) {
-    const reader = ollamaRes.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = "";
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          try {
-            const json = JSON.parse(trimmed);
-            const token = json.message?.content || "";
-            if (token) {
-              fullText += token;
-              onToken(token);
-            }
-          } catch (e) {}
-        }
-      }
-    }
-    return fullText;
-  } else {
-    const data = await ollamaRes.json();
-    return data.message?.content || "";
-  }
 }
 
 // CORS Headers helper
@@ -267,11 +145,12 @@ export async function POST(request, { params }) {
     }
 
     // --- PHASE 4: DOMAIN WHITELISTS ---
-    const domainCheck = checkDomainAuthorization(request, bot);
+    const originHeader = request.headers.get("origin") || request.headers.get("referer");
+    const domainCheck = checkDomainAuthorization(originHeader, bot?.allowedDomains);
     if (!domainCheck.allowed) {
       return corsResponse(
         NextResponse.json(
-          { error: `Unauthorized domain. This chatbot cannot be embedded on ${domainCheck.host}.` },
+          { error: `Unauthorized domain. This chatbot cannot be embedded on ${domainCheck.host || "this origin"}.` },
           { status: 403 }
         )
       );

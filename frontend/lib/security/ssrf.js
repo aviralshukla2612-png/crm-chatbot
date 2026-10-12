@@ -109,7 +109,8 @@ function isPrivateIPv6(ip) {
  * @returns {Promise<{ valid: boolean, error?: string, normalizedUrl?: string }>}
  */
 export async function validateUrlForSSRF(rawUrl, options = {}) {
-  const allowLocalhost = Boolean(options.allowLocalhost || process.env.NODE_ENV !== "production");
+  // Localhost is strictly blocked by default. Only permitted if explicitly set options.allowLocalhost === true
+  const allowLocalhost = options.allowLocalhost === true;
   if (!rawUrl || typeof rawUrl !== "string") {
     return { valid: false, error: "Please provide a valid website URL." };
   }
