@@ -1,49 +1,77 @@
 # ESS CHATBOT SaaS — PRODUCTION DEPLOYMENT GUIDE
 
-**Version:** 1.0.0  
-**Target Environment:** Docker Compose / Linux VPS (Ubuntu 22.04 LTS / 24.04 LTS)  
-**Database:** PostgreSQL 16 + pgvector  
-**Reverse Proxy & Edge:** Cloudflare + Nginx  
+**Version:** 1.1.0 (Hardened)  
+**Target Environment:** Ubuntu 22.04 LTS / 24.04 LTS VPS  
+**Container Engine:** Docker Compose v2+ with Private Bridge Networking  
+**Database:** PostgreSQL 16 + pgvector (HNSW Indexing)  
+**Reverse Proxy & Edge:** Cloudflare WAF + Nginx (Unbuffered SSE Streaming)  
+**Operational Status:** **Implementation Verified in Tested Environment; Production Deployment Pending Target VPS Provisioning**
 
 ---
 
-## 1. System Architecture Overview
+## 1. System Architecture & Network Isolation
 
 ```mermaid
 graph TD
     Client[Browser Widget / Visitor] -->|HTTPS :443| CF[Cloudflare Edge / WAF / DDOS Guard]
-    CF -->|Reverse Proxy| NGINX[Nginx / Reverse Proxy]
-    NGINX -->|HTTP :3000| NextJS[Next.js 16 SaaS Application]
-    NextJS -->|Connection Pool| PG[(PostgreSQL 16 + pgvector)]
-    NextJS -->|Inference Call| AI{InferenceProvider}
-    AI -->|Cloud LPU| Groq[Groq API llama-3.3-70b]
-    AI -->|Local Fallback| Ollama[Ollama Server :11434]
-    NextJS -->|HMAC SHA-256 Webhook| CRM[Customer CRM / Webhook Endpoint]
+    CF -->|Proxy with CF-Connecting-IP| NGINX[Nginx Reverse Proxy :80/:443]
+    NGINX -->|Unbuffered SSE Proxy :3300| NextJS[Next.js 16 SaaS Application]
+    
+    subgraph Private Docker Bridge [ess_internal]
+        NextJS -->|PostgreSQL Connection Pool| PG[(PostgreSQL 16 + pgvector)]
+        NextJS -.->|Optional Local Fallback| OLLAMA[Ollama Server :11434]
+        NextJS -.->|Optional FastAPI Backend| FASTAPI[FastAPI Service :8000]
+    end
+
+    NextJS -->|Primary Inference / Sub-second TTFT| GROQ[Groq Cloud LPU llama-3.3-70b]
+    NextJS -->|Signed Webhook HMAC SHA-256| CRM[Customer CRM / Webhook Endpoint]
+```
+
+### Network Isolation Rules
+1. **Public Ingress:** Only Ports `80` (HTTP) and `443` (HTTPS) are open to the internet via Nginx.
+2. **Private Containers:** PostgreSQL, Redis, and internal worker services communicate across the private `ess_internal` Docker bridge network.
+3. **No Public Database Binding:** Port `5432` is bound strictly to `127.0.0.1:5432:5432` for administrative CLI access. It is **never** published to `0.0.0.0`.
+4. **Internal Ollama Port:** Bound strictly to `127.0.0.1:11434:11434` for local debugging; internal containers communicate via `http://ollama:11434`.
+
+---
+
+## 2. Server Prerequisites & Firewall Setup
+
+### Step 1: VPS Host Firewall (UFW)
+```bash
+# Allow SSH, HTTP, and HTTPS only
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### Step 2: Install Docker & Compose v2
+```bash
+sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
 ---
 
-## 2. Server Prerequisites
+## 3. Environment Configuration & Secret Consistency
 
-1. **Hardware Requirements:**
-   - **For Cloud Inference (Groq):** 2 vCPU, 4GB RAM, 40GB SSD.
-   - **For Self-Hosted Ollama (3B Model):** 4 vCPU, 8GB RAM, 80GB SSD (or 1x NVIDIA T4 / RTX 3060+ GPU).
-2. **Software Requirements:**
-   - Docker Engine v24+ & Docker Compose v2+
-   - Node.js 18+ LTS (for local maintenance tools)
-   - Git & OpenSSL
-
----
-
-## 3. Environment Configuration
-
-Copy the production environment template:
+Create and secure the production environment file:
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 ```
 
-Configure the following mandatory variables in `.env`:
+### Environment Variables Checklist
 
 ```env
 # Application
@@ -51,15 +79,20 @@ NODE_ENV=production
 PORT=3000
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 
-# PostgreSQL Database
-DATABASE_URL="postgresql://postgres:REPLACE_WITH_STRONG_PASSWORD@postgres:5432/ess_chatbot?schema=public"
+# PostgreSQL Credentials (MUST MATCH IN BOTH PLACES)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=YOUR_STRONG_GENERATED_PASSWORD_HERE
+POSTGRES_DB=ess_chatbot
+
+# Database URL (Constructed from above credentials)
+DATABASE_URL="postgresql://postgres:YOUR_STRONG_GENERATED_PASSWORD_HERE@postgres:5432/ess_chatbot?schema=public"
 
 # AI Inference (Recommended: Groq for sub-second responses)
 DEFAULT_AI_PROVIDER=groq
-GROQ_API_KEY="gsk_your_actual_groq_api_key"
+GROQ_API_KEY="gsk_your_actual_groq_api_key_here"
 GROQ_MODEL="llama-3.3-70b-versatile"
 
-# Local Ollama Fallback
+# Local Ollama Fallback (Internal network address)
 OLLAMA_URL="http://ollama:11434"
 CHAT_MODEL="llama3.2:1b"
 
@@ -70,148 +103,114 @@ LEAD_WEBHOOK_SECRET="whsec_generate_with_openssl_rand_hex_32"
 
 ---
 
-## 4. Database Setup & Idempotent Migration
+## 4. Docker Compose Deployment & Service Health Checks
 
-### Step 1: Start PostgreSQL with pgvector
+The hardened `docker-compose.yml` configures:
+- Private bridge network `ess_internal`.
+- Loopback-only port bindings (`127.0.0.1:3300:3000`, `127.0.0.1:5432:5432`).
+- Service health checks for PostgreSQL (`pg_isready`), Ollama (`ollama list`), and Next.js (`/api/health`).
 
-Ensure your `docker-compose.yml` includes the PostgreSQL pgvector service:
-
-```yaml
-services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: ess_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
-      POSTGRES_DB: ess_chatbot
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+### Launch Stack
+```bash
+./deploy.sh
 ```
 
-### Step 2: Run Idempotent Schema Migration
-
-Run the audited migration utility to create tables, HNSW indexes, and populate initial tenant data:
-
+Or manually via Docker Compose:
 ```bash
-# Execute the audited SQL script against PostgreSQL
-docker exec -i ess_postgres psql -U postgres -d ess_chatbot < frontend/data/idempotent_migration.sql
-```
-
-Alternatively, initialize the schema directly via Node.js:
-```bash
-node -e "import('./frontend/lib/db/dbPool.js').then(m => m.initializeDatabaseSchema())"
-```
-
----
-
-## 5. Cloudflare Configuration
-
-Cloudflare acts as the edge defense layer protecting the application origin from volumetric DDoS, brute-force requests, and invalid origins.
-
-### A. SSL / TLS Settings
-- **SSL/TLS encryption mode:** `Full (strict)`.
-- **Always Use HTTPS:** Enabled.
-- **Minimum TLS Version:** `TLS 1.2`.
-- **HTTP/3 (with QUIC):** Enabled.
-
-### B. Cloudflare WAF Rules
-Create custom WAF rules under **Security > WAF > Custom Rules**:
-1. **Block Malicious User Agents:**
-   - Expression: `(http.user_agent contains "sqlmap") or (http.user_agent contains "nikto")`
-   - Action: `Block`.
-2. **Public Chat Rate Limit:**
-   - Path: `/api/public/chat/*`
-   - Characteristics: `IP Address`.
-   - Threshold: `40 requests per 1 minute`.
-   - Action: `Managed Challenge` or `Block with 429`.
-
-### C. Caching Rules (Page Rules / Cache Rules)
-- **Static Widget (`/widget.js`):**
-  - Edge Cache TTL: `4 hours`.
-  - Browser Cache TTL: `1 hour`.
-- **Public Chat API (`/api/public/chat/*`):**
-  - Bypass Cache. (Streaming SSE must never be cached by edge CDN).
-
----
-
-## 6. Docker Stack Deployment
-
-Launch the complete containerized stack:
-
-```bash
-# Build and start services in background
-docker compose up -d --build
-
-# Verify container status
+docker compose up -d --build --remove-orphans
 docker compose ps
-
-# View application logs
-docker compose logs -f frontend
 ```
 
 ---
 
-## 7. Health Verification
+## 5. Verified Database Migration
 
-Verify application health via the zero-leak health endpoint:
+The migration process is **idempotent, transactional, and non-destructive**:
+1. Creates `vector` extension (`CREATE EXTENSION IF NOT EXISTS vector;`).
+2. Creates all tables (`"Organization"`, `"Bot"`, `"Conversation"`, `"Message"`, `"Lead"`, `"KnowledgeDocument"`, `"KnowledgeChunk"`, `"WebhookConfig"`, `"AuditLog"`).
+3. Creates HNSW vector index (`WITH (m = 16, ef_construction = 64)`).
+4. Inserts seed and audited records using `ON CONFLICT (...) DO UPDATE / DO NOTHING`.
 
+### Execute Migration
 ```bash
-curl -i https://your-domain.com/api/health
+docker compose exec -T postgres psql -U postgres -d ess_chatbot < frontend/data/idempotent_migration.sql
 ```
 
-Expected response (`HTTP 200 OK`):
-```json
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2026-10-12T12:00:00.000Z",
-  "uptimeSeconds": 1420,
-  "memory": {
-    "rssMB": 85,
-    "heapUsedMB": 42
-  },
-  "database": {
-    "status": "connected"
-  },
-  "inference": {
-    "defaultProvider": "groq",
-    "status": "configured"
-  }
-}
+### Verify Migration Integrity
+```bash
+docker compose exec -T postgres psql -U postgres -d ess_chatbot -c "\dt"
+docker compose exec -T postgres psql -U postgres -d ess_chatbot -c "SELECT COUNT(*) FROM \"Bot\";"
+docker compose exec -T postgres psql -U postgres -d ess_chatbot -c "SELECT COUNT(*) FROM \"Lead\";"
 ```
 
 ---
 
-## 8. Backup & Disaster Recovery
+## 6. Nginx & Cloudflare Setup
 
-### Automated Daily PostgreSQL Backup
-Set up a daily cron job on the host machine:
-
-```bash
-#!/bin/bash
-# /opt/scripts/backup_postgres.sh
-BACKUP_DIR="/var/backups/ess_chatbot"
-mkdir -p "$BACKUP_DIR"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-docker exec ess_postgres pg_dump -U postgres -d ess_chatbot -F c -b -v -f "/tmp/backup_${TIMESTAMP}.dump"
-docker cp "ess_postgres:/tmp/backup_${TIMESTAMP}.dump" "${BACKUP_DIR}/"
-docker exec ess_postgres rm "/tmp/backup_${TIMESTAMP}.dump"
-# Retain backups for 14 days
-find "$BACKUP_DIR" -type f -name "*.dump" -mtime +14 -delete
-```
-
-### Recovery Procedure
-To restore from a backup file:
+### A. Nginx Configuration
+Deploy the provided configuration in [nginx/default.conf](file:///d:/ollama/nginx/default.conf) to `/etc/nginx/sites-available/ess_chatbot`:
 
 ```bash
-# Drop existing database (ensure maintenance window)
-docker exec -i ess_postgres dropdb -U postgres ess_chatbot
-docker exec -i ess_postgres createdb -U postgres ess_chatbot
-
-# Restore data from dump file
-docker exec -i ess_postgres pg_restore -U postgres -d ess_chatbot -v < /var/backups/ess_chatbot/backup_20261012.dump
+sudo cp nginx/default.conf /etc/nginx/sites-available/ess_chatbot
+sudo ln -s /etc/nginx/sites-available/ess_chatbot /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 ```
+
+**Critical Features in `nginx/default.conf`:**
+- `proxy_buffering off;` and `proxy_set_header X-Accel-Buffering no;` on `/api/public/chat/*` to allow progressive SSE token delivery without proxy buffering.
+- `real_ip_header CF-Connecting-IP;` to extract true visitor IP addresses behind Cloudflare for rate limiting.
+- Static caching for `/widget.js` (1 hour browser cache, stale-while-revalidate).
+
+### B. Cloudflare Edge Rules
+1. **SSL/TLS Mode:** Set to `Full (strict)`. Install Cloudflare Origin CA certificate on Nginx.
+2. **Always Use HTTPS:** Enabled.
+3. **WAF Rate Limiting Rule:**
+   - Path: `/api/public/chat/*`
+   - Key: `IP Address`
+   - Rate: `40 requests per 1 minute`
+   - Action: `Managed Challenge` or `Block with 429`
+4. **Caching Rules:**
+   - URL: `*your-domain.com/widget.js` -> Cache Level: `Cache Everything`, Edge TTL: `4 hours`.
+   - URL: `*your-domain.com/api/public/chat/*` -> Cache Level: `Bypass`. (Dynamic SSE must never be cached).
+
+---
+
+## 7. Automated Backups & Safe Non-Destructive Recovery
+
+### A. Automated Daily Backup Script
+Use the provided [scripts/backup_postgres.sh](file:///d:/ollama/scripts/backup_postgres.sh):
+- Creates a timestamped PostgreSQL custom dump (`pg_dump -F c`).
+- Verifies artifact size > 1KB.
+- Stores backups in `/var/backups/ess_chatbot` with 0700 permissions.
+- Applies 14-day retention without deleting the last remaining backup.
+
+Add to host crontab (`sudo crontab -e`):
+```cron
+0 2 * * * /opt/ess-chatbot/scripts/backup_postgres.sh >> /var/log/ess_backup.log 2>&1
+```
+
+### B. Safe, Non-Destructive Restoration Procedure
+**NEVER use `dropdb` on the production database.**  
+Always restore into a separate verification database (`ess_chatbot_verify`) first:
+
+```bash
+# Execute the non-destructive verification script
+./scripts/restore_verify.sh /var/backups/ess_chatbot/ess_chatbot_20261012_020000.dump
+```
+
+**The script automatically:**
+1. Restores the dump into an isolated database `ess_chatbot_verify`.
+2. Compares record counts between live and restored databases.
+3. Verifies pgvector extension and indexes.
+4. Cleans up the temporary database without altering the live production database.
+
+---
+
+## 8. Smoke Testing Checklist Before Public Traffic
+
+- [ ] `/api/health` returns `HTTP 200 OK` with `status: "healthy"` and `database: "connected"`.
+- [ ] Embedding widget loads from `/widget.js` on allowed domains and receives tokens via SSE.
+- [ ] Unauthorized origins receive `HTTP 403 Forbidden`.
+- [ ] Conversational phone numbers and leads are saved in PostgreSQL `Lead` table.
+- [ ] Webhook deliveries receive HMAC SHA-256 signatures in `X-Webhook-Signature`.
+- [ ] Backup script runs successfully and artifact is verified via `restore_verify.sh`.

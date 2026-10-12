@@ -1,3 +1,152 @@
+-- =========================================================
+-- ESS CHATBOT SaaS — COMPLETE POSTGRESQL & PGVECTOR MIGRATION
+-- Generated: 2026-10-12T09:17:44.131Z
+-- =========================================================
+BEGIN;
+
+-- 1. Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 2. Organizations Table
+CREATE TABLE IF NOT EXISTS "Organization" (
+  "id" VARCHAR(64) PRIMARY KEY,
+  "name" VARCHAR(255) NOT NULL,
+  "slug" VARCHAR(128) UNIQUE NOT NULL,
+  "plan" VARCHAR(64) DEFAULT 'Enterprise',
+  "status" VARCHAR(64) DEFAULT 'ACTIVE',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Bots Table
+CREATE TABLE IF NOT EXISTS "Bot" (
+  "id" VARCHAR(64) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "avatar" VARCHAR(32) DEFAULT '🤖',
+  "primaryColor" VARCHAR(32) DEFAULT '#4f46e5',
+  "status" VARCHAR(64) DEFAULT 'Active',
+  "systemPrompt" TEXT,
+  "welcomeMessage" TEXT DEFAULT 'Hello! How can I help you today?',
+  "launcherPosition" VARCHAR(32) DEFAULT 'bottom-right',
+  "brandingEnabled" BOOLEAN DEFAULT TRUE,
+  "allowedDomains" TEXT[] DEFAULT ARRAY['*']::TEXT[],
+  "webhookUrl" TEXT,
+  "webhookSecret" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Conversations Table
+CREATE TABLE IF NOT EXISTS "Conversation" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "visitorName" VARCHAR(255) DEFAULT 'Website Visitor',
+  "visitorEmail" VARCHAR(255),
+  "visitorPhone" VARCHAR(64),
+  "visitorLocation" VARCHAR(128),
+  "status" VARCHAR(64) DEFAULT 'Active',
+  "isLead" BOOLEAN DEFAULT FALSE,
+  "leadScore" VARCHAR(32),
+  "lastMessage" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Messages Table
+CREATE TABLE IF NOT EXISTS "Message" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "conversationId" VARCHAR(128) NOT NULL REFERENCES "Conversation"("id") ON DELETE CASCADE,
+  "role" VARCHAR(32) NOT NULL,
+  "content" TEXT NOT NULL,
+  "tokens" INT,
+  "latencyMs" INT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. Leads Table
+CREATE TABLE IF NOT EXISTS "Lead" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "email" VARCHAR(255),
+  "phone" VARCHAR(64),
+  "company" VARCHAR(255) DEFAULT 'Direct Inbound',
+  "score" VARCHAR(32) DEFAULT 'Medium',
+  "status" VARCHAR(64) DEFAULT 'New',
+  "inquiry" TEXT,
+  "budget" VARCHAR(64) DEFAULT '₹50,000+',
+  "source" VARCHAR(128) DEFAULT 'Web Chatbot Widget',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Knowledge Documents Table
+CREATE TABLE IF NOT EXISTS "KnowledgeDocument" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "type" VARCHAR(32) DEFAULT 'PDF',
+  "sizeBytes" INT DEFAULT 0,
+  "status" VARCHAR(64) DEFAULT 'Ready',
+  "chunksCount" INT DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Knowledge Chunks Table (with Vector(768))
+CREATE TABLE IF NOT EXISTS "KnowledgeChunk" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "documentId" VARCHAR(128) NOT NULL REFERENCES "KnowledgeDocument"("id") ON DELETE CASCADE,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "chunkIndex" INT DEFAULT 0,
+  "content" TEXT NOT NULL,
+  "contentHash" VARCHAR(64),
+  "embedding" VECTOR(768),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. Webhook Config Table
+CREATE TABLE IF NOT EXISTS "WebhookConfig" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "url" TEXT NOT NULL,
+  "secret" TEXT NOT NULL,
+  "events" TEXT[] DEFAULT ARRAY['lead_captured']::TEXT[],
+  "isActive" BOOLEAN DEFAULT TRUE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Audit Log Table
+CREATE TABLE IF NOT EXISTS "AuditLog" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "userId" VARCHAR(64),
+  "action" VARCHAR(128) NOT NULL,
+  "resourceType" VARCHAR(64) NOT NULL,
+  "resourceId" VARCHAR(128) NOT NULL,
+  "ipAddress" VARCHAR(64),
+  "metadata" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance & vector search
+CREATE INDEX IF NOT EXISTS idx_bot_org ON "Bot" ("organizationId");
+CREATE INDEX IF NOT EXISTS idx_conversation_tenant ON "Conversation" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_lead_tenant ON "Lead" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_document_tenant ON "KnowledgeDocument" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_chunk_tenant ON "KnowledgeChunk" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_hnsw 
+ON "KnowledgeChunk" USING hnsw ("embedding" vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
 -- Organization & Bot: aa (bot_aa)
 INSERT INTO "Organization" ("id", "name", "slug", "plan", "status", "createdAt", "updatedAt")
 VALUES ('org_default', 'Emperor Smart Solutions', 'org-bot_aa', 'Enterprise', 'ACTIVE', NOW(), NOW())
@@ -102,3 +251,5 @@ ON CONFLICT ("id") DO NOTHING;
 INSERT INTO "Conversation" ("id", "organizationId", "botId", "visitorName", "visitorEmail", "visitorPhone", "status", "isLead", "lastMessage", "createdAt", "updatedAt")
 VALUES ('c_seed_01', 'org_default', 'bot_aa', 'Acme Logistics Inquiry', 'contact@acmelogistics.com', '+91 98765 43210', 'Active', true, 'Can we schedule a live demo of the ERP integration modules?', NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
+
+COMMIT;

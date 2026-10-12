@@ -1,7 +1,8 @@
 /**
  * Production Database Migration Utility (JSON -> PostgreSQL)
  * Idempotently migrates all existing JSON file records into PostgreSQL tables
- * with full validation, relationship preservation, and error reporting.
+ * with full DDL table creation, pgvector HNSW indexing, relationship preservation,
+ * and auditable verification.
  */
 
 import fs from "fs";
@@ -29,6 +30,158 @@ export function auditAndMigrateJsonData() {
     sqlStatements: [],
     errors: [],
   };
+
+  // Header and DDL setup
+  report.sqlStatements.push(`
+-- =========================================================
+-- ESS CHATBOT SaaS — COMPLETE POSTGRESQL & PGVECTOR MIGRATION
+-- Generated: ${new Date().toISOString()}
+-- =========================================================
+BEGIN;
+
+-- 1. Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 2. Organizations Table
+CREATE TABLE IF NOT EXISTS "Organization" (
+  "id" VARCHAR(64) PRIMARY KEY,
+  "name" VARCHAR(255) NOT NULL,
+  "slug" VARCHAR(128) UNIQUE NOT NULL,
+  "plan" VARCHAR(64) DEFAULT 'Enterprise',
+  "status" VARCHAR(64) DEFAULT 'ACTIVE',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Bots Table
+CREATE TABLE IF NOT EXISTS "Bot" (
+  "id" VARCHAR(64) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "avatar" VARCHAR(32) DEFAULT '🤖',
+  "primaryColor" VARCHAR(32) DEFAULT '#4f46e5',
+  "status" VARCHAR(64) DEFAULT 'Active',
+  "systemPrompt" TEXT,
+  "welcomeMessage" TEXT DEFAULT 'Hello! How can I help you today?',
+  "launcherPosition" VARCHAR(32) DEFAULT 'bottom-right',
+  "brandingEnabled" BOOLEAN DEFAULT TRUE,
+  "allowedDomains" TEXT[] DEFAULT ARRAY['*']::TEXT[],
+  "webhookUrl" TEXT,
+  "webhookSecret" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Conversations Table
+CREATE TABLE IF NOT EXISTS "Conversation" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "visitorName" VARCHAR(255) DEFAULT 'Website Visitor',
+  "visitorEmail" VARCHAR(255),
+  "visitorPhone" VARCHAR(64),
+  "visitorLocation" VARCHAR(128),
+  "status" VARCHAR(64) DEFAULT 'Active',
+  "isLead" BOOLEAN DEFAULT FALSE,
+  "leadScore" VARCHAR(32),
+  "lastMessage" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Messages Table
+CREATE TABLE IF NOT EXISTS "Message" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "conversationId" VARCHAR(128) NOT NULL REFERENCES "Conversation"("id") ON DELETE CASCADE,
+  "role" VARCHAR(32) NOT NULL,
+  "content" TEXT NOT NULL,
+  "tokens" INT,
+  "latencyMs" INT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. Leads Table
+CREATE TABLE IF NOT EXISTS "Lead" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "email" VARCHAR(255),
+  "phone" VARCHAR(64),
+  "company" VARCHAR(255) DEFAULT 'Direct Inbound',
+  "score" VARCHAR(32) DEFAULT 'Medium',
+  "status" VARCHAR(64) DEFAULT 'New',
+  "inquiry" TEXT,
+  "budget" VARCHAR(64) DEFAULT '₹50,000+',
+  "source" VARCHAR(128) DEFAULT 'Web Chatbot Widget',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Knowledge Documents Table
+CREATE TABLE IF NOT EXISTS "KnowledgeDocument" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "name" VARCHAR(255) NOT NULL,
+  "type" VARCHAR(32) DEFAULT 'PDF',
+  "sizeBytes" INT DEFAULT 0,
+  "status" VARCHAR(64) DEFAULT 'Ready',
+  "chunksCount" INT DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Knowledge Chunks Table (with Vector(768))
+CREATE TABLE IF NOT EXISTS "KnowledgeChunk" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "documentId" VARCHAR(128) NOT NULL REFERENCES "KnowledgeDocument"("id") ON DELETE CASCADE,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "chunkIndex" INT DEFAULT 0,
+  "content" TEXT NOT NULL,
+  "contentHash" VARCHAR(64),
+  "embedding" VECTOR(768),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. Webhook Config Table
+CREATE TABLE IF NOT EXISTS "WebhookConfig" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+  "url" TEXT NOT NULL,
+  "secret" TEXT NOT NULL,
+  "events" TEXT[] DEFAULT ARRAY['lead_captured']::TEXT[],
+  "isActive" BOOLEAN DEFAULT TRUE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Audit Log Table
+CREATE TABLE IF NOT EXISTS "AuditLog" (
+  "id" VARCHAR(128) PRIMARY KEY,
+  "organizationId" VARCHAR(64) NOT NULL,
+  "userId" VARCHAR(64),
+  "action" VARCHAR(128) NOT NULL,
+  "resourceType" VARCHAR(64) NOT NULL,
+  "resourceId" VARCHAR(128) NOT NULL,
+  "ipAddress" VARCHAR(64),
+  "metadata" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance & vector search
+CREATE INDEX IF NOT EXISTS idx_bot_org ON "Bot" ("organizationId");
+CREATE INDEX IF NOT EXISTS idx_conversation_tenant ON "Conversation" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_lead_tenant ON "Lead" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_document_tenant ON "KnowledgeDocument" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_chunk_tenant ON "KnowledgeChunk" ("organizationId", "botId");
+CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_hnsw 
+ON "KnowledgeChunk" USING hnsw ("embedding" vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+`.trim());
 
   // 1. Audit and Migrate Bots
   const botsFile = findDataFile("bots.json");
@@ -143,13 +296,15 @@ ON CONFLICT ("id") DO NOTHING;
     }
   }
 
+  // Finalize transaction
+  report.sqlStatements.push("COMMIT;");
+
   // Write out idempotent migration SQL file
   const outSqlPath = path.join(process.cwd(), "frontend", "data", "idempotent_migration.sql");
   try {
     fs.writeFileSync(outSqlPath, report.sqlStatements.join("\n\n"), "utf8");
     report.outputSqlPath = outSqlPath;
   } catch (e) {
-    // If running in frontend dir
     fs.writeFileSync(path.join(process.cwd(), "data", "idempotent_migration.sql"), report.sqlStatements.join("\n\n"), "utf8");
   }
 
@@ -157,7 +312,7 @@ ON CONFLICT ("id") DO NOTHING;
   console.log(`✅ Audited Leads: ${report.leads.valid}/${report.leads.read} valid.`);
   console.log(`✅ Audited Documents: ${report.documents.valid}/${report.documents.read} valid.`);
   console.log(`✅ Audited Conversations: ${report.conversations.valid}/${report.conversations.read} valid.`);
-  console.log(`📄 Generated Idempotent SQL: ${report.sqlStatements.length} operations.`);
+  console.log(`📄 Generated Complete Idempotent SQL: ${report.sqlStatements.length} operations.`);
   return report;
 }
 

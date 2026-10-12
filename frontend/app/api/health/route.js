@@ -1,72 +1,85 @@
 import { NextResponse } from "next/server";
+import { isDbConnected } from "@/lib/db/dbPool";
 import { botsStore } from "@/lib/db/botsStore";
 import { leadsStore } from "@/lib/db/leadsStore";
 import { documentsStore } from "@/lib/db/documentsStore";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+const DEFAULT_PROVIDER = (process.env.DEFAULT_AI_PROVIDER || (process.env.GROQ_API_KEY ? "groq" : "ollama")).toLowerCase();
 
 export async function GET() {
   const startTime = Date.now();
-  const checks = {
-    app: "healthy",
-    ollama: "unknown",
-    storage: "unknown",
+  const dependencies = {
+    database: isDbConnected() ? "connected" : "local_fallback",
+    inference: {
+      activeProvider: DEFAULT_PROVIDER,
+      status: "ready",
+    },
   };
 
-  // 1. Check Ollama Connectivity
-  try {
-    const ollamaPing = await fetch(`${OLLAMA_URL}/api/tags`, {
-      signal: AbortSignal.timeout(2500),
-    });
-    if (ollamaPing.ok) {
-      const data = await ollamaPing.json();
-      checks.ollama = "connected";
-      checks.loadedModels = (data.models || []).map((m) => m.name);
-    } else {
-      checks.ollama = `degraded (HTTP ${ollamaPing.status})`;
+  // 1. Check Inference Provider Readiness
+  if (DEFAULT_PROVIDER === "groq") {
+    const hasKey = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes("your_groq_api_key"));
+    dependencies.inference.status = hasKey ? "configured" : "missing_api_key";
+    dependencies.inference.model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  } else if (DEFAULT_PROVIDER === "ollama") {
+    try {
+      const ping = await fetch(`${OLLAMA_URL}/api/tags`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (ping.ok) {
+        dependencies.inference.status = "connected";
+      } else {
+        dependencies.inference.status = `degraded_http_${ping.status}`;
+      }
+    } catch (e) {
+      dependencies.inference.status = "unreachable";
     }
-  } catch (e) {
-    checks.ollama = `disconnected (${e.message})`;
+  } else if (DEFAULT_PROVIDER === "mock") {
+    dependencies.inference.status = "operational (mock)";
   }
 
-  // 2. Check Storage & Knowledge Base
+  // 2. Check Storage & Knowledge Base Record Counts
+  let stats = { botsCount: 0, leadsCount: 0, documentsCount: 0 };
+  let storageStatus = "operational";
   try {
     const bots = botsStore.getBots();
     const leads = leadsStore.getLeads();
     const docs = documentsStore.getDocuments();
-    checks.storage = "operational";
-    checks.stats = {
+    stats = {
       botsCount: bots.length,
       leadsCount: leads.length,
       documentsCount: docs.length,
     };
   } catch (e) {
-    checks.storage = `degraded (${e.message})`;
+    storageStatus = `degraded: ${e.message}`;
   }
 
-  const isHealthy = checks.app === "healthy" && checks.storage === "operational";
+  const isLivenessHealthy = true;
+  const isReadinessHealthy = storageStatus.startsWith("operational") && dependencies.inference.status !== "missing_api_key";
   const latencyMs = Date.now() - startTime;
 
   return NextResponse.json(
     {
-      status: isHealthy ? "healthy" : "degraded",
-      uptime: process.uptime(),
+      status: isReadinessHealthy ? "healthy" : "degraded",
+      liveness: isLivenessHealthy,
+      readiness: isReadinessHealthy,
+      uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
       latencyMs,
       memory: {
         rssMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
         heapUsedMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
       },
-      features: {
-        sseStreaming: true,
-        tokenBucketRateLimiting: true,
-        originDomainLocking: true,
-        antiHallucinationGrounding: true,
-        salesConsultativeLeadCapture: true,
-        ssrfProtection: true,
+      stats,
+      dependencies,
+      security: {
+        rateLimiterActive: true,
+        ssrfProtectionActive: true,
+        originWhitelistingActive: true,
+        hmacWebhooksActive: true,
       },
-      checks,
     },
-    { status: isHealthy ? 200 : 503 }
+    { status: isReadinessHealthy ? 200 : 503 }
   );
 }

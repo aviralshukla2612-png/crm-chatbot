@@ -1,85 +1,117 @@
-name: ollama-stack
+name: ess-chatbot-stack
+
+networks:
+  ess_internal:
+    driver: bridge
 
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: nexus-frontend
+    container_name: ess-frontend
     restart: unless-stopped
     ports:
-      - "3300:3000"
+      # Expose on host port 3300 for reverse proxy (Nginx) connection
+      - "127.0.0.1:3300:3000"
     environment:
       - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-ess_chatbot}?schema=public
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
       - OLLAMA_URL=http://ollama:11434
       - CHAT_MODEL=${CHAT_MODEL:-llama3.2:1b}
+      - LEAD_WEBHOOK_URL=${LEAD_WEBHOOK_URL:-}
+      - LEAD_WEBHOOK_SECRET=${LEAD_WEBHOOK_SECRET:-}
     volumes:
       - ./frontend/data:/app/data
+    networks:
+      - ess_internal
     depends_on:
-      - fastapi
-      - ollama
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ess-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ess_chatbot}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    networks:
+      - ess_internal
+    ports:
+      # Bound strictly to loopback interface for administrative CLI access; never exposed publicly
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ess_chatbot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ess-ollama
+    restart: unless-stopped
+    networks:
+      - ess_internal
+    ports:
+      # Bound strictly to loopback for host debugging; internal containers reach via http://ollama:11434
+      - "127.0.0.1:11434:11434"
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=2
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   fastapi:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fastapi-rag
+    container_name: ess-fastapi-rag
     restart: unless-stopped
+    networks:
+      - ess_internal
     ports:
-      - "8008:8000"
+      - "127.0.0.1:8008:8000"
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=rag_db
-      - DB_USER=postgres
-      - DB_PASS=postgrespassword
+      - DB_NAME=${POSTGRES_DB:-ess_chatbot}
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASS=${POSTGRES_PASSWORD:-postgrespassword}
       - OLLAMA_URL=http://ollama:11434
-      - LLM_MODEL=${LLM_MODEL:-qwen2.5:3b}
+      - LLM_MODEL=${CHAT_MODEL:-llama3.2:1b}
       - EMBED_MODEL=nomic-embed-text
     volumes:
       - ./app:/app
     depends_on:
-      - postgres
-      - ollama
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: postgres-vector
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: rag_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-    volumes:
-      - pgvector_data:/var/lib/postgresql/data
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    environment:
-      - OLLAMA_MAX_LOADED_MODELS=3
-      - OLLAMA_KEEP_ALIVE=24h
-      - OLLAMA_NUM_PARALLEL=2
-    volumes:
-      - ollama_data:/root/.ollama
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    ports:
-      - "3880:8080"
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-    volumes:
-      - open-webui_data:/app/backend/data
-    depends_on:
-      - ollama
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
 
 volumes:
-  open-webui_data:
   pgvector_data:
   ollama_data:
