@@ -273,11 +273,21 @@ export async function POST(request, { params }) {
       /\b(?:[1-9]k|[1-4]\d\s*k|[1-9]\d{2,4})\b/i.test(message) &&
       /\b(?:budget|only|have|afford|pay|give|price|cost|rs|inr|rupees)\b/i.test(message);
 
-    const isCompanyPersonQuery = /\b(founder|co-founder|founder's|ceo|cto|owner|leader|team|yash|karan|sharma|makwana|emperor|ess)\b/i.test(message);
+    const isExternalEntityQuery =
+      /\b(?:owner|founder|co-founder|ceo|cto|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)/i.test(message) ||
+      /\b(?:mahindra|tata|reliance|adani|google|microsoft|apple|amazon|facebook|meta|tesla|netflix|infosys|tcs|wipro|twitter|openai|nvidia|flipkart|zomato|swiggy|bjp|congress)\b/i.test(message);
+
+    const isEssLeadershipQuery =
+      !isExternalEntityQuery &&
+      (/\b(?:who\s+(?:is|are)\s+(?:the\s+)?(?:founder|co-founder|founder's|ceo|cto|owner|leader|team)\b)/i.test(message) ||
+       /\b(?:yash\s+sharma|karan\s+makwana)\b/i.test(message) ||
+       /\b(?:founder|co-founder|owner|ceo|cto)\s+of\s+(?:ess|emperor)/i.test(message));
+
     const isCelebrityOrTriviaQuery =
-      (/\bwho (?:is|was)\b/i.test(message) && !isCompanyPersonQuery) ||
-      /\b(?:salman khan|shah\s*rukh|srk|aamir khan|akshay|deepika|katrina|alia|virat kohli|dhoni|rohit sharma|messi|ronaldo)\b/i.test(message) ||
-      /\b(?:recipe for|how to cook|how to bake|movie review|box office|song lyrics)\b/i.test(message);
+      isExternalEntityQuery ||
+      (/\bwho (?:is|was|are|were)\b/i.test(message) && !isEssLeadershipQuery) ||
+      /\b(?:salman khan|shah\s*rukh|srk|aamir khan|akshay|deepika|katrina|alia|virat kohli|dhoni|rohit sharma|messi|ronaldo|elon musk|sundar pichai|mukesh ambani|ratan tata|anand mahindra|bill gates|steve jobs|mark zuckerberg)\b/i.test(message) ||
+      /\b(?:recipe for|how to cook|how to bake|movie review|box office|song lyrics|capital of|weather in|tell me a joke)\b/i.test(message);
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
@@ -304,7 +314,14 @@ export async function POST(request, { params }) {
       }
       deterministicReply = `Your first message was:\n\n"${firstUserMsg}"`;
     } else if (isCelebrityOrTriviaQuery) {
-      deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide celebrity or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+      deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+    } else if (isEssLeadershipQuery) {
+      deterministicReply = `The founders and leadership of Emperor Smart Solutions (ESS) are:
+
+1. **Yash Sharma** — Founder
+2. **Karan Makwana** — Co-Founder
+
+Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : "\n\nCould you please share your **Phone Number (or WhatsApp)** so our technical specialists can connect with you directly to explore your options?")
