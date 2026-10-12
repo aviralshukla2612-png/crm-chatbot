@@ -254,6 +254,7 @@ export async function POST(request, { params }) {
           const leadDetails = extractLeadDetails(message, sessionHistory);
           if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
             const leadData = {
+              botId: bot?.id || "bot_aa",
               name: visitor.name || leadDetails.name,
               email: visitor.email || leadDetails.email,
               phone: visitor.phone || leadDetails.phone,
@@ -299,6 +300,7 @@ export async function POST(request, { params }) {
     const leadDetails = extractLeadDetails(message, sessionHistory);
     if (leadDetails.hasLeadData || visitor.email || visitor.phone) {
       const leadData = {
+        botId: bot?.id || "bot_aa",
         name: visitor.name || leadDetails.name,
         email: visitor.email || leadDetails.email,
         phone: visitor.phone || leadDetails.phone,

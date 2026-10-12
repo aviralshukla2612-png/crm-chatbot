@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { sseBroker } from "./sseBroker.js";
+import { queryDb } from "./dbPool.js";
 
 function resolveDataFile() {
   const frontendPath = path.join(process.cwd(), "frontend", "data", "leads.json");
@@ -125,6 +126,15 @@ export const leadsStore = {
       existing.updatedAt = now.toISOString();
       saveToDisk(list);
       sseBroker.broadcast("lead_updated", existing);
+
+      // Async write to PostgreSQL
+      try {
+        queryDb(
+          `UPDATE "Lead" SET "name" = $1, "phone" = $2, "email" = $3, "score" = $4, "inquiry" = $5, "updatedAt" = NOW() WHERE "id" = $6 OR "email" = $7`,
+          [existing.name, existing.phone, existing.email, existing.score, existing.inquiry, existing.id, existing.email]
+        ).catch((err) => console.warn("[DB_LEAD_UPDATE_FAIL]", err.message));
+      } catch (e) {}
+
       return existing;
     }
 
@@ -155,6 +165,32 @@ export const leadsStore = {
     // Broadcast lead in real-time
     sseBroker.broadcast("lead_created", newLead);
 
+    // Async dual-write to PostgreSQL
+    try {
+      const targetBotId = (data.bot === "aa" || !data.botId) ? "bot_aa" : (data.botId || data.bot);
+      queryDb(
+        `INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name", "email" = EXCLUDED."email", "phone" = EXCLUDED."phone", "updatedAt" = NOW()`,
+        [
+          newLead.id,
+          "org_default",
+          targetBotId,
+          newLead.name,
+          newLead.email,
+          newLead.phone,
+          newLead.company,
+          newLead.score,
+          newLead.status,
+          newLead.inquiry,
+          newLead.budget,
+          newLead.source,
+          newLead.createdAt,
+          newLead.updatedAt,
+        ]
+      ).catch((err) => console.warn("[DB_LEAD_INSERT_FAIL]", err.message));
+    } catch (e) {}
+
     return newLead;
   },
 
@@ -168,6 +204,12 @@ export const leadsStore = {
     saveToDisk(list);
 
     sseBroker.broadcast("lead_updated", lead);
+
+    try {
+      queryDb('UPDATE "Lead" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2', [newStatus, id])
+        .catch((err) => console.warn("[DB_LEAD_STATUS_FAIL]", err.message));
+    } catch (e) {}
+
     return lead;
   },
 
@@ -176,6 +218,12 @@ export const leadsStore = {
     const filtered = list.filter((l) => l.id !== id);
     saveToDisk(filtered);
     sseBroker.broadcast("lead_deleted", { id });
+
+    try {
+      queryDb('DELETE FROM "Lead" WHERE "id" = $1', [id])
+        .catch((err) => console.warn("[DB_LEAD_DELETE_FAIL]", err.message));
+    } catch (e) {}
+
     return { success: true };
   },
 
