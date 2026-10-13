@@ -1,5 +1,31 @@
 [
   {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "06:25 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T12:55:13.908Z",
+    "updatedAt": "2026-10-13T12:55:13.908Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
     "id": "test_session_1791895067323",
     "visitorName": "Karan",
     "visitorEmail": "",

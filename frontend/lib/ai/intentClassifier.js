@@ -52,6 +52,12 @@ const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
   /\b(?:weather\s+today|temperature\s+in|today'?s\s+weather|todays\s+news|stock\s+market|crypto\s+price|bitcoin\s+rate|gold\s+rate|headache|fever|medicine|prescription|doctor\s+consultation|symptom|legal\s+advice|court|lawyer|sue|lawsuit)\b/i,
   // Off-topic A or B dilemmas (e.g. "love or lust", "tea or coffee", "cat or dog")
   /^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i,
+  // Consumer hardware, gadget comparisons & purchasing advice (e.g. "does laptop is better than phone", "laptop vs phone")
+  /\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone)\b.*\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b/i,
+  /\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b.*\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone|phone)\b/i,
+  /\b(?:is|does|which\s+is)\s+[a-z\s]+\s+better\s+than\s+[a-z\s]+/i,
+  /\b(?:which\s+(?:is|one\s+is)\s+better)\b/i,
+  /\b(?:should\s+i\s+buy|which\s+(?:phone|laptop|car|bike|tv|gadget)\s+(?:should|to)\s+buy)\b/i,
 ];
 
 // Legitimate security & technical question markers (to prevent false-positive UNSAFE triggers)

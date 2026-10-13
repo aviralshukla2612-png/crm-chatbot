@@ -97,3 +97,11 @@ test("IntentClassifier - classifies 'tea or coffee' as OUT_OF_SCOPE with REFUSE"
   assert.equal(result.action, "REFUSE");
 });
 
+test("IntentClassifier - classifies 'does laptop is better than phone' as OUT_OF_SCOPE with REFUSE", () => {
+  const result = classifyMessageIntent({ message: "does laptop is better than phone" });
+  assert.equal(result.intent, "OUT_OF_SCOPE");
+  assert.equal(result.action, "REFUSE");
+  assert.ok(result.refusalReply);
+  assert.match(result.refusalReply, /I am the official AI Sales Consultant for Emperor Smart Solutions/i);
+});
+

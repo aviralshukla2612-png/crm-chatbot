@@ -399,8 +399,11 @@ export async function POST(request, { params }) {
       !isOfferingToShareContact &&
       !isSavedUserDetailsQuery &&
       !/\b(?:my\s+(?:name|number|phone|contact|details|email))\b/i.test(message) &&
-      /\b(?:c?o[in]*tact|cont[ae]ct|dertails?|details?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|pata)\b/i.test(message) &&
-      (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company|chahiye|chaiye|vchaiye|mangta|batao|dedo|de\s*do|bhejo|kahan|kidhar|kaha|kya\s+hai)\b/i.test(message) || message.trim().length <= 35);
+      !/\b(?:laptop|desktop|pc|computer|tablet|ipad|better\s+than|worse\s+than|vs\.?|versus|compare)\b/i.test(message) &&
+      (/\b(?:c?o[in]*tact\s*(?:details?|number|info|us)?|cont[ae]ct|head\s*office|office\s*(?:address|location)|phone\s*number|whatsapp\s*number|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|office\s*kahan\s*hai)\b/i.test(message) ||
+       /^(?:contact|phone\s*number|call|whatsapp|email|address|office|location|details)$/i.test(message.trim()) ||
+       (/\b(?:phone|whatsapp|email|address|office|location)\b/i.test(message) &&
+        /\b(?:give|tell|what|share|show|provide|how\s+to|where|send|ess|emperor|your|company|chahiye|chaiye|vchaiye|mangta|batao|dedo|de\s*do|bhejo|kahan|kidhar|kaha|kya\s+hai)\b/i.test(message)));
 
     const isLanguageSwitchQuery =
       !hasTechnicalKeywords &&
@@ -527,8 +530,13 @@ export async function POST(request, { params }) {
       /\b(?:weather|temperature|news|headlines|stock\s+market|crypto\s+price|bitcoin\s+rate|gold\s+rate|headache|fever|medicine|prescription|doctor\s+consultation|symptom|legal\s+advice|court|lawyer|sue|lawsuit)\b/i.test(message);
 
     const isOffTopicDilemma =
-      /^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i.test(message.trim()) &&
-      !/\b(?:web|website|app|mobile|android|ios|flutter|react|native|next\.?js|node|python|ai|bot|chatbot|saas|software|ecommerce|cloud|devops|design|redesign|new|existing|fixed|hourly|sprint|timeline|budget|inr|usd|yes|no)\b/i.test(message);
+      (/^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i.test(message.trim()) ||
+       /\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone)\b.*\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b/i.test(message) ||
+       /\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b.*\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone|phone)\b/i.test(message) ||
+       /\b(?:is|does|which\s+is)\s+[a-z\s]+\s+better\s+than\s+[a-z\s]+/i.test(message) ||
+       /\b(?:which\s+(?:is|one\s+is)\s+better)\b/i.test(message) ||
+       /\b(?:should\s+i\s+buy|which\s+(?:phone|laptop|car|bike|tv|gadget)\s+(?:should|to)\s+buy)\b/i.test(message)) &&
+      !/\b(?:web|website|app|mobile|android|ios|flutter|react|native|next\.?js|node|python|ai|bot|chatbot|saas|software|ecommerce|cloud|devops|design|redesign|new|existing|fixed|hourly|sprint|timeline|budget|inr|usd|yes|no)\b/i.test(message.replace(/\b(?:laptop|phone|computer|pc)\b/gi, ""));
 
     const isEntertainmentOrTrivia =
       /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
