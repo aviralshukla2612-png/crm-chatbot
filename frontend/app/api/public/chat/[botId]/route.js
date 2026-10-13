@@ -293,8 +293,8 @@ export async function POST(request, { params }) {
       .join("\n\n");
 
     // 5. Step 5: Extract lead details and resolve visitor identity
-    const currentMsgLead = extractLeadDetails(message, []);
-    const sessionLead = extractLeadDetails(message, sessionHistory);
+    const currentMsgLead = extractLeadDetails(message, sessionHistory);
+    const sessionLead = currentMsgLead;
     const leadDetails = sessionLead;
 
     const isCompanyEmail = (em) =>

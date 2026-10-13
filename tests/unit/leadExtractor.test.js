@@ -50,6 +50,15 @@ test("LeadExtractor - extracts standalone name when assistant previously asked f
   assert.equal(result.name, "Aviral Shukla");
 });
 
+test("LeadExtractor - extracts single-word name 'aviral' when assistant previously asked for name", () => {
+  const history = [
+    { role: "assistant", content: "Hello! Welcome to Emperor Smart Solutions. May I know your name so I can assist you better and personalize our conversation?" }
+  ];
+  const result = extractLeadDetails("aviral", history);
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Aviral");
+});
+
 test("LeadExtractor - extracts name and typo phone from 'sure here it is my name karan &nunmber is 66666666666'", () => {
   const result = extractLeadDetails("sure here it is my name karan &nunmber is 66666666666");
   assert.equal(result.hasLeadData, true);

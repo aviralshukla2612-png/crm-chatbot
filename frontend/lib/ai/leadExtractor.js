@@ -183,13 +183,23 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // Check if current message or any recent turn is a standalone 2-3 word person name
+  const lastAssistantMsg = [...history].reverse().find((m) => typeof m === "object" && m.role === "assistant")?.content || "";
+  const wasAskedForName =
+    /\b(?:name|naam|may\s+i\s+know\s+your\s+name|share\s+your\s+name|apna\s+name|know\s+your\s+name|who\s+are\s+you)\b/i.test(lastAssistantMsg) ||
+    lastAssistantMsg.includes("May I know your name") ||
+    lastAssistantMsg.includes("अपना नाम") ||
+    lastAssistantMsg.includes("apna Name");
+
+  // Check if current message or any recent turn is a standalone 1-3 word person name
   if (!name) {
     for (const text of recentTexts.slice().reverse()) {
       const clean = text.trim().replace(/[.,:;!?&]+$/, "").trim();
       const words = clean.split(/\s+/).filter(Boolean);
-      if (words.length >= 2 && words.length <= 3 && isValidPersonName(clean)) {
-        name = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      if (words.length >= 1 && words.length <= 3 && isValidPersonName(clean)) {
+        if (words.length === 1 && !wasAskedForName && clean === clean.toLowerCase() && clean.length < 3) {
+          continue;
+        }
+        name = words.map((w) => w.includes(".") ? (w.charAt(0).toUpperCase() + w.slice(1)) : (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())).join(" ");
         break;
       }
     }
