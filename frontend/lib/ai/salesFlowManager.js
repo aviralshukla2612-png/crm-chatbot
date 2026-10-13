@@ -809,14 +809,14 @@ export function detectServiceIntent(message = "", currentService = null) {
     return "cloud_devops";
   }
 
+  // Mobile App Intent
+  if (/\b(?:mobile\s*app|ios\s*app|android\s*app|flutter\s*app|react\s*native|build\s*an?\s*app|app\s*development|mobile\s*application|app\s+for|want\s+(?:an?\s+)?app|need\s+(?:an?\s+)?app|application\s+for|school\s*management\s*app)\b/i.test(clean)) {
+    return "mobile_app";
+  }
+
   // Custom Software & ERP Intent
   if (/\b(?:custom\s*software|erp|crm|inventory\s*software|billing\s*software|management\s*system|custom\s*software\s*&\s*erp|software\s*development|school\s*management|college\s*management|hospital\s*management|management\s*software)\b/i.test(clean)) {
     return "custom_software";
-  }
-
-  // Mobile App Intent
-  if (/\b(?:mobile\s*app|ios\s*app|android\s*app|flutter\s*app|react\s*native|build\s*an?\s*app|app\s*development|mobile\s*application|app\s+for|want\s+(?:an?\s+)?app|need\s+(?:an?\s+)?app|application\s+for)\b/i.test(clean)) {
-    return "mobile_app";
   }
 
   // AI Chatbot Intent
@@ -824,8 +824,8 @@ export function detectServiceIntent(message = "", currentService = null) {
     return "ai_chatbot";
   }
 
-  // Website Intent
-  if (/\b(?:website|web\s*site|web\s*portal|web\s*page|landing\s*page|e-?commerce\s*website|clinic\s*website|business\s*website|web\s*platform|website\s*development)\b/i.test(clean)) {
+  // Website & E-commerce Intent
+  if (/\b(?:website|web\s*site|web\s*portal|web\s*page|landing\s*page|e-?commerce|online\s*store|clinic\s*website|business\s*website|web\s*platform|website\s*development)\b/i.test(clean)) {
     return "website";
   }
 
@@ -1152,16 +1152,19 @@ export function detectDirectBusinessQuestion(message = "") {
 export function handleSalesFlowTurn({
   message = "",
   existingQualification = null,
+  currentQualification = null,
   sessionHistory = [],
   lang = "english",
   visitorName = "",
   visitorPhone = "",
   visitorEmail = "",
+  contactRecorded: contactRecordedParam = "",
 }) {
   const cleanMsg = message.trim();
-  const contactRecorded = visitorPhone || visitorEmail;
-  let current = existingQualification
-    ? { ...existingQualification }
+  const contactRecorded = contactRecordedParam || visitorPhone || visitorEmail || "";
+  const existing = existingQualification || currentQualification;
+  let current = existing
+    ? { ...existing }
     : {
         service: null,
         answers: {},

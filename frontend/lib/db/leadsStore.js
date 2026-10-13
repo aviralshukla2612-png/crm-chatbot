@@ -123,16 +123,17 @@ export const leadsStore = {
     const list = loadFromDisk();
     const now = new Date();
 
-    // Check if lead already exists by sessionId, email, phone, or name to enrich details
+    // Check if lead already exists by sessionId, email, or verified phone
     const cleanDigits = (p) => (p || "").replace(/\D/g, "");
     const existing = list.find(
       (l) =>
         (data.sessionId && l.sessionId && l.sessionId === data.sessionId) ||
         (data.email && l.email && l.email.toLowerCase() === data.email.toLowerCase()) ||
-        (data.phone && l.phone && cleanDigits(l.phone) === cleanDigits(data.phone)) ||
-        (data.name && data.name !== "Website Prospect" && data.name !== "Website Visitor" && l.name && l.name.toLowerCase() === data.name.toLowerCase())
+        (data.phone && l.phone && cleanDigits(l.phone) === cleanDigits(data.phone) && cleanDigits(data.phone).length >= 10) ||
+        (data.sessionId && l.sessionId === data.sessionId && data.name && l.name && l.name.toLowerCase() === data.name.toLowerCase())
     );
     if (existing) {
+      if (data.sessionId) existing.sessionId = data.sessionId;
       if (data.name && data.name !== "Website Prospect" && data.name !== "Website Visitor") {
         existing.name = data.name;
       } else if (!existing.name || existing.name === "Website Prospect" || existing.name === "Website Visitor") {
