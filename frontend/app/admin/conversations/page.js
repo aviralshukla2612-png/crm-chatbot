@@ -42,27 +42,35 @@ export default function AdminConversationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/80">
-              {conversations.map((c) => (
-                <tr key={c.id} className="hover:bg-neutral-900/60 transition-colors">
-                  <td className="p-4 font-bold text-white">{c.visitorName}</td>
-                  <td className="p-4 text-neutral-300">{c.botName}</td>
-                  <td className="p-4 text-neutral-400 max-w-xs truncate">{c.lastMessage}</td>
-                  <td className="p-4 font-mono text-neutral-400">{c.duration}</td>
-                  <td className="p-4">
-                    {c.isLead ? (
-                      <span className="font-bold text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded-full">
-                        YES
-                      </span>
-                    ) : (
-                      <span className="text-neutral-500 text-[10px]">No</span>
-                    )}
+              {conversations.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-neutral-400">
+                    No conversations yet. When visitors chat with your bots, sessions will appear here live.
                   </td>
-                  <td className="p-4">
-                    <StatusBadge status={c.status} size="sm" />
-                  </td>
-                  <td className="p-4 text-right text-neutral-400">{c.time}</td>
                 </tr>
-              ))}
+              ) : (
+                conversations.map((c) => (
+                  <tr key={c.id} className="hover:bg-neutral-900/60 transition-colors">
+                    <td className="p-4 font-bold text-white">{c.visitorName || "Website Visitor"}</td>
+                    <td className="p-4 text-neutral-300">{c.botName || "aa"}</td>
+                    <td className="p-4 text-neutral-400 max-w-xs truncate">{c.lastMessage || "(In progress)"}</td>
+                    <td className="p-4 font-mono text-neutral-400">{c.duration || "1m"}</td>
+                    <td className="p-4">
+                      {c.isLead ? (
+                        <span className="font-bold text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded-full">
+                          YES
+                        </span>
+                      ) : (
+                        <span className="text-neutral-500 text-[10px]">No</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <StatusBadge status={c.status || "Active"} size="sm" />
+                    </td>
+                    <td className="p-4 text-right text-neutral-400">{c.startedAt || "Just now"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

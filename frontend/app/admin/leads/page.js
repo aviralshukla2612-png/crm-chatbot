@@ -42,26 +42,34 @@ export default function AdminLeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/80">
-              {leads.map((l) => (
-                <tr key={l.id} className="hover:bg-neutral-900/60 transition-colors">
-                  <td className="p-4">
-                    <p className="font-bold text-white">{l.name}</p>
-                    <p className="text-[11px] text-neutral-400">{l.email}</p>
-                  </td>
-                  <td className="p-4 text-neutral-300 font-medium">{l.company}</td>
-                  <td className="p-4 text-neutral-400">{l.botName}</td>
-                  <td className="p-4">
-                    <StatusBadge status={l.score} size="sm" />
-                  </td>
-                  <td className="p-4 text-neutral-400">{l.source}</td>
-                  <td className="p-4">
-                    <StatusBadge status={l.status} size="sm" />
-                  </td>
-                  <td className="p-4 text-right text-neutral-400">
-                    {l.created?.split("T")[0]}
+              {leads.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-neutral-400">
+                    No leads generated yet. Leads captured by your chatbots will appear here in real time.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                leads.map((l) => (
+                  <tr key={l.id} className="hover:bg-neutral-900/60 transition-colors">
+                    <td className="p-4">
+                      <p className="font-bold text-white">{l.name || "Website Prospect"}</p>
+                      <p className="text-[11px] text-neutral-400">{l.phone || l.email || "No contact shared yet"}</p>
+                    </td>
+                    <td className="p-4 text-neutral-300 font-medium">{l.company || "Direct Inbound"}</td>
+                    <td className="p-4 text-neutral-400">{l.bot || l.botName || "aa"}</td>
+                    <td className="p-4">
+                      <StatusBadge status={l.score || "Medium"} size="sm" />
+                    </td>
+                    <td className="p-4 text-neutral-400">{l.source || "Web Chatbot"}</td>
+                    <td className="p-4">
+                      <StatusBadge status={l.status || "New"} size="sm" />
+                    </td>
+                    <td className="p-4 text-right text-neutral-400">
+                      {l.created || (l.createdAt ? l.createdAt.split("T")[0] : "Just now")}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

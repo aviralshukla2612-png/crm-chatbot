@@ -12,12 +12,12 @@ export const mockCurrentUser = {
 export const mockOrganizations = [
   {
     id: "org_ess_01",
-    name: "Emperor Solutions",
+    name: "Emperor Smart Solutions",
     slug: "emperor-solutions",
     owner: "Aviral Shukla",
     plan: "Enterprise",
     status: "ACTIVE",
-    botsCount: 0,
+    botsCount: 1,
     usersCount: 1,
     conversationsCount: 0,
     leadsCount: 0,

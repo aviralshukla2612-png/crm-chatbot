@@ -29,45 +29,18 @@ import { botsApi } from "@/lib/api/bots";
 import RealtimeBadge from "@/components/ui/RealtimeBadge";
 
 const platformGrowthData = [
-  { date: "Oct 1", orgs: 800, users: 2200, bots: 1400 },
-  { date: "Oct 5", orgs: 1100, users: 3400, bots: 1900 },
-  { date: "Oct 10", orgs: 1450, users: 4900, bots: 2400 },
-  { date: "Oct 15", orgs: 1750, users: 6100, bots: 2900 },
-  { date: "Oct 20", orgs: 2100, users: 7200, bots: 3400 },
-  { date: "Oct 25", orgs: 2320, users: 8100, bots: 3850 },
-  { date: "Oct 30", orgs: 2481, users: 8932, bots: 4182 },
+  { date: "Day 1", orgs: 1, users: 1, bots: 1 },
+  { date: "Day 2", orgs: 1, users: 1, bots: 1 },
+  { date: "Day 3", orgs: 1, users: 1, bots: 1 },
+  { date: "Today", orgs: 1, users: 1, bots: 1 },
 ];
 
 const topOrganizations = [
   {
-    name: "Acme Healthcare",
-    bots: 12,
-    conversations: "48,392",
-    users: "1,284",
-  },
-  {
-    name: "ABC Technologies",
-    bots: 8,
-    conversations: "32,110",
-    users: "942",
-  },
-  {
-    name: "XYZ Ltd",
-    bots: 6,
-    conversations: "18,450",
-    users: "612",
-  },
-  {
-    name: "DEF Limited",
-    bots: 4,
-    conversations: "12,211",
-    users: "395",
-  },
-  {
-    name: "GHI Private Ltd",
-    bots: 3,
-    conversations: "8,940",
-    users: "248",
+    name: "Emperor Smart Solutions",
+    bots: 1,
+    conversations: 0,
+    users: 1,
   },
 ];
 
@@ -127,7 +100,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              2,481
+              1
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Organizations
@@ -142,7 +115,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              8,932
+              1
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Users
@@ -157,7 +130,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              4,182
+              {metrics?.activeBotsCount ?? 1}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Bots
@@ -172,7 +145,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              1.2M
+              {metrics?.totalConversations ?? 0}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Conversations
@@ -187,7 +160,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              4.8M
+              {metrics?.totalQuestions ?? 0}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Questions
@@ -202,7 +175,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              182K
+              {metrics?.leadsGenerated ?? 0}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Leads
@@ -217,7 +190,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              98.4%
+              99.9%
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Platform Uptime
@@ -228,14 +201,14 @@ export default function AdminOverviewPage() {
           </div>
         </div>
 
-        {/* Row 2, Card 8: Monthly Revenue */}
+        {/* Row 2, Card 8: Monthly Plan */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              ₹12.4L
+              Enterprise
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
-              Monthly Revenue
+              Active Tier
             </div>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-100/60 flex items-center justify-center text-rose-500">
@@ -374,7 +347,7 @@ export default function AdminOverviewPage() {
                         {org.bots}
                       </td>
                       <td className="py-3 px-2 text-center text-slate-600 font-medium">
-                        {org.conversations}
+                        {metrics?.totalConversations ?? 0}
                       </td>
                       <td className="py-3 pl-2 text-right font-medium text-slate-700">
                         {org.users}

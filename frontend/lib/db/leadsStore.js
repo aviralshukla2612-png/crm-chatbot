@@ -14,27 +14,7 @@ function resolveDataFile() {
 
 const DATA_FILE = resolveDataFile();
 
-const SEED_LEADS = [
-  {
-    id: "lead_seed_01",
-    name: "Rohan Varma",
-    email: "rohan.v@techlogix.co",
-    phone: "+91 98200 12345",
-    company: "TechLogix Global",
-    bot: "aa",
-    score: "High",
-    status: "New",
-    created: new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    createdAt: new Date().toISOString(),
-    inquiry: "Interested in custom ERP & CRM automation pipeline with real-time vector search.",
-    budget: "₹1,50,000",
-    source: "Web Chatbot Widget",
-  },
-];
+const SEED_LEADS = [];
 
 let memoryCache = null;
 

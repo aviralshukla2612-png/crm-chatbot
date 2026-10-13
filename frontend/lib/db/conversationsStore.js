@@ -13,53 +13,7 @@ function resolveDataFile() {
 
 const DATA_FILE = resolveDataFile();
 
-const SEED_CONVERSATIONS = [
-  {
-    id: "c_seed_01",
-    visitorName: "Acme Logistics Inquiry",
-    visitorEmail: "contact@acmelogistics.com",
-    visitorPhone: "+91 98765 43210",
-    visitorLocation: "Mumbai, India",
-    botId: "bot_aa",
-    botName: "aa",
-    status: "Active",
-    isLead: true,
-    leadScore: "High",
-    startedAt: "10:15 AM",
-    duration: "4 mins",
-    messagesCount: 4,
-    questionsCount: 2,
-    lastMessage: "Can we schedule a live demo of the ERP integration modules?",
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    messages: [
-      {
-        id: "m_1",
-        role: "user",
-        content: "Hello, what ERP modules do you support for inventory and supply chain?",
-        timestamp: "10:15 AM",
-      },
-      {
-        id: "m_2",
-        role: "assistant",
-        content: "We provide comprehensive inventory tracking, multi-warehouse management, procurement orders, and real-time vendor dispatch portals.",
-        timestamp: "10:16 AM",
-      },
-      {
-        id: "m_3",
-        role: "user",
-        content: "Can we schedule a live demo of the ERP integration modules?",
-        timestamp: "10:18 AM",
-      },
-      {
-        id: "m_4",
-        role: "assistant",
-        content: "Absolutely! I can connect you directly with our solutions team. Would you like to share your preferred date and time?",
-        timestamp: "10:19 AM",
-      },
-    ],
-  },
-];
+const SEED_CONVERSATIONS = [];
 
 let memoryCache = null;
 
