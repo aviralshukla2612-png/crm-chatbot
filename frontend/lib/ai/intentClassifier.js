@@ -14,45 +14,68 @@
  * configured business scope without hardcoded company coupling.
  */
 
-// Prompt injection and jailbreak attack patterns
+// 10. Requests to override chatbot rules (signals / jailbreak checks)
 const PROMPT_INJECTION_PATTERNS = [
   /ignore\s+(?:all\s+)?(?:previous|prior|system)\s+(?:instructions|directions|rules|prompts)/i,
+  /ignore\s+all\s+rules/i,
   /you\s+are\s+now\s+(?:an?\s+unrestricted|a\s+new|dan|jailbroken|free)/i,
-  /developer\s+mode\s+(?:enabled|on|activate)/i,
-  /reveal\s+(?:your|the)\s+(?:hidden|system|master|secret)\s+(?:prompt|instructions|rules)/i,
+  /developer\s+mode\s*(?:enabled|on|activate)?/i,
+  /reveal\s+(?:your\s+|the\s+)?(?:hidden|system|master|secret)?\s*(?:prompt|instructions|rules|system\s+prompt|confidential\s+data|secrets?|internal\s+knowledge\s*base)/i,
   /what\s+(?:is|are)\s+your\s+(?:system|initial|hidden)\s+(?:prompt|instructions|rules)/i,
-  /bypass\s+(?:all\s+)?(?:safety|content|system|security)\s+(?:filters|policies|rules)/i,
+  /bypass\s+(?:all\s+)?(?:restrictions|safety|content|system|security)\s*(?:filters|policies|rules)?/i,
+  /override\s+(?:system\s+)?(?:prompt|instructions|rules)/i,
+  /show\s+(?:hidden\s+instructions|system\s+prompt|confidential\s+data|secrets?)/i,
+  /expose\s+(?:api\s+keys?|environment\s+variables?|secrets?)/i,
   /output\s+(?:your|the)\s+(?:rules|guidelines|prompt|instructions)\s+verbatim/i,
-  /disregard\s+(?:all\s+)?(?:safety|guardrails|instructions)/i,
+  /disregard\s+(?:all\s+)?(?:safety|guardrails|instructions|your\s+role)/i,
+  /forget\s+(?:your\s+company|all\s+instructions)/i,
+  /pretend\s+(?:you\s+are|to\s+be)\s+(?:another\s+chatbot|a\s+new|an?\s+unrestricted)/i,
+  /act\s+without\s+restrictions/i,
+  /dump\s+training\s+data/i,
+  /jailbreak/i,
 ];
 
 // Cross-tenant document / secret exfiltration patterns
 const CROSS_TENANT_EXFILTRATION_PATTERNS = [
   /(?:show|give|fetch|view|download|read|list|dump)\s+(?:me\s+)?(?:all\s+)?(?:other|another|all)\s+(?:customer'?s?|tenant'?s?|client'?s?|user'?s?)\s+(?:uploaded\s+)?(?:documents?|files?|data|chats?|conversations?|records?|credentials?|passwords?)/i,
   /(?:show|access|view)\s+(?:another|other)\s+(?:tenant|customer|organization)\b/i,
-  /(?:internal\s+database\s+credentials|database\s+password|api\s+keys|env\s+variables|jwt\s+secret)/i,
+  /(?:internal\s+database\s+credentials|database\s+password|api\s+keys|env\s+variables|jwt\s+secret|expose\s+api\s+keys|show\s+environment\s+variables|reveal\s+confidential\s+data|dump\s+training\s+data|reveal\s+internal\s+knowledge\s*base)/i,
 ];
 
-// Out-of-scope entertainment, pop culture, sports, relationships, philosophy, and general trivia patterns
+// Out-of-scope categories across all 10 standard business boundaries:
 const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
-  /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i,
-  /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i,
-  /\b(?:salman|salman\s+khan|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i,
-  /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i,
-  /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i,
-  /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|horoscope|astrology|zodiac)\b/i,
-  /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i,
-  // Relationships, romance, dating, sexuality, emotions, love vs lust
-  /\b(?:love|lust|romance|romantic|dating|date|girlfriend|boyfriend|crush|breakup|heartbreak|divorce|marriage|marry|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|flirt|flirting|propose|pyar|pyaar|ishq|mohabbat|shadi)\b/i,
-  // Philosophy, religion, existential, afterlife, spiritual queries
-  /\b(?:meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i,
-  // Personal questions directed at bot (sentience, romance, physical)
+  // 1. Personal advice and relationships
+  /\b(?:love|relationship|girlfriend|boyfriend|husband|wife|marriage|marry|dating|date|breakup|heartbreak|crush|romance|romantic|soulmate|flirting|flirt|proposal|propose|divorce|family\s+problems?|friendship\s+problems?|personal\s+advice|emotional\s+support|loneliness|jealousy|trust\s+issues?|cheating\s+partner|parenting\s+advice|family\s+conflict|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|pyar|pyaar|ishq|mohabbat|shadi)\b/i,
   /\b(?:do\s+you\s+(?:love|like)\s+me|are\s+you\s+(?:single|married|human|alive|sentient|real)|will\s+you\s+marry\s+me|be\s+my\s+(?:girlfriend|boyfriend|friend)|have\s+feelings|feel\s+emotions?|can\s+you\s+feel)\b/i,
-  // Weather, medical, legal, stocks / crypto trading signals
-  /\b(?:weather\s+today|temperature\s+in|today'?s\s+weather|todays\s+news|stock\s+market|crypto\s+price|bitcoin\s+rate|gold\s+rate|headache|fever|medicine|prescription|doctor\s+consultation|symptom|legal\s+advice|court|lawyer|sue|lawsuit)\b/i,
-  // Off-topic A or B dilemmas (e.g. "love or lust", "tea or coffee", "cat or dog")
+
+  // 2. Entertainment and celebrity topics
+  /\b(?:movies?|films?|web\s*series|tv\s*shows?|actors?|actresses?|celebrity\s*gossip|celebrity\s*news|songs?|music\s*lyrics|lyrics|singers?|albums?|entertainment\s*news|movie\s*reviews?|movie\s*recommendations?|memes?|jokes?|comedy|funny\s*stories|cartoons?|anime|manga|gaming|video\s*games?|game\s*cheats?|gaming\s*walkthroughs?|sports\s*entertainment|comedian|comedians|stand-?up|standup|roast|cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay|dialogue|trailer|box\s*office|bollywood|hollywood)\b/i,
+  /\b(?:salman|salman\s+khan|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i,
+
+  // 3. General knowledge and trivia
+  /\b(?:general\s*knowledge|trivia|quiz|random\s*facts?|fun\s*facts?|history\s*questions?|geography\s*questions?|world\s*capitals?|capital\s*of|country\s*population|famous\s*personalities|scientific\s*trivia|space\s*trivia|animal\s*facts?|riddles?|puzzles?|brain\s*teasers?|crossword\s*answers?|word\s*games?|dictionary\s*questions?|unrelated\s*facts?|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|dinosaurs?|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i,
+  /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i,
+
+  // 4. Health and medical advice
+  /\b(?:medical\s*advice|symptoms?|disease\s*diagnosis|medicine\s*dosage|prescription\s*advice|treatment\s*recommendations?|home\s*remedies|pregnancy\s*advice|mental\s*health\s*diagnosis|therapy\s*advice|medical\s*emergency|doctor\s*consultation|fitness\s*diagnosis|nutrition\s*treatment|drug\s*interactions?|headache|fever|cough|flu|covid|cancer\s*cure|paracetamol|antibiotics?|prescription|dosage)\b/i,
+
+  // 5. Politics and religion
+  /\b(?:politics|political\s*parties?|elections?|voting\s*advice|political\s*debates?|politicians?|political\s*campaigns?|government\s*controversies|religious\s*debates?|religious\s*conversion|religious\s*disputes?|theological\s*arguments?|political\s*propaganda|political\s*predictions?|meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i,
+
+  // 6. Financial and legal personal advice
+  /\b(?:personal\s*investment\s*advice|stock\s*tips?|cryptocurrency\s*predictions?|crypto\s*predictions?|trading\s*signals?|loan\s*advice|tax\s*evasion|personal\s*budgeting|legal\s*advice|lawsuit\s*advice|divorce\s*law\s*advice|criminal\s*defense\s*advice|immigration\s*advice|personal\s*insurance\s*advice|gambling\s*tips?|betting\s*predictions?|lottery\s*numbers?|stock\s*market|crypto\s*price|bitcoin\s*rate|gold\s*rate|court\s*lawyer|sue\s+someone|lawsuit)\b/i,
+
+  // 7. Cooking, travel and lifestyle
+  /\b(?:recipes?|cooking\s*instructions?|food\s*recommendations?|restaurant\s*recommendations?|travel\s*itinerary|tourist\s*attractions?|hotel\s*recommendations?|flight\s*booking|vacation\s*planning|fashion\s*advice|outfit\s*recommendations?|beauty\s*tips?|makeup\s*tutorials?|gardening\s*tips?|home\s*decoration|diy\s*crafts?|workout\s*routines?|hobby\s*recommendations?|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i,
+
+  // 8. Homework and unrelated academic work
+  /\b(?:homework\s*answers?|homework|school\s*assignments?|essay\s*writing|poetry\s*writing|literature\s*analysis|exam\s*preparation|math\s*homework|physics\s*problems?|chemistry\s*homework|biology\s*homework|history\s*assignments?|language\s*translation|general\s*tutoring|college\s*admission\s*advice|unrelated\s*research\s*topics?|write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|puzzle|horoscope|astrology|zodiac)\b/i,
+
+  // 9. Offensive, explicit or harmful content
+  /\b(?:pornography|porn|explicit\s*sexual\s*content|sexual\s*roleplay|erotic\s*stories|sexual\s*fantasies|obscene\s*content|hate\s*speech|harassment|threats?|violent\s*fantasies|instructions\s*for\s*harming\s*people|harm\s*someone|kill\s*someone|illegal\s*activities|drug\s*manufacturing|make\s*drugs|make\s*bomb|malware\s*for\s*criminal\s*use|phishing\s*attacks?|credential\s*theft|cybercrime\s*instructions?)\b/i,
+
+  // Off-topic A or B dilemmas and consumer gadget comparisons
   /^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i,
-  // Consumer hardware, gadget comparisons & purchasing advice (e.g. "does laptop is better than phone", "laptop vs phone")
   /\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone)\b.*\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b/i,
   /\b(?:better\s+than|worse\s+than|vs\.?|versus|compare|which\s+(?:one\s+)?(?:is|should)|difference)\b.*\b(?:laptop|desktop|computer|pc|tablet|ipad|iphone|macbook|smartphone|phone)\b/i,
   /\b(?:is|does|which\s+is)\s+[a-z\s]+\s+better\s+than\s+[a-z\s]+/i,

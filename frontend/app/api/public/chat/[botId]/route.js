@@ -517,11 +517,48 @@ export async function POST(request, { params }) {
          /\b[6-9]\d{9}\b/.test(message) ||
          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(message))));
 
+    // 1. Personal advice and relationships
     const isRomanceOrRelationships =
-      /\b(?:love|lust|romance|romantic|dating|date|girlfriend|boyfriend|crush|breakup|heartbreak|divorce|marriage|marry|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|flirt|flirting|propose|pyar|pyaar|ishq|mohabbat|shadi)\b/i.test(message);
+      /\b(?:love|relationship|girlfriend|boyfriend|husband|wife|marriage|marry|dating|date|breakup|heartbreak|crush|romance|romantic|soulmate|flirting|flirt|proposal|propose|divorce|family\s+problems?|friendship\s+problems?|personal\s+advice|emotional\s+support|loneliness|jealousy|trust\s+issues?|cheating\s+partner|parenting\s+advice|family\s+conflict|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|pyar|pyaar|ishq|mohabbat|shadi)\b/i.test(message);
 
-    const isPhilosophyOrReligion =
-      /\b(?:meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i.test(message);
+    // 2. Entertainment and celebrity topics
+    const isEntertainmentOrTrivia =
+      /\b(?:movies?|films?|web\s*series|tv\s*shows?|actors?|actresses?|celebrity\s*gossip|celebrity\s*news|songs?|music\s*lyrics|lyrics|singers?|albums?|entertainment\s*news|movie\s*reviews?|movie\s*recommendations?|memes?|jokes?|comedy|funny\s*stories|cartoons?|anime|manga|gaming|video\s*games?|game\s*cheats?|gaming\s*walkthroughs?|sports\s*entertainment|comedian|comedians|stand-?up|standup|roast|cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay|dialogue|trailer|box\s*office|bollywood|hollywood)\b/i.test(message) ||
+      /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
+      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i.test(message);
+
+    // 3. General knowledge and trivia
+    const isGeneralKnowledgeAndTrivia =
+      /\b(?:general\s*knowledge|trivia|quiz|random\s*facts?|fun\s*facts?|history\s*questions?|geography\s*questions?|world\s*capitals?|capital\s*of|country\s*population|famous\s*personalities|scientific\s*trivia|space\s*trivia|animal\s*facts?|riddles?|puzzles?|brain\s*teasers?|crossword\s*answers?|word\s*games?|dictionary\s*questions?|unrelated\s*facts?|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|dinosaurs?|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
+      /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
+
+    // 4. Health and medical advice
+    const isHealthAndMedical =
+      /\b(?:medical\s*advice|symptoms?|disease\s*diagnosis|medicine\s*dosage|prescription\s*advice|treatment\s*recommendations?|home\s*remedies|pregnancy\s*advice|mental\s*health\s*diagnosis|therapy\s*advice|medical\s*emergency|doctor\s*consultation|fitness\s*diagnosis|nutrition\s*treatment|drug\s*interactions?|headache|fever|cough|flu|covid|cancer\s*cure|paracetamol|antibiotics?|prescription|dosage)\b/i.test(message);
+
+    // 5. Politics and religion
+    const isPoliticsAndReligion =
+      /\b(?:politics|political\s*parties?|elections?|voting\s*advice|political\s*debates?|politicians?|political\s*campaigns?|government\s*controversies|religious\s*debates?|religious\s*conversion|religious\s*disputes?|theological\s*arguments?|political\s*propaganda|political\s*predictions?|meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i.test(message);
+
+    // 6. Financial and legal personal advice
+    const isFinancialAndLegalAdvice =
+      /\b(?:personal\s*investment\s*advice|stock\s*tips?|cryptocurrency\s*predictions?|crypto\s*predictions?|trading\s*signals?|loan\s*advice|tax\s*evasion|personal\s*budgeting|legal\s*advice|lawsuit\s*advice|divorce\s*law\s*advice|criminal\s*defense\s*advice|immigration\s*advice|personal\s*insurance\s*advice|gambling\s*tips?|betting\s*predictions?|lottery\s*numbers?|stock\s*market|crypto\s*price|bitcoin\s*rate|gold\s*rate|court\s*lawyer|sue\s+someone|lawsuit)\b/i.test(message);
+
+    // 7. Cooking, travel and lifestyle
+    const isCookingTravelLifestyle =
+      /\b(?:recipes?|cooking\s*instructions?|food\s*recommendations?|restaurant\s*recommendations?|travel\s*itinerary|tourist\s*attractions?|hotel\s*recommendations?|flight\s*booking|vacation\s*planning|fashion\s*advice|outfit\s*recommendations?|beauty\s*tips?|makeup\s*tutorials?|gardening\s*tips?|home\s*decoration|diy\s*crafts?|workout\s*routines?|hobby\s*recommendations?|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message);
+
+    // 8. Homework and unrelated academic work
+    const isHomeworkAndAcademic =
+      /\b(?:homework\s*answers?|homework|school\s*assignments?|essay\s*writing|poetry\s*writing|literature\s*analysis|exam\s*preparation|math\s*homework|physics\s*problems?|chemistry\s*homework|biology\s*homework|history\s*assignments?|language\s*translation|general\s*tutoring|college\s*admission\s*advice|unrelated\s*research\s*topics?|write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|puzzle|horoscope|astrology|zodiac)\b/i.test(message);
+
+    // 9. Offensive, explicit or harmful content
+    const isOffensiveHarmfulContent =
+      /\b(?:pornography|porn|explicit\s*sexual\s*content|sexual\s*roleplay|erotic\s*stories|sexual\s*fantasies|obscene\s*content|hate\s*speech|harassment|threats?|violent\s*fantasies|instructions\s*for\s*harming\s*people|harm\s*someone|kill\s*someone|illegal\s*activities|drug\s*manufacturing|make\s*drugs|make\s*bomb|malware\s*for\s*criminal\s*use|phishing\s*attacks?|credential\s*theft|cybercrime\s*instructions?)\b/i.test(message);
+
+    // 10. Requests to override chatbot rules
+    const isOverrideOrJailbreak =
+      /\b(?:ignore\s+(?:all\s+)?(?:previous|prior|system)\s+(?:instructions|rules|prompts)|ignore\s+all\s+rules|bypass\s+(?:all\s+)?(?:restrictions|safety|rules)|override\s+system\s+prompt|reveal\s+system\s+prompt|show\s+hidden\s+instructions|reveal\s+confidential\s+data|expose\s+api\s+keys|show\s+environment\s+variables|reveal\s+secrets|developer\s+mode|jailbreak|act\s+without\s+restrictions|disregard\s+your\s+role|forget\s+your\s+company|pretend\s+you\s+are\s+another\s+chatbot|reveal\s+internal\s+knowledge\s*base|dump\s+training\s+data)\b/i.test(message);
 
     const isPersonalBotQuery =
       /\b(?:do\s+you\s+(?:love|like)\s+me|are\s+you\s+(?:single|married|human|alive|sentient|real)|will\s+you\s+marry\s+me|be\s+my\s+(?:girlfriend|boyfriend|friend)|have\s+feelings|feel\s+emotions?|can\s+you\s+feel)\b/i.test(message);
@@ -537,16 +574,6 @@ export async function POST(request, { params }) {
        /\b(?:which\s+(?:is|one\s+is)\s+better)\b/i.test(message) ||
        /\b(?:should\s+i\s+buy|which\s+(?:phone|laptop|car|bike|tv|gadget)\s+(?:should|to)\s+buy)\b/i.test(message)) &&
       !/\b(?:web|website|app|mobile|android|ios|flutter|react|native|next\.?js|node|python|ai|bot|chatbot|saas|software|ecommerce|cloud|devops|design|redesign|new|existing|fixed|hourly|sprint|timeline|budget|inr|usd|yes|no)\b/i.test(message.replace(/\b(?:laptop|phone|computer|pc)\b/gi, ""));
-
-    const isEntertainmentOrTrivia =
-      /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
-      /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
-      /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i.test(message) ||
-      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i.test(message) ||
-      /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message) ||
-      /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
-      /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
-      /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
 
     const isCelebrityOrTriviaQuery =
       !hasActiveProject &&
@@ -564,7 +591,14 @@ export async function POST(request, { params }) {
       !isContactSubmission &&
       (isExternalEntityQuery ||
       isRomanceOrRelationships ||
-      isPhilosophyOrReligion ||
+      isGeneralKnowledgeAndTrivia ||
+      isHealthAndMedical ||
+      isPoliticsAndReligion ||
+      isFinancialAndLegalAdvice ||
+      isCookingTravelLifestyle ||
+      isHomeworkAndAcademic ||
+      isOffensiveHarmfulContent ||
+      isOverrideOrJailbreak ||
       isPersonalBotQuery ||
       isGeneralOffTopicAdvice ||
       isOffTopicDilemma ||
