@@ -260,9 +260,11 @@ export async function POST(request, { params }) {
           const parts = [];
           if (recalledBudget) parts.push(`your stated budget is **${recalledBudget}**`);
           if (recalledTech) parts.push(`the technology you chose is **${recalledTech}**`);
-          if (recalledProject) parts.push(`for your **${recalledProject}**`);
+          
+          let memoryReply = `Based on our conversation, ${parts.join(" and ")}`;
+          if (recalledProject) memoryReply += ` for your **${recalledProject}** app`;
+          memoryReply += `. How would you like to proceed with your project?`;
 
-          const memoryReply = `Based on our conversation, ${parts.join(" and ")}. How would you like to proceed with your project?`;
           return corsResponse(
             NextResponse.json({
               success: true,
@@ -647,6 +649,10 @@ Emperor Smart Solutions ek premier custom software engineering aur enterprise AI
 
 Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
       }
+    } else if (/\b(?:guarantee\s+delivery|delivery\s+(?:within|in)?\s*(?:7|seven)\s*days?|7\s*day\s*(?:delivery|guarantee)|seven\s*day\s*(?:delivery|guarantee))\b/i.test(message)) {
+      deterministicReply = `Emperor Smart Solutions (ESS) does not guarantee delivery of every mobile app within seven days. Production-grade custom mobile and web applications require structured UI/UX architecture, end-to-end engineering, and rigorous QA testing, which typically takes between 2 to 6 weeks depending on requirements and milestones. We do not provide unrealistic 7-day guarantees, as quality, security, and scalability are our top priorities.
+
+Would you like to discuss your project requirements and receive a realistic timeline? Feel free to share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a customized proposal!`;
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isLowBudgetQuery) {

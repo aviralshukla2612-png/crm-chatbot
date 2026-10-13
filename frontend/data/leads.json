@@ -1,5 +1,22 @@
 [
   {
+    "id": "lead_1791874314965_3cgq",
+    "sessionId": "",
+    "name": "Siddharth Mehta",
+    "email": "siddharth.new@logistics.in",
+    "phone": "+91 99000 88776",
+    "company": "Mehta Freight Solutions",
+    "bot": "aa",
+    "score": "Hot",
+    "status": "New",
+    "created": "Oct 13, 2026",
+    "createdAt": "2026-10-13T06:51:54.965Z",
+    "updatedAt": "2026-10-13T06:51:54.965Z",
+    "inquiry": "Custom ERP & GPS fleet tracking application",
+    "budget": "₹50,000+",
+    "source": "Web Chatbot Widget"
+  },
+  {
     "id": "lead_1791787975361_b7dj",
     "name": "Vikram Joshi",
     "email": "vikram@enterprise.in",
