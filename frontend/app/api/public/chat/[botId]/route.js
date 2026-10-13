@@ -653,6 +653,62 @@ Emperor Smart Solutions is a premier custom software engineering and enterprise 
       deterministicReply = `Emperor Smart Solutions (ESS) does not guarantee delivery of every mobile app within seven days. Production-grade custom mobile and web applications require structured UI/UX architecture, end-to-end engineering, and rigorous QA testing, which typically takes between 2 to 6 weeks depending on requirements and milestones. We do not provide unrealistic 7-day guarantees, as quality, security, and scalability are our top priorities.
 
 Would you like to discuss your project requirements and receive a realistic timeline? Feel free to share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a customized proposal!`;
+    } else if (
+      /\b(?:clinic|hospital|doctor|healthcare|medical|patient)\b/i.test(message) &&
+      /\b(?:website|web\s*app|portal|platform|software|app|develop|build|create|make)\b/i.test(message)
+    ) {
+      deterministicReply = lang === "hindi"
+        ? `Emperor Smart Solutions में हम आपकी क्लिनिक या व्यवसाय के लिए उच्च-प्रदर्शन, सुरक्षित और कस्टम वेबसाइट्स व वेब पोर्टल्स डिज़ाइन और डेवलप करते हैं! 🏥
+
+हमारी कस्टम क्लिनिक वेब समाधानों में शामिल हैं:
+1. **ऑनलाइन अपॉइंटमेंट बुकिंग:** मरीजों के लिए रीयल-टाइम डॉक्टर शेड्यूलिंग और स्वचालित SMS/WhatsApp रिमाइंडर।
+2. **डॉक्टर व सेवा प्रोफाइल:** डॉक्टरों की विशेषज्ञता, उपलब्ध समय और क्लिनिक सेवाओं का इंटरएक्टिव प्रदर्शन।
+3. **टेली-परामर्श व पेशेंट पोर्टल:** सुरक्षित ऑनलाइन वीडियो कंसल्टेशन और डिजिटल पर्चे (Prescription)।
+4. **तेज़ व मोबाइल-अनुकूल डिज़ाइन:** आधुनिक Next.js और React आधारित सुपरफास्ट लोडिंग स्पीड।
+
+हमारे कस्टम वेबसाइट डेवलपमेंट पैकेज ₹50,000 से शुरू होते हैं (18% GST अतिरिक्त), जिसमें 30 दिनों का निःशुल्क सपोर्ट शामिल है।
+
+कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें, ताकि हमारी तकनीकी टीम आपसे संपर्क कर एक अनुकूलित प्रस्ताव और डेमो तैयार कर सके!`
+        : lang === "hinglish"
+        ? `Emperor Smart Solutions mein hum aapke clinic ya business ke liye high-performance, secure aur custom websites develop karte hain! 🏥
+
+Hamare custom clinic web solutions mein yeh features shamil hain:
+1. **Online Patient Appointment Booking:** Real-time doctor scheduling aur automated WhatsApp/SMS reminders.
+2. **Doctors & Services Showcase:** Detailed doctor profiles, specialization, aur treatments catalog.
+3. **Teleconsultation & Patient Portal:** Secure online consultation aur medical record management.
+4. **High-Speed Next.js & React Frontend:** Superfast loading speed aur mobile-responsive layout.
+
+Hamare custom web development packages ₹50,000 se start hote hain (18% GST extra), jisme 30 days ka free post-launch support included hai.
+
+Kripya apna **Name aur Phone Number (ya WhatsApp)** share karein, taaki hamari technical team aapse connect karke customized proposal aur demo share kar sake!`
+        : `At Emperor Smart Solutions, we specialize in building custom, high-performance websites, patient portals, and digital healthcare platforms tailored specifically for clinics and healthcare providers! 🏥
+
+Here is what our software engineering team builds for your clinic:
+1. **Online Patient Appointment Booking:** Real-time doctor calendar scheduling, department filtering, and automated WhatsApp/SMS appointment confirmations.
+2. **Doctor Profiles & Services Showcase:** Interactive doctor credentials, clinical specialties, treatment descriptions, and verified patient reviews.
+3. **Teleconsultation & Patient Portal:** Secure virtual consultations, digital prescriptions, and electronic medical record management.
+4. **Modern, High-Speed Architecture:** Engineered on Next.js and React with PostgreSQL, ensuring sub-second page loads and top local patient Google SEO rankings.
+
+Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.
+
+Could you please share your **Name and Phone Number (or WhatsApp)** so our healthcare solutions team can connect with you and prepare a customized live demo and formal quotation?`;
+    } else if (
+      !isServicesQuery &&
+      !isProjectsPortfolioQuery &&
+      (/\b(?:want\s+to\s+(?:develop|build|create|make)|need\s+(?:a|to\s+build|to\s+develop))\s+(?:a\s+)?(?:website|web\s*platform|web\s*app|portal)\b/i.test(message) ||
+       /\bcan\s+you\s+(?:build|make|develop|create)\s+(?:a\s+)?(?:website|web\s*platform|web\s*app|portal)\b/i.test(message))
+    ) {
+      deterministicReply = `At Emperor Smart Solutions, we specialize in designing and engineering custom, high-performance web platforms and websites built for business growth! 🚀
+
+Here is what we engineer for your business:
+1. **Full-Stack Custom Web Architecture:** Scalable web apps built on Next.js, React, and Node.js for lightning-fast loading speed and top SEO ranking.
+2. **Admin Dashboards & Portals:** Intuitive, secure management portals to manage users, content, leads, or products with role-based access.
+3. **Seamless Integrations:** Online payment gateways (Stripe, Razorpay), custom APIs, CRM sync, and automated workflows.
+4. **Mobile-Responsive & Modern UI/UX:** Tailored, interactive design that reflects your brand and converts visitors into customers.
+
+Our custom website and MVP development packages start from **₹50,000** (with 18% GST extra) and include 30 days of free post-launch support.
+
+What kind of business or website are you looking to build? Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal and live demo?`;
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isLowBudgetQuery) {
