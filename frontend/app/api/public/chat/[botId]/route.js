@@ -329,16 +329,19 @@ export async function POST(request, { params }) {
       resolvedEmail = visitor.email;
     }
 
-    // 3. Name Resolution (Current message has top priority!)
+    // 3. Name Resolution (Preserve existing verified visitor name unless explicitly updated!)
+    const hasExplicitNameIntro = /(?:my\s+name\s+is|i\s+am|call\s+me|mera\s+naam|this\s+is)\b/i.test(message);
     let resolvedName = "";
-    if (currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
+    if (hasExplicitNameIntro && currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
       resolvedName = currentMsgLead.name;
-    } else if (sessionLead.name && !isPlaceholderName(sessionLead.name)) {
-      resolvedName = sessionLead.name;
     } else if (existingConv?.visitorName && !isPlaceholderName(existingConv.visitorName)) {
       resolvedName = existingConv.visitorName;
     } else if (visitor?.name && !isPlaceholderName(visitor.name)) {
       resolvedName = visitor.name;
+    } else if (currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
+      resolvedName = currentMsgLead.name;
+    } else if (sessionLead.name && !isPlaceholderName(sessionLead.name)) {
+      resolvedName = sessionLead.name;
     }
 
     const hasVisitorDetails = Boolean(
@@ -482,6 +485,8 @@ export async function POST(request, { params }) {
 
     const isNameIntroductionOnly =
       !hasTechnicalKeywords &&
+      !hasActiveProject &&
+      !isAnsweringQualificationOption &&
       !resolvedPhone &&
       !resolvedEmail &&
       Boolean(resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect" &&

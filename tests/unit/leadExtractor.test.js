@@ -70,3 +70,21 @@ test("LeadExtractor - does not extract lead from 'note my name and number'", () 
   const result = extractLeadDetails("note my name and number");
   assert.equal(result.hasLeadData, false);
 });
+
+test("LeadExtractor - does not extract 'Enterprise ERP' as a person's name", () => {
+  const history = [
+    { role: "user", content: "Ram" },
+    { role: "assistant", content: "Nice to meet you, Ram! Welcome to Emperor Smart Solutions. Which solution are you planning to build?" },
+    { role: "user", content: "Custom Software" },
+    { role: "assistant", content: "Is this for enterprise ERP, CRM & sales, operations, or a custom portal?" }
+  ];
+  const result = extractLeadDetails("Enterprise ERP", history);
+  assert.notEqual(result.name, "Enterprise Erp");
+  assert.equal(result.name, "Ram");
+});
+
+test("LeadExtractor - does not extract 'CRM & Sales' as a person's name", () => {
+  const result = extractLeadDetails("CRM & Sales");
+  assert.equal(result.name, "");
+});
+
