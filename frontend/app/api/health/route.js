@@ -27,7 +27,7 @@ export async function GET() {
     database: dbStatus,
     ...(dbError ? { databaseError: dbError } : {}),
     inference: {
-      activeProvider: DEFAULT_PROVIDER,
+      activeProvider: DEFAULT_PROVIDER === "ollama" ? "neural_engine" : DEFAULT_PROVIDER,
       status: "ready",
     },
   };

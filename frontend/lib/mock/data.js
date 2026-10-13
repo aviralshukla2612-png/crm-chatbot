@@ -101,13 +101,13 @@ export const mockTeamMembers = [
 
 export const mockSystemHealth = [
   {
-    service: "Ollama LLM Engine",
+    service: "ESS AI Neural Engine",
     status: "ONLINE",
     latency: "42ms",
-    model: "llama3.2:1b (4 threads)",
+    model: "ESS-Neural-v2 (Enterprise)",
     lastChecked: "10 seconds ago",
     uptime: "99.98%",
-    details: "Local GPU/CPU inference node healthy",
+    details: "High-throughput inference node healthy",
   },
   {
     service: "Qdrant Vector Database",

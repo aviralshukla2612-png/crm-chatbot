@@ -30,7 +30,6 @@ const adminNavItems = [
   { name: "Conversations", href: "/admin/conversations", icon: MessageSquare },
   { name: "Leads", href: "/admin/leads", icon: Users2 },
   { name: "Usage", href: "/admin/usage", icon: HardDrive },
-  { name: "System Health", href: "/admin/system", icon: Activity },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -115,15 +114,11 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
         {/* Bottom Profile Area */}
         <div className="p-3 border-t border-slate-800/80 space-y-2">
-          {/* Help & Support */}
-          <Link
-            href="/admin/system"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span>Platform Status</span>
-            <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          </Link>
+          {/* Platform Status indicator */}
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-400 bg-slate-800/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Platform Online</span>
+          </div>
 
           {/* User Profile */}
           <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/40 border border-slate-800/60">

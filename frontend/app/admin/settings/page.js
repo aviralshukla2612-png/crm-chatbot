@@ -38,10 +38,10 @@ export default function AdminSettingsPage() {
           </h3>
 
           <div>
-            <label className="block text-neutral-400 mb-1">Ollama Cluster Endpoint</label>
+            <label className="block text-neutral-400 mb-1">AI Inference Engine Endpoint</label>
             <input
               type="text"
-              defaultValue="http://ollama:11434"
+              defaultValue="http://ai-engine:11434"
               className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl font-mono text-white"
             />
           </div>
@@ -51,7 +51,7 @@ export default function AdminSettingsPage() {
               <label className="block text-neutral-400 mb-1">Default Model Tag</label>
               <input
                 type="text"
-                defaultValue="llama3.2:1b"
+                defaultValue="ess-enterprise-neural"
                 className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl font-mono text-white"
               />
             </div>
@@ -59,7 +59,7 @@ export default function AdminSettingsPage() {
               <label className="block text-neutral-400 mb-1">Embedding Model</label>
               <input
                 type="text"
-                defaultValue="nomic-embed-text"
+                defaultValue="ess-vector-embed"
                 className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl font-mono text-white"
               />
             </div>

@@ -164,7 +164,7 @@ export default function HomePage() {
             </div>
             <h3 className="font-bold text-base text-white">Dedicated Super Admin</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Complete SaaS owner platform visibility: inspect any tenant bot, track global token usage, and monitor cluster health for Ollama, pgvector, and n8n.
+              Complete SaaS owner platform visibility: inspect any tenant bot, track global token usage, and monitor cluster health for AI Inference, pgvector, and automated webhooks.
             </p>
           </div>
 
