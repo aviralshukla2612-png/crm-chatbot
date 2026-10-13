@@ -258,6 +258,39 @@
       border-bottom-left-radius: 4px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     }
+    .nexus-quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .nexus-quick-reply-btn {
+      background: #ffffff;
+      color: ${botConfig.primaryColor};
+      border: 1.5px solid ${botConfig.primaryColor};
+      padding: 6px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .nexus-quick-reply-btn:hover {
+      background: ${botConfig.primaryColor};
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .nexus-quick-reply-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #cbd5e1;
+      color: #64748b;
+      background: #f1f5f9;
+      transform: none;
+      box-shadow: none;
+    }
     #nexus-chatbot-widget-container strong,
     #nexus-chatbot-widget-container b,
     .nexus-msg strong,
@@ -514,13 +547,30 @@
       list.appendChild(welcomeEl);
     }
 
-    messages.forEach((m) => {
+    messages.forEach((m, idx) => {
       const el = document.createElement("div");
       el.className = `nexus-msg ${m.role === "user" ? "nexus-msg-user" : "nexus-msg-bot"}`;
       if (m.role === "user") {
         el.style.background = botConfig.primaryColor;
       }
       el.innerHTML = formatMessage(m.content);
+
+      if (m.role === "assistant" && idx === messages.length - 1 && m.quickReplies && Array.isArray(m.quickReplies) && m.quickReplies.length > 0) {
+        const qrContainer = document.createElement("div");
+        qrContainer.className = "nexus-quick-replies";
+        m.quickReplies.forEach((qrText) => {
+          const qrBtn = document.createElement("button");
+          qrBtn.type = "button";
+          qrBtn.className = "nexus-quick-reply-btn";
+          qrBtn.textContent = qrText;
+          qrBtn.addEventListener("click", () => {
+            qrContainer.querySelectorAll("button").forEach((b) => (b.disabled = true));
+            sendMessage(qrText);
+          });
+          qrContainer.appendChild(qrBtn);
+        });
+        el.appendChild(qrContainer);
+      }
 
       list.appendChild(el);
     });
@@ -570,13 +620,15 @@
   });
 
   // 10. Chat Inference with Real-Time SSE Streaming
-  async function sendMessage() {
+  async function sendMessage(explicitText) {
     const input = document.getElementById("nexus-user-input");
     const sendBtn = document.getElementById("nexus-send-button");
-    const text = input.value.trim();
+    const text = (typeof explicitText === "string" ? explicitText : input.value).trim();
     if (!text || isLoading) return;
 
-    input.value = "";
+    if (!explicitText) {
+      input.value = "";
+    }
     messages.push({ role: "user", content: text });
     isLoading = true;
     if (sendBtn) sendBtn.disabled = true;
@@ -602,7 +654,7 @@
       // Stream handling (SSE)
       if (contentType.includes("text/event-stream") && res.body) {
         isLoading = false;
-        const botMsg = { role: "assistant", content: "" };
+        const botMsg = { role: "assistant", content: "", quickReplies: [] };
         messages.push(botMsg);
         renderMessages();
 
@@ -632,6 +684,10 @@
                   const list = document.getElementById("nexus-messages-list");
                   if (list) list.scrollTop = list.scrollHeight;
                 }
+                if (parsed.quickReplies && Array.isArray(parsed.quickReplies)) {
+                  botMsg.quickReplies = parsed.quickReplies;
+                  renderMessages();
+                }
               } catch (e) {}
             }
           }
@@ -653,9 +709,11 @@
           messages.push({
             role: "assistant",
             content: data.reply || "I am ready to assist you. What kind of digital project are you looking to create?",
+            quickReplies: data.quickReplies || [],
             sources: data.sources || [],
           });
         }
+        renderMessages();
       }
     } catch (e) {
       messages.push({

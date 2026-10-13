@@ -11,6 +11,7 @@ import {
 } from "@/lib/ai/masterPrompt";
 import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
 import { extractLeadDetails } from "@/lib/ai/leadExtractor";
+import { handleSalesFlowTurn } from "@/lib/ai/salesFlowManager";
 import { InferenceProvider } from "@/lib/ai/inferenceProvider";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
@@ -485,8 +486,10 @@ export async function POST(request, { params }) {
       (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
 
     let deterministicReply = null;
+    let quickReplies = [];
     if (isLanguageSwitchQuery) {
       lang = /[\u0900-\u097F]/.test(message) ? "hindi" : "hinglish";
+      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
       if (lang === "hindi") {
         deterministicReply = `हाँ बिल्कुल! मैं हिंदी में बात कर सकता हूँ। Emperor Smart Solutions में आपका स्वागत है! मैं आपके डिजिटल प्रोजेक्ट में किस प्रकार सहायता कर सकता हूँ? क्या आप कोई मोबाइल ऐप, वेबसाइट या कस्टम AI समाधान बनवाना चाहते हैं?`;
       } else {
@@ -494,6 +497,7 @@ export async function POST(request, { params }) {
       }
     } else if (isEnglishSwitchQuery) {
       lang = "english";
+      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
       deterministicReply = `Yes, absolutely! I can converse fluently in English. Emperor Smart Solutions specializes in custom mobile apps, web platforms, and enterprise AI solutions. What kind of project are you looking to build?`;
     } else if (isOfferingToShareContact) {
       deterministicReply = lang === "hindi"
@@ -502,6 +506,7 @@ export async function POST(request, { params }) {
         ? `Sure! Please apna **Name aur Phone Number (ya WhatsApp)** share karein, hum ise note kar lenge aur hamari technical team aapse connect karegi.`
         : `Sure! Please share your **Name and Phone Number (or WhatsApp)** here, and I'll make sure our technical team connects with you promptly.`;
     } else if (isContactSubmission) {
+      quickReplies = ["Website development", "Mobile app", "AI Chatbot"];
       const displayName = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : "";
       if (displayName) {
         deterministicReply = lang === "hindi"
@@ -517,6 +522,7 @@ export async function POST(request, { params }) {
           : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
       }
     } else if (isPureGreeting && !hasTechnicalKeywords) {
+      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         deterministicReply = lang === "hindi"
           ? `नमस्ते ${resolvedName}! Emperor Smart Solutions में आपका स्वागत है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
@@ -706,34 +712,11 @@ Emperor Smart Solutions is a premier custom software engineering and enterprise 
 
 Would you like to discuss your project requirements and receive a realistic timeline? Feel free to share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a customized proposal!`;
     } else if (
-      /\b(?:clinic|hospital|doctor|healthcare|medical|patient)\b/i.test(message) &&
-      /\b(?:website|web\s*app|portal|platform|software|app|develop|build|create|make)\b/i.test(message)
+      /\b(?:what\s+features|feature\s*list|tell\s+me\s+all\s+features|explain\s+all\s+features|clinic\s+features)\b/i.test(message) &&
+      /\b(?:clinic|hospital|doctor|healthcare|medical)\b/i.test(message)
     ) {
-      deterministicReply = lang === "hindi"
-        ? `Emperor Smart Solutions में हम आपकी क्लिनिक या व्यवसाय के लिए उच्च-प्रदर्शन, सुरक्षित और कस्टम वेबसाइट्स व वेब पोर्टल्स डिज़ाइन और डेवलप करते हैं! 🏥
-
-हमारी कस्टम क्लिनिक वेब समाधानों में शामिल हैं:
-1. **ऑनलाइन अपॉइंटमेंट बुकिंग:** मरीजों के लिए रीयल-टाइम डॉक्टर शेड्यूलिंग और स्वचालित SMS/WhatsApp रिमाइंडर।
-2. **डॉक्टर व सेवा प्रोफाइल:** डॉक्टरों की विशेषज्ञता, उपलब्ध समय और क्लिनिक सेवाओं का इंटरएक्टिव प्रदर्शन।
-3. **टेली-परामर्श व पेशेंट पोर्टल:** सुरक्षित ऑनलाइन वीडियो कंसल्टेशन और डिजिटल पर्चे (Prescription)।
-4. **तेज़ व मोबाइल-अनुकूल डिज़ाइन:** आधुनिक Next.js और React आधारित सुपरफास्ट लोडिंग स्पीड।
-
-हमारे कस्टम वेबसाइट डेवलपमेंट पैकेज ₹50,000 से शुरू होते हैं (18% GST अतिरिक्त), जिसमें 30 दिनों का निःशुल्क सपोर्ट शामिल है।
-
-कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें, ताकि हमारी तकनीकी टीम आपसे संपर्क कर एक अनुकूलित प्रस्ताव और डेमो तैयार कर सके!`
-        : lang === "hinglish"
-        ? `Emperor Smart Solutions mein hum aapke clinic ya business ke liye high-performance, secure aur custom websites develop karte hain! 🏥
-
-Hamare custom clinic web solutions mein yeh features shamil hain:
-1. **Online Patient Appointment Booking:** Real-time doctor scheduling aur automated WhatsApp/SMS reminders.
-2. **Doctors & Services Showcase:** Detailed doctor profiles, specialization, aur treatments catalog.
-3. **Teleconsultation & Patient Portal:** Secure online consultation aur medical record management.
-4. **High-Speed Next.js & React Frontend:** Superfast loading speed aur mobile-responsive layout.
-
-Hamare custom web development packages ₹50,000 se start hote hain (18% GST extra), jisme 30 days ka free post-launch support included hai.
-
-Kripya apna **Name aur Phone Number (ya WhatsApp)** share karein, taaki hamari technical team aapse connect karke customized proposal aur demo share kar sake!`
-        : `At Emperor Smart Solutions, we specialize in building custom, high-performance websites, patient portals, and digital healthcare platforms tailored specifically for clinics and healthcare providers! 🏥
+      quickReplies = ["Book a live demo", "Get formal quotation", "Tech stack"];
+      deterministicReply = `At Emperor Smart Solutions, we specialize in building custom, high-performance websites, patient portals, and digital healthcare platforms tailored specifically for clinics and healthcare providers! 🏥
 
 Here is what our software engineering team builds for your clinic:
 1. **Online Patient Appointment Booking:** Real-time doctor calendar scheduling, department filtering, and automated WhatsApp/SMS appointment confirmations.
@@ -741,28 +724,11 @@ Here is what our software engineering team builds for your clinic:
 3. **Teleconsultation & Patient Portal:** Secure virtual consultations, digital prescriptions, and electronic medical record management.
 4. **Modern, High-Speed Architecture:** Engineered on Next.js and React with PostgreSQL, ensuring sub-second page loads and top local patient Google SEO rankings.
 
-Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.
-
-Could you please share your **Name and Phone Number (or WhatsApp)** so our healthcare solutions team can connect with you and prepare a customized live demo and formal quotation?`;
-    } else if (
-      !isServicesQuery &&
-      !isProjectsPortfolioQuery &&
-      (/\b(?:want\s+to\s+(?:develop|build|create|make)|need\s+(?:a|to\s+build|to\s+develop))\s+(?:a\s+)?(?:website|web\s*platform|web\s*app|portal)\b/i.test(message) ||
-       /\bcan\s+you\s+(?:build|make|develop|create)\s+(?:a\s+)?(?:website|web\s*platform|web\s*app|portal)\b/i.test(message))
-    ) {
-      deterministicReply = `At Emperor Smart Solutions, we specialize in designing and engineering custom, high-performance web platforms and websites built for business growth! 🚀
-
-Here is what we engineer for your business:
-1. **Full-Stack Custom Web Architecture:** Scalable web apps built on Next.js, React, and Node.js for lightning-fast loading speed and top SEO ranking.
-2. **Admin Dashboards & Portals:** Intuitive, secure management portals to manage users, content, leads, or products with role-based access.
-3. **Seamless Integrations:** Online payment gateways (Stripe, Razorpay), custom APIs, CRM sync, and automated workflows.
-4. **Mobile-Responsive & Modern UI/UX:** Tailored, interactive design that reflects your brand and converts visitors into customers.
-
-Our custom website and MVP development packages start from **₹50,000** (with 18% GST extra) and include 30 days of free post-launch support.
-
-What kind of business or website are you looking to build? Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can connect with you and prepare a customized proposal and live demo?`;
+Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.`;
     } else if (isCelebrityOrTriviaQuery) {
-      deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+      deterministicReply = `I can help with ESS's business and technology services. Are you planning a website, app, or AI solution?`;
+      quickReplies = ["Website", "Mobile App", "AI Chatbot"];
+    }
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : (
@@ -804,6 +770,30 @@ Here are our official contact details to speak with our engineering leadership:
       }
     }
 
+    // Consultative Adaptive Sales Flow Handler
+    if (!deterministicReply) {
+      const salesResult = handleSalesFlowTurn({
+        message,
+        existingQualification: existingConv?.qualification,
+        sessionHistory,
+        lang,
+        visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "",
+      });
+
+      if (salesResult.shouldHandle) {
+        deterministicReply = salesResult.reply;
+        quickReplies = salesResult.quickReplies || [];
+        if (salesResult.updatedQualification) {
+          conversationsStore.updateConversation(currentSessionId, {
+            qualification: salesResult.updatedQualification,
+          });
+        }
+        if (salesResult.leadDataToSave && hasActionableContact) {
+          leadDetails.inquiry = salesResult.leadDataToSave.summary;
+        }
+      }
+    }
+
     // --- PHASE 3: REAL-TIME SSE STREAMING (if requested) ---
     const isSseRequested =
       Boolean(requestStream) ||
@@ -812,7 +802,11 @@ Here are our official contact details to speak with our engineering leadership:
     if (isSseRequested) {
       if (deterministicReply) {
         conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
-        conversationsStore.addMessage(currentSessionId, { role: "assistant", content: deterministicReply });
+        conversationsStore.addMessage(currentSessionId, {
+          role: "assistant",
+          content: deterministicReply,
+          quickReplies: quickReplies || [],
+        });
         if (resolvedName || resolvedPhone || resolvedEmail) {
           conversationsStore.updateConversation(currentSessionId, {
             ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
@@ -838,17 +832,19 @@ Here are our official contact details to speak with our engineering leadership:
           leadsStore.createLead(leadData);
           triggerLeadWebhookAsync(bot, leadData);
         }
-        return new Response(
-          `data: ${JSON.stringify({ token: deterministicReply })}\n\ndata: [DONE]\n\n`,
-          {
-            headers: {
-              "Content-Type": "text/event-stream; charset=utf-8",
-              "Cache-Control": "no-cache, no-transform",
-              Connection: "keep-alive",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
+        let streamPayload = `data: ${JSON.stringify({ token: deterministicReply })}\n\n`;
+        if (quickReplies && quickReplies.length > 0) {
+          streamPayload += `data: ${JSON.stringify({ quickReplies })}\n\n`;
+        }
+        streamPayload += `data: [DONE]\n\n`;
+        return new Response(streamPayload, {
+          headers: {
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
 
       const responseStream = new TransformStream();
@@ -1044,6 +1040,7 @@ Here are our official contact details to speak with our engineering leadership:
       NextResponse.json({
         success: true,
         reply: botReply,
+        quickReplies: quickReplies || [],
         sources: [],
         sessionId: currentSessionId,
       })

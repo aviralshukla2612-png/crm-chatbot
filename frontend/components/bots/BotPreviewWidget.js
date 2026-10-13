@@ -42,11 +42,11 @@ export default function BotPreviewWidget({
     setSessionId(`session_preview_${Date.now()}`);
   }, []);
 
-  const handleSend = async (e) => {
+  const handleSend = async (e, explicitText) => {
     e?.preventDefault();
-    if (!inputText.trim()) return;
+    const userText = (typeof explicitText === "string" ? explicitText : inputText).trim();
+    if (!userText) return;
 
-    const userText = inputText.trim();
     const userMsg = {
       id: `w_u_${Date.now()}`,
       role: "user",
@@ -54,7 +54,7 @@ export default function BotPreviewWidget({
     };
     setMessages((prev) => [...prev, userMsg]);
     const query = userText.toLowerCase();
-    setInputText("");
+    if (!explicitText) setInputText("");
     setIsTyping(true);
 
     // 1. Try real live Next.js API endpoint (saves conversation and broadcasts to dashboard live)
@@ -83,6 +83,7 @@ export default function BotPreviewWidget({
               id: `w_a_${Date.now()}`,
               role: "assistant",
               content: data.reply,
+              quickReplies: data.quickReplies || [],
               sources: data.sources || ["Verified Knowledge"],
             },
           ]);
@@ -338,7 +339,7 @@ export default function BotPreviewWidget({
 
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-neutral-50/60 dark:bg-neutral-950/40 text-xs">
-        {messages.map((m) => (
+        {messages.map((m, idx) => (
           <div
             key={m.id}
             className={`flex flex-col ${
@@ -354,6 +355,22 @@ export default function BotPreviewWidget({
             >
               {m.content}
             </div>
+
+            {/* Quick Replies Interactive Options */}
+            {m.quickReplies && m.quickReplies.length > 0 && idx === messages.length - 1 && (
+              <div className="mt-2 flex flex-wrap gap-1.5 max-w-[85%]">
+                {m.quickReplies.map((qr, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSend(null, qr)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-full border border-indigo-600/70 dark:border-indigo-400/70 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-neutral-800 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-all shadow-xs cursor-pointer"
+                  >
+                    {qr}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Citations if available */}
             {m.sources && m.sources.length > 0 && (

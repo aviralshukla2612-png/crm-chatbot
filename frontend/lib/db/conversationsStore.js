@@ -154,6 +154,7 @@ export const conversationsStore = {
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
       messages: data.messages || [],
+      qualification: data.qualification || null,
     };
 
     list.unshift(newConv);
@@ -183,6 +184,7 @@ export const conversationsStore = {
       id: message.id || `m_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       role: message.role || "user",
       content: message.content || message.text || "",
+      quickReplies: message.quickReplies || [],
       sources: message.sources || [],
       timestamp: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
