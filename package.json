@@ -11,6 +11,9 @@
     "test:eval": "node scripts/run_ai_evaluation.js",
     "test:simulate": "node scripts/simulate_real_conversations.js"
   },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
   "devDependencies": {
     "hyparquet": "^1.31.4"
   }

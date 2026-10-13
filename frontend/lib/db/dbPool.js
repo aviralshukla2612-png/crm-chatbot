@@ -5,10 +5,28 @@
  * Aligned 1:1 with Prisma and idempotent_migration.sql schema.
  */
 
-import pg from "pg";
+import { createRequire } from "module";
 import { validateEnvironment } from "../config/envValidator.js";
 
-const { Pool } = pg;
+const require = createRequire(import.meta.url);
+
+let Pool = null;
+try {
+  const pgModule = require("pg");
+  Pool = pgModule.Pool || pgModule.default?.Pool || pgModule;
+} catch {
+  try {
+    const pgModule = require("../../../frontend/node_modules/pg");
+    Pool = pgModule.Pool || pgModule.default?.Pool || pgModule;
+  } catch {
+    try {
+      const pgModule = require("../../node_modules/pg");
+      Pool = pgModule.Pool || pgModule.default?.Pool || pgModule;
+    } catch {
+      // Fallback mode when running outside Docker without local pg
+    }
+  }
+}
 
 const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/ess_chatbot?schema=public";
 
@@ -17,6 +35,7 @@ let isConnected = false;
 let initPromise = null;
 
 export function getDbPool() {
+  if (!Pool) return null;
   if (!pool) {
     const envStatus = validateEnvironment(process.env);
     if (!envStatus.valid && process.env.NODE_ENV === "production") {
@@ -58,6 +77,7 @@ export async function initPostgresTables() {
   initPromise = (async () => {
     try {
       const p = getDbPool();
+      if (!p) return null;
       const client = await p.connect();
 
       try {
@@ -254,6 +274,9 @@ export async function initPostgresTables() {
 export async function queryDb(sql, params = []) {
   try {
     const p = getDbPool();
+    if (!p) {
+      return { ok: false, error: "Database pool unavailable", rows: [], rowCount: 0 };
+    }
     const result = await p.query(sql, params);
     isConnected = true;
     return { ok: true, rows: result.rows, rowCount: result.rowCount };
