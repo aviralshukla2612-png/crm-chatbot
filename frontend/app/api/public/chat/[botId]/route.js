@@ -244,6 +244,38 @@ export async function POST(request, { params }) {
       );
     }
 
+    // Handle CUSTOMER_SPECIFIC memory recall queries deterministically
+    if (intentResult.intent === "CUSTOMER_SPECIFIC") {
+      const priorUserText = sessionHistory.filter((m) => m.role === "user").map((m) => m.content).join(" ");
+      const budgetMatch = priorUserText.match(/(?:₹|rs\.?|inr)?\s*([0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?\s*(?:k|lakh|lac|cr)?)/i);
+      const techMatch = priorUserText.match(/\b(flutter|react native|next\.?js|node\.?js|react|python|fastapi|vue|angular)\b/i);
+      const projectMatch = priorUserText.match(/\b(e-commerce|ecommerce|mobile app|web platform|saas|ai chatbot|crm|erp)\b/i);
+
+      if (/\b(?:what\s+is\s+my\s+budget|which\s+technology|what\s+did\s+i\s+choose|my\s+requirements?|what\s+do\s+you\s+remember)\b/i.test(message)) {
+        const recalledBudget = budgetMatch ? (budgetMatch[0].startsWith("₹") ? budgetMatch[0] : `₹${budgetMatch[0]}`) : null;
+        const recalledTech = techMatch ? techMatch[0] : null;
+        const recalledProject = projectMatch ? projectMatch[0] : null;
+
+        if (recalledBudget || recalledTech) {
+          const parts = [];
+          if (recalledBudget) parts.push(`your stated budget is **${recalledBudget}**`);
+          if (recalledTech) parts.push(`the technology you chose is **${recalledTech}**`);
+          if (recalledProject) parts.push(`for your **${recalledProject}**`);
+
+          const memoryReply = `Based on our conversation, ${parts.join(" and ")}. How would you like to proceed with your project?`;
+          return corsResponse(
+            NextResponse.json({
+              success: true,
+              reply: memoryReply,
+              intent: intentResult.intent,
+              sources: [],
+              sessionId: currentSessionId,
+            })
+          );
+        }
+      }
+    }
+
     // 4. Step 4: Multi-Tenant Vector Search over Authorized Knowledge (Top 2 chunks for fast evaluation)
     const relevantChunks = await searchWebsiteKnowledge(botId, message, 2);
     const contextText = relevantChunks

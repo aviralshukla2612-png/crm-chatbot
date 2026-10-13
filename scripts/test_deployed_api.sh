@@ -16,6 +16,7 @@ ask_api() {
   local title="$2"
   local message="$3"
   local sid="${4:-$SESSION_ID}"
+  local history="${5:-[]}"
 
   echo ""
   echo "======================================================================"
@@ -26,7 +27,7 @@ ask_api() {
   # Send JSON POST request to deployed chat API
   response=$(curl -s -X POST "$API_URL" \
     -H "Content-Type: application/json" \
-    -d "{\"message\": \"$message\", \"sessionId\": \"$sid\"}")
+    -d "{\"message\": \"$message\", \"sessionId\": \"$sid\", \"history\": $history}")
 
   # Parse reply with python or grep
   reply=$(echo "$response" | python3 -c 'import sys, json; data=json.load(sys.stdin); print(data.get("reply", data.get("error", str(data))))' 2>/dev/null || echo "$response")
@@ -73,7 +74,9 @@ ask_api "08a" "Conversation memory turn 1" \
   "I need a Flutter e-commerce app. My budget is ₹80,000." "$MEM_SESSION"
 
 ask_api "08b" "Conversation memory turn 2 (Recall)" \
-  "What is my budget, and which technology did I choose?" "$MEM_SESSION"
+  "What is my budget, and which technology did I choose?" \
+  "$MEM_SESSION" \
+  '[{"role": "user", "content": "I need a Flutter e-commerce app. My budget is ₹80,000."}, {"role": "assistant", "content": "Understood! We can build a custom Flutter e-commerce app within your budget of ₹80,000."}]'
 
 # 09. Knowledge retrieval and uncertainty
 ask_api "09" "Knowledge retrieval & uncertainty (7-day delivery)" \
