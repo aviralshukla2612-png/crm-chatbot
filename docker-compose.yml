@@ -77,6 +77,8 @@ services:
       - OLLAMA_NUM_PARALLEL=2
     volumes:
       - ollama_data:/root/.ollama
+      - ./artifacts:/root/artifacts:ro
+      - ./scripts:/root/scripts:ro
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 15s
