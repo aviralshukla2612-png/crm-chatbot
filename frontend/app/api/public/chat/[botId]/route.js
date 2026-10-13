@@ -728,7 +728,6 @@ Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra
     } else if (isCelebrityOrTriviaQuery) {
       deterministicReply = `I can help with ESS's business and technology services. Are you planning a website, app, or AI solution?`;
       quickReplies = ["Website", "Mobile App", "AI Chatbot"];
-    }
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : (
