@@ -79,6 +79,7 @@ models/
 *.safetensors
 !artifacts/ess_llama3.2_lora/adapter_model.safetensors
 *.onnx
+*.parquet
 .cache/
 huggingface/
 

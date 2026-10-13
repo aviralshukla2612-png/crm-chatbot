@@ -29,9 +29,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="ESS Chatbot SFT via QLoRA")
     parser.add_argument("--base_model", type=str, default="meta-llama/Llama-3.2-1B-Instruct",
                         help="Base Hugging Face model repository or local path")
-    parser.add_argument("--train_file", type=str, default="frontend/data/training/finetuning_train.jsonl",
+    parser.add_argument("--train_file", type=str, default="data/training/ess-sales/train.jsonl",
                         help="Path to training JSONL")
-    parser.add_argument("--val_file", type=str, default="frontend/data/training/finetuning_val.jsonl",
+    parser.add_argument("--val_file", type=str, default="data/training/ess-sales/validation.jsonl",
                         help="Path to validation JSONL")
     parser.add_argument("--output_dir", type=str, default="artifacts/ess_llama3.2_lora",
                         help="Destination directory for LoRA adapter checkpoints")

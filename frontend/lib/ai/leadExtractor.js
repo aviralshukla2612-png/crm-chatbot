@@ -144,7 +144,7 @@ export function extractLeadDetails(message = "", history = []) {
   }
 
   const namePatterns = [
-    /(?:(?:my\s+)?name\s*(?:is|:|-|\s)\s*|i\s+am|i'm|this\s+is|call\s+me|myself|mera\s+naam\s*(?:hai|:|-|\s)?\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
+    /(?:(?:my\s+)?name\s*(?:is|:|-|\s)\s*|(?:i\s+am|i'm|this\s+is|call\s+me|myself)\s+|mera\s+naam\s*(?:hai|:|-|\s)?\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
     /(?:name\s*[:\-\s]\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
   ];
 
@@ -152,7 +152,7 @@ export function extractLeadDetails(message = "", history = []) {
     for (const pattern of namePatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
-        let candidate = match[1].replace(/[.,:;!?&]+.*$/, "").trim();
+        let candidate = match[1].replace(/[,:;!?&]+.*$/, "").replace(/\.+$/, "").trim();
         candidate = candidate.replace(/\s+(?:and|with|my|mobile|phone|number|mobilenumber|whatsapp|email|contact).*$/i, "").trim();
         const candidateWords = candidate.split(/\s+/).filter(Boolean);
         while (candidateWords.length > 0 && NON_NAME_WORDS.has(candidateWords[candidateWords.length - 1].toLowerCase())) {
@@ -161,7 +161,7 @@ export function extractLeadDetails(message = "", history = []) {
         candidate = candidateWords.join(" ");
 
         if (isValidPersonName(candidate)) {
-          name = candidate.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+          name = candidate.split(/\s+/).map((w) => w.includes(".") ? (w.charAt(0).toUpperCase() + w.slice(1)) : (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())).join(" ");
           break;
         }
       }
