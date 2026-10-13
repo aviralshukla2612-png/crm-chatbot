@@ -175,10 +175,6 @@ def main():
         model=model,
         train_dataset=dataset["train"],
         eval_dataset=dataset["validation"],
-        peft_config=peft_config,
-        dataset_text_field="messages",
-        max_seq_length=1024,
-        tokenizer=tokenizer,
         args=training_args,
     )
 
