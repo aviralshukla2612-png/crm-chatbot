@@ -159,20 +159,6 @@ export const QUALIFICATION_FLOWS = {
         },
         extract: (text) => extractBudgetAnswer(text),
       },
-      {
-        id: "timeline",
-        text: {
-          english: "When would you like to launch the website?",
-          hindi: "आप वेबसाइट कब तक लॉन्च करना चाहते हैं?",
-          hinglish: "Aap website kab tak launch karna chahte hain?",
-        },
-        quickReplies: {
-          english: ["Within 2 weeks", "Within a month", "1–3 months", "Flexible"],
-          hindi: ["2 सप्ताह में", "1 महीने में", "1–3 महीने में", "लचीला (Flexible)"],
-          hinglish: ["Within 2 weeks", "Within a month", "1–3 months", "Flexible"],
-        },
-        extract: (text) => extractTimelineAnswer(text),
-      },
     ],
   },
 
@@ -1169,8 +1155,11 @@ export function handleSalesFlowTurn({
   sessionHistory = [],
   lang = "english",
   visitorName = "",
+  visitorPhone = "",
+  visitorEmail = "",
 }) {
   const cleanMsg = message.trim();
+  const contactRecorded = visitorPhone || visitorEmail;
   let current = existingQualification
     ? { ...existingQualification }
     : {
@@ -1216,16 +1205,22 @@ export function handleSalesFlowTurn({
   // 2. Check if user already provided consent to be contacted
   if (current.consentAsked) {
     if (/\b(?:yes|contact\s*me|sure|okay|definitely|call\s*me|haan|kar\s*lo|theek\s*hai)\b/i.test(cleanMsg)) {
-      current.status = "collecting_contact";
-      const promptText = lang === "hindi"
-        ? (visitorName ? `धन्यवाद ${visitorName}! कृपया अपना **फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।` : "कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।")
-        : lang === "hinglish"
-        ? (visitorName ? `Thank you ${visitorName}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect karein.` : "Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sakein.")
-        : (visitorName ? `Thank you ${visitorName}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can prepare your proposal?` : "Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a formal proposal?");
+      current.status = "completed";
+      const promptText = contactRecorded
+        ? (lang === "hindi"
+            ? `धन्यवाद ${visitorName || ""}! हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${contactRecorded}**) दर्ज है और वे जल्द ही आपसे संपर्क करेंगे! 🚀`
+            : lang === "hinglish"
+            ? `Thank you ${visitorName || ""}! Hamari technical team ke paas aapka contact details (**${contactRecorded}**) available hai aur hamari team jald hi customized proposal ke saath aapse connect karegi! 🚀`
+            : `Thank you, ${visitorName || "there"}! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal! 🚀`)
+        : (lang === "hindi"
+            ? (visitorName ? `धन्यवाद ${visitorName}! कृपया अपना **फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।` : "कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।")
+            : lang === "hinglish"
+            ? (visitorName ? `Thank you ${visitorName}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect karein.` : "Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sakein.")
+            : (visitorName ? `Thank you, ${visitorName}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can prepare your proposal?` : "Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a formal proposal?"));
       return {
         shouldHandle: true,
         reply: promptText,
-        quickReplies: [],
+        quickReplies: contactRecorded ? ["Tell me about ESS", "Recent projects", "Office location"] : [],
         updatedQualification: current,
         leadDataToSave: {
           service: current.service,
@@ -1305,27 +1300,46 @@ export function handleSalesFlowTurn({
     };
   }
 
-  // 6. All qualification questions answered! Present brief summary and ask for contact consent
+  // 6. All qualification questions answered! Present brief summary and finalize lead
   const summary = generateRequirementsSummary(current.service, current.answers, lang);
+  const serviceTitle = QUALIFICATION_FLOWS[current.service]?.serviceName || "Digital Project";
+
+  if (contactRecorded) {
+    current.status = "completed";
+    current.consentAsked = false;
+
+    const completionText = lang === "hindi"
+      ? `शानदार! मैंने आपकी **${serviceTitle}** आवश्यकताओं को नोट कर लिया है।\n\nधन्यवाद ${visitorName || ""}! हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${contactRecorded}**) दर्ज है और वे जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेंगे! 🚀`
+      : lang === "hinglish"
+      ? `Great! Humne aapke **${serviceTitle}** project ki saari requirements note kar li hain.\n\nThank you ${visitorName || ""}! Hamari technical team ke paas aapka contact details (**${contactRecorded}**) recorded hai aur hamari team jald hi customized proposal ke saath aapse connect karegi! 🚀`
+      : `Great! We have recorded all your requirements for your **${serviceTitle}** project.\n\nThank you, ${visitorName || "there"}! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal and project roadmap! 🚀`;
+
+    return {
+      shouldHandle: true,
+      reply: completionText,
+      quickReplies: ["Tell me about ESS", "Recent projects", "Office location"],
+      updatedQualification: current,
+      leadDataToSave: {
+        service: current.service,
+        answers: current.answers,
+        summary: summary,
+      },
+    };
+  }
+
   current.status = "summary_ready";
   current.consentAsked = true;
 
   const consentPrompt = lang === "hindi"
-    ? `${summary}\n\nक्या आप चाहेंगे कि ESS इंजीनियरिंग टीम इस प्रोजेक्ट पर आपसे चर्चा करने के लिए संपर्क करे?`
+    ? `${summary}\n\nधन्यवाद ${visitorName || ""}! क्या आप अपना **फ़ोन नंबर (या WhatsApp)** साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे सीधे संपर्क कर सके?`
     : lang === "hinglish"
-    ? `${summary}\n\nKya aap chahenge ki ESS technical team is project ko discuss karne ke liye aapse connect kare?`
-    : `${summary}\n\nWould you like the ESS team to contact you about this project?`;
-
-  const consentReplies = lang === "hindi"
-    ? ["हाँ, संपर्क करें", "अभी नहीं"]
-    : lang === "hinglish"
-    ? ["Haan, contact me", "Not right now"]
-    : ["Yes, contact me", "Not right now"];
+    ? `${summary}\n\nThank you ${visitorName || ""}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sake!`
+    : `${summary}\n\nThank you, ${visitorName || "there"}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can reach out to you with a customized proposal?`;
 
   return {
     shouldHandle: true,
     reply: consentPrompt,
-    quickReplies: consentReplies,
+    quickReplies: [],
     updatedQualification: current,
     leadDataToSave: {
       service: current.service,

@@ -234,15 +234,17 @@ export async function POST(request, { params }) {
     }
 
     if (intentResult.action === "CLARIFY" && intentResult.clarificationPrompt) {
-      return corsResponse(
-        NextResponse.json({
-          success: true,
-          reply: intentResult.clarificationPrompt,
-          intent: intentResult.intent,
-          sources: [],
-          sessionId: currentSessionId,
-        })
-      );
+      if (sessionHistory.length === 0) {
+        return corsResponse(
+          NextResponse.json({
+            success: true,
+            reply: intentResult.clarificationPrompt,
+            intent: intentResult.intent,
+            sources: [],
+            sessionId: currentSessionId,
+          })
+        );
+      }
     }
 
     // Handle CUSTOMER_SPECIFIC memory recall queries deterministically
@@ -821,6 +823,8 @@ Here are our official contact details to speak with our engineering leadership:
         sessionHistory,
         lang,
         visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "",
+        visitorPhone: resolvedPhone,
+        visitorEmail: resolvedEmail,
       });
 
       if (salesResult.shouldHandle) {

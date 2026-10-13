@@ -214,7 +214,9 @@ export function classifyMessageIntent({
     };
   }
 
-  // 8. Check for Person Introduction, Contact Submission, or Qualification Answer
+  // 8. Ongoing Conversation Turn or Qualification / Contact Response
+  const hasHistory = Array.isArray(history) && history.length > 0;
+
   const isPersonName =
     /^[A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20}){0,2}$/.test(trimmed) &&
     !/^(?:what|where|who|how|why|when|which|is|are|can|could|will|would|do|does|did|show|give|tell|help|need|want|build|make|create|price|cost|quote|budget|srk|salman)\b/i.test(trimmed);
@@ -225,32 +227,23 @@ export function classifyMessageIntent({
     /\b\d{10,12}\b/.test(trimmed);
 
   const isQualificationChoice =
-    /^(?:yes|no|haan|nahi|new website|redesign|business website|e-commerce|ecommerce|portfolio|blog|web application|mobile application|mobile app|ai chatbot|custom software|ui\/ux|cloud|seo|android|ios|cross-platform|not sure|personal portfolio|student project|non-profit)\b/i.test(trimmed);
+    /^(?:yes|no|haan|nahi|new website|redesign|business website|e-commerce|ecommerce|portfolio|blog|web application|mobile application|mobile app|ai chatbot|custom software|ui\/ux|cloud|seo|android|ios|cross-platform|not sure|personal portfolio|student project|non-profit|under|above|flexible|within|month|weeks)\b/i.test(trimmed) ||
+    /\b(?:under|above|less\s+than|more\s+than)?\s*(?:₹|rs\.?|inr)?\s*[\d,]+(?:\s*k|\s*lakh|\s*mo|\s*cr)?\b/i.test(trimmed) ||
+    /\b(?:2\s*weeks|month|1–3\s*months|flexible|urgent|immediate)\b/i.test(trimmed);
 
-  const lastAssistantMsg = (history || [])
-    .filter((m) => typeof m === "object" && m.role === "assistant")
-    .slice(-1)[0]?.content || "";
-
-  const wasAskedForNameOrChoice =
-    Boolean(lastAssistantMsg) &&
-    (/\b(?:name|naam|number|phone|whatsapp|contact|email|who\s+are\s+you|introduce|website|app|service|interested|solution)\b/i.test(lastAssistantMsg) ||
-     lastAssistantMsg.includes("May I know your name") ||
-     lastAssistantMsg.includes("अपना नाम") ||
-     lastAssistantMsg.includes("apna Name"));
-
-  if (isPersonName || hasPhoneOrEmail || isQualificationChoice || wasAskedForNameOrChoice) {
+  if (hasHistory || isPersonName || hasPhoneOrEmail || isQualificationChoice) {
     return {
-      intent: (isPersonName || hasPhoneOrEmail || wasAskedForNameOrChoice) ? "CUSTOMER_SPECIFIC" : "BUSINESS_RELEVANT",
+      intent: (isPersonName || hasPhoneOrEmail) ? "CUSTOMER_SPECIFIC" : "BUSINESS_RELEVANT",
       confidence: 0.95,
-      reason: "Customer introducing themselves, sharing contact, or responding to qualification prompt",
-      subCategory: "customer_onboarding",
+      reason: hasHistory ? "Active conversation continuation" : "Customer onboarding or qualification reply",
+      subCategory: "conversation_turn",
       action: "PROCEED",
       refusalReply: null,
       clarificationPrompt: null,
     };
   }
 
-  // 9. Check for AMBIGUOUS: Truly underspecified or gibberish queries
+  // 9. Check for AMBIGUOUS: Truly underspecified or gibberish FIRST-TURN queries
   if (trimmed.length <= 15 && !/^(?:hi|hello|hey|yes|no|ok|sure|thanks|thank you)\b/i.test(trimmed)) {
     const clarification =
       lang === "hindi"
@@ -262,7 +255,7 @@ export function classifyMessageIntent({
     return {
       intent: "AMBIGUOUS",
       confidence: 0.75,
-      reason: "Query is ambiguous or underspecified; requesting clarification",
+      reason: "Initial query is ambiguous or underspecified; requesting clarification",
       subCategory: "underspecified",
       action: "CLARIFY",
       refusalReply: null,
