@@ -810,12 +810,12 @@ export function detectServiceIntent(message = "", currentService = null) {
   }
 
   // Custom Software & ERP Intent
-  if (/\b(?:custom\s*software|erp|crm|inventory\s*software|billing\s*software|management\s*system|custom\s*software\s*&\s*erp|software\s*development)\b/i.test(clean)) {
+  if (/\b(?:custom\s*software|erp|crm|inventory\s*software|billing\s*software|management\s*system|custom\s*software\s*&\s*erp|software\s*development|school\s*management|college\s*management|hospital\s*management|management\s*software)\b/i.test(clean)) {
     return "custom_software";
   }
 
   // Mobile App Intent
-  if (/\b(?:mobile\s*app|ios\s*app|android\s*app|flutter\s*app|react\s*native|build\s*an?\s*app|app\s*development|mobile\s*application)\b/i.test(clean)) {
+  if (/\b(?:mobile\s*app|ios\s*app|android\s*app|flutter\s*app|react\s*native|build\s*an?\s*app|app\s*development|mobile\s*application|app\s+for|want\s+(?:an?\s+)?app|need\s+(?:an?\s+)?app|application\s+for)\b/i.test(clean)) {
     return "mobile_app";
   }
 

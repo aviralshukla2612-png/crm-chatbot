@@ -114,6 +114,13 @@ export function extractLeadDetails(message = "", history = []) {
     "bot", "chatbot", "agent", "agents", "saas", "project", "mvp", "prototype",
     "quote", "cost", "price", "pricing", "rate", "budget", "money", "cash", "rupees",
     "rs", "inr", "dollar", "dollars", "k", "lakh", "crore",
+    "both", "all", "none", "neither", "either", "any", "some", "few", "more", "less",
+    "other", "another", "same", "different",
+    "new", "old", "fresh", "scratch", "redesign", "update", "revamp",
+    "school", "college", "university", "institute", "student", "teacher", "management",
+    "ecommerce", "store", "shop", "portal", "platform", "system",
+    "hybrid", "cross", "crossplatform", "pwa",
+    "under", "above", "around", "approx", "approximate",
     "info", "details", "contact", "number", "phone", "email", "address", "office",
     "location", "founder", "founders", "cofounder", "ceo", "cto", "developer", "engineer",
     "clinic", "hospital", "healthcare", "medical", "doctor", "business", "service", "services",
@@ -176,12 +183,12 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // Check if current message or any recent turn is a standalone 1-3 word person name
+  // Check if current message or any recent turn is a standalone 2-3 word person name
   if (!name) {
     for (const text of recentTexts.slice().reverse()) {
       const clean = text.trim().replace(/[.,:;!?&]+$/, "").trim();
       const words = clean.split(/\s+/).filter(Boolean);
-      if (words.length >= 1 && words.length <= 3 && isValidPersonName(clean)) {
+      if (words.length >= 2 && words.length <= 3 && isValidPersonName(clean)) {
         name = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
         break;
       }

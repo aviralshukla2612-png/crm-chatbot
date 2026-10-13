@@ -304,7 +304,7 @@ export async function POST(request, { params }) {
 
     // 1. Phone Resolution (Current message has top priority!)
     let resolvedPhone = "";
-    if (currentMsgLead.phone && !isCompanyPhone(currentMsgLead.phone)) {
+    if (currentMsgLead.phone) {
       resolvedPhone = currentMsgLead.phone;
     } else if (sessionLead.phone && !isCompanyPhone(sessionLead.phone)) {
       resolvedPhone = sessionLead.phone;
