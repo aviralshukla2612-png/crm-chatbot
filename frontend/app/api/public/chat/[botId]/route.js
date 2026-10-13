@@ -282,7 +282,7 @@ export async function POST(request, { params }) {
       /^(?:hi+|hello+|hey+)\b/i.test(trimmedMsg) ||
       ["whatsup", "whats up", "sup", "yo", "hi", "hii", "hello", "hey", "namaste", "greetings"].includes(cleanLower);
     const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address)\b/i));
-    const hasSoftwareOrCompanyContext = Boolean(message.toLowerCase().match(/\b(flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|database|postgres|aws|cloud|ai|rag|llm|agent|chatbot|automation|erp|crm|saas|mvp|prototype|architecture|ui|ux|design|dev|code|coding|software|website|web|app|apps|application|mobile|ios|android|ecommerce|e-commerce|store|portal|platform|custom\s*software|cost|price|pricing|quote|budget|hire|developer|engineer|timeline|sprint|estimate|proposal|package|5k|10k|50k|rupees|inr|rs|ess|emperor|smart\s*solutions|yash|karan|sharma|makwana|shitiratna|panchvati|navrangpura|ahmedabad|consultation|meeting|demo)\b/i));
+    const hasSoftwareOrCompanyContext = Boolean(message.toLowerCase().match(/\b(flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|database|postgres|aws|cloud|ai|rag|llm|agent|chatbot|automation|erp|crm|saas|mvp|prototype|architecture|ui|ux|design|dev|code|coding|software|website|web|app|apps|application|mobile|ios|android|ecommerce|e-commerce|store|portal|platform|custom\s*software|cost|price|pricing|quote|budget|hire|developer|engineer|timeline|sprint|estimate|proposal|package|5k|10k|50k|rupees|inr|rs|ess|emperor|smart\s*solutions|yash|karan|sharma|makwana|shitiratna|panchvati|navrangpura|ahmedabad|consultation|meeting|demo|service|services|provide|provides|providing|offer|offers|offering|offerings|solution|solutions|work|works|working|build|building|make|create|features?|technology|tech|stack|capabilities|expertise|company|business|client|clients)\b/i));
 
     const isOfferingToShareContact =
       !hasTechnicalKeywords &&
@@ -336,6 +336,17 @@ export async function POST(request, { params }) {
       /\b(?:projects?|portfolio|recent\s*works?|past\s*works?|case\s*studies|clients?|completed\s*projects?|live\s*projects?)\b/i.test(message) &&
       (/\b(?:how\s+many|show|give|list|tell|view|see|completed|done|worked|details?|sample|example|what|share)\b/i.test(message) || message.trim().length <= 35);
 
+    const isServicesQuery =
+      !isContactDetailsQuery &&
+      !isProjectsPortfolioQuery &&
+      !isEssLeadershipQuery &&
+      (/\b(?:services?|offerings?|capabilities|expertise)\b/i.test(message) ||
+       /\bwhat\s+(?:services?|solutions?)\s+(?:they|you|do\s+you|are|does\s+ess|does\s+emperor)\b/i.test(message) ||
+       /\bwhat\s+(?:do\s+you|they|does\s+(?:ess|emperor))\s+(?:do|provide|offer|build|make)\b/i.test(message) ||
+       /\bwhat\s+can\s+you\s+(?:do|build|make|provide|offer)\b/i.test(message) ||
+       /\b(?:kya|konsi|kaunsi)\s+(?:service|services|kaam|suvidha)\b/i.test(message) ||
+       /\b(?:kya\s+karte\s+ho|kya\s+karti\s+hai|kya\s+service\s+dete\s+ho)\b/i.test(message));
+
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
     const isNameIntroductionOnly =
@@ -374,6 +385,7 @@ export async function POST(request, { params }) {
       !isEnglishSwitchQuery &&
       !isOfferingToShareContact &&
       !isProjectsPortfolioQuery &&
+      !isServicesQuery &&
       !isContactSubmission &&
       (isExternalEntityQuery ||
       (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
@@ -499,6 +511,42 @@ Our key portfolio areas include:
 • **Enterprise AI Solutions:** Production RAG pipelines, autonomous AI agents, and enterprise workflow automation.
 
 Would you like to see relevant case studies or a live demo for your industry? Could you please share your **Name and Phone Number (or WhatsApp)** so our team can send over a tailored portfolio?`;
+    } else if (isServicesQuery) {
+      deterministicReply = lang === "hindi"
+        ? `Emperor Smart Solutions (ESS) एक प्रमुख डिजिटल इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है। हमारी मुख्य सेवाएं इस प्रकार हैं:
+
+1. **कस्टम मोबाइल ऐप डेवलपमेंट:** Flutter और React Native द्वारा निर्मित हाई-परफॉर्मेंस iOS और Android ऐप्स।
+2. **वेब प्लेटफ़ॉर्म और SaaS डेवलपमेंट:** Next.js, React और Node.js आधारित स्केलेबल वेब ऐप्स, कस्टम पोर्टल्स और क्लाउड SaaS प्लेटफ़ॉर्म।
+3. **एंटरप्राइज AI और ऑटोमेशन:** कस्टम AI चैटबॉट्स, RAG (Retrieval-Augmented Generation) सिस्टम्स, स्वायत्त AI एजेंट्स और बिजनेस वर्कफ़्लो ऑटोमेशन।
+4. **UI/UX डिज़ाइन और प्रोटोटाइपिंग:** आधुनिक और सहज UI/UX डिज़ाइन, सिस्टम आर्किटेक्चर कंसल्टिंग और रैपिड MVP प्रोटोटाइप्स।
+5. **क्लाउड और API इंटीग्रेशन:** स्केलेबल बैकएंड सिस्टम्स, सुरक्षित REST/GraphQL APIs और क्लाउड डिप्लॉयमेंट (AWS/Docker)।
+
+प्रत्येक प्रोजेक्ट में एंड-टू-एंड डिज़ाइन, इंजीनियरिंग, कठोर QA टेस्टिंग और 30 दिनों का निःशुल्क पोस्ट-लॉन्च सपोर्ट शामिल है।
+
+आप किस प्रकार का प्रोजेक्ट बनवाना चाहते हैं? कृपया अपनी आवश्यकताएं या अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें, हमारी तकनीकी टीम आपसे संपर्क करेगी!`
+        : lang === "hinglish"
+        ? `Emperor Smart Solutions (ESS) ek premier digital engineering aur enterprise AI development company hai. Hamari core services yeh hain:
+
+1. **Custom Mobile App Development:** Flutter aur React Native par high-performance iOS aur Android apps.
+2. **Web Platforms & Enterprise SaaS:** Next.js, React, aur Node.js par scalable web applications, client portals aur SaaS platforms.
+3. **Enterprise AI & Automation:** Custom AI chatbots, production-grade RAG systems, autonomous AI agents aur business workflow automation.
+4. **UI/UX Design & Architecture:** Intuitive UI/UX designs, architecture consulting aur rapid MVP prototyping.
+5. **Cloud Infrastructure & APIs:** Scalable microservices, secure REST/GraphQL APIs aur cloud deployment (AWS/Docker).
+
+Har project mein end-to-end design, development, QA testing, aur 30 days ka free post-launch support included hota hai.
+
+Aap kis tarah ka digital project build karwana chahte hain? Apna idea ya **Name aur Phone/WhatsApp number** share karein, hamari team aapse jald hi connect karegi!`
+        : `Emperor Smart Solutions (ESS) is a full-cycle digital engineering and enterprise AI development company. Here are our core services:
+
+1. **Custom Mobile App Development:** High-performance iOS and Android applications built with Flutter and React Native.
+2. **Web Platforms & Enterprise SaaS:** Scalable web applications, customer portals, and cloud SaaS platforms using Next.js, React, Node.js, and modern backends.
+3. **Enterprise AI & Automation:** Custom AI chatbots, RAG (Retrieval-Augmented Generation) systems, autonomous AI agents, and intelligent workflow automation.
+4. **UI/UX Design & Architecture:** Intuitive UI/UX designs, system architecture consulting, and rapid MVP prototypes.
+5. **Cloud Infrastructure & API Integrations:** Scalable microservices, secure REST/GraphQL APIs, database optimization (PostgreSQL/pgvector), and cloud deployments (AWS/Docker).
+
+Every project includes full turnkey execution: end-to-end design, development, rigorous QA testing, and 30 days of free post-launch support.
+
+What kind of digital project are you looking to build? Feel free to share your requirements or your **Name and Phone Number (or WhatsApp)**, and our technical team will prepare a tailored proposal for you!`;
     } else if (isEssLeadershipQuery) {
       if (/\b(?:karan|karan\s+makwana)\b/i.test(message) && !/\byash\b/i.test(message)) {
         deterministicReply = lang === "hindi"

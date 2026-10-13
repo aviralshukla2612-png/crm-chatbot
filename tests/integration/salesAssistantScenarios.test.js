@@ -352,4 +352,14 @@ The founder is Yash Sharma.`;
     const found = leadsStore.getLead(newLead.id);
     assert.equal(found.name, "Siddharth Mehta");
   });
+
+  // 41. Service inquiry does not trigger off-topic trivia refusal
+  it("Scenario 41: Service inquiry ('what service they provide') is recognized as core business", () => {
+    const inquiry = "what service they provide";
+    const lead = extractLeadDetails(inquiry);
+    assert.match(lead.inquiry, /Consultation|Custom Engineering|General Inquiry/i);
+    const safetyCheck = checkInputScopeAndSafety(inquiry, "Emperor Smart Solutions", "english");
+    assert.equal(safetyCheck.blocked, false);
+  });
 });
+
