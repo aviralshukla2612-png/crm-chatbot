@@ -419,8 +419,11 @@ export async function POST(request, { params }) {
       /\b(?:budget|only|have|afford|pay|give|price|cost|rs|inr|rupees)\b/i.test(message);
 
     const isExternalEntityQuery =
-      /\b(?:owner|founder|co-founder|ceo|cto|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)/i.test(message) ||
-      /\b(?:mahindra|tata|reliance|adani|google|microsoft|apple|amazon|facebook|meta|tesla|netflix|infosys|tcs|wipro|twitter|openai|nvidia|flipkart|zomato|swiggy|bjp|congress)\b/i.test(message);
+      !hasSoftwareOrCompanyContext &&
+      !hasTechnicalKeywords &&
+      (/\b(?:owner|founder|co-founder|ceo|cto|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)[a-z\s]+/i.test(message) ||
+       /\bwho\s+(?:is|was|are)\s+(?:the\s+)?(?:founder|ceo|cto|owner|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)[a-z\s]+/i.test(message) ||
+       /\b(?:mahindra|reliance|adani|tesla|netflix|infosys|tcs|wipro|twitter|bjp|congress)\b/i.test(message));
 
     const isEssLeadershipQuery =
       !isExternalEntityQuery &&
@@ -452,8 +455,8 @@ export async function POST(request, { params }) {
 
     const isAnsweringQualificationOption =
       hasActiveProject &&
-      (/\b(?:portfolio|e-commerce|business\s*website|web\s*application|not\s*sure|new\s*website|redesign|yes|no|personal\s*portfolio|blog|student|ngo|non-profit|android|ios|cross-platform|custom|full-stack|mvp|prototype|under\s*₹?50|₹?50,000|above\s*₹?1|₹?1,00,000)\b/i.test(message) ||
-       /\b(?:business\s+website,\s+e-commerce\s+store,\s+portfolio|new\s+website\s+or\s+a\s+redesign|website\s+for\s+your\s+business|personal\s+portfolio,\s+blog|approximate\s+budget)\b/i.test(lastAssistantMessage));
+      (/\b(?:portfolio|e-commerce|business\s*website|web\s*application|not\s*sure|new\s*website|redesign|yes|no|personal\s*portfolio|blog|student|ngo|non-profit|android|ios|cross-platform|custom|full-stack|mvp|prototype|under\s*₹?50|₹?50,000|above\s*₹?1|₹?1,00,000|aws|google\s*cloud|google|gcp|docker|vps|azure|microsoft|recommendation|enterprise\s*erp|erp|crm|sales|operations|portal|whatsapp|lead\s*collection|customer\s*support|figma|branding|wireframes|ranking|speed|cro)\b/i.test(message) ||
+       /\b(?:business\s+website,\s+e-commerce\s+store,\s+portfolio|new\s+website\s+or\s+a\s+redesign|website\s+for\s+your\s+business|personal\s+portfolio,\s+blog|approximate\s+budget|which\s+cloud\s+platform|android\s+app,\s+ios\s+app|website,\s+whatsapp|enterprise\s+erp,\s+crm)\b/i.test(lastAssistantMessage));
 
     const isProjectsPortfolioQuery =
       !hasTechnicalKeywords &&
@@ -538,6 +541,10 @@ export async function POST(request, { params }) {
       /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
 
     const isCelebrityOrTriviaQuery =
+      !hasActiveProject &&
+      !isAnsweringQualificationOption &&
+      !hasTechnicalKeywords &&
+      !hasSoftwareOrCompanyContext &&
       !isContactDetailsQuery &&
       !isLanguageSwitchQuery &&
       !isEnglishSwitchQuery &&
