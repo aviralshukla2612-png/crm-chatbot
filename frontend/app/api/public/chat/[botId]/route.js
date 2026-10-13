@@ -10,9 +10,13 @@ import {
   detectLanguage,
 } from "@/lib/ai/masterPrompt";
 import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
-import { extractLeadDetails } from "@/lib/ai/leadExtractor";
-import { handleSalesFlowTurn, formatQualificationInquiry, ALL_ESS_SERVICES } from "@/lib/ai/salesFlowManager";
-import { InferenceProvider } from "@/lib/ai/inferenceProvider";
+import {
+  handleSalesFlowTurn,
+  formatQualificationInquiry,
+  ALL_ESS_SERVICES,
+  recoverQualificationFromHistory,
+  QUALIFICATION_FLOWS,
+} from "@/lib/ai/salesFlowManager";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
 
@@ -521,51 +525,103 @@ export async function POST(request, { params }) {
         ? `Sure! Please apna **Name aur Phone Number (ya WhatsApp)** share karein, hum ise note kar lenge aur hamari technical team aapse connect karegi.`
         : `Sure! Please share your **Name and Phone Number (or WhatsApp)** here, and I'll make sure our technical team connects with you promptly.`;
     } else if (isContactSubmission) {
-      quickReplies = [...ALL_ESS_SERVICES];
+      const activeQual = existingConv?.qualification || recoverQualificationFromHistory(sessionHistory);
+      const hasActiveProject = Boolean(activeQual && activeQual.service);
       const displayName = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : "";
-      if (displayName) {
-        if (!resolvedPhone && !resolvedEmail) {
-          deterministicReply = lang === "hindi"
-            ? `नमस्ते ${displayName}! Emperor Smart Solutions में आपका स्वागत है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
-            : lang === "hinglish"
-            ? `Nice to meet you, ${displayName}! Emperor Smart Solutions mein aapka swagat hai. Aap kaunsa project plan kar rahe hain?`
-            : `Nice to meet you, ${displayName}! Welcome to Emperor Smart Solutions. Which solution are you planning to build?`;
+
+      if (hasActiveProject && (resolvedPhone || resolvedEmail)) {
+        const serviceTitle = QUALIFICATION_FLOWS[activeQual.service]?.serviceName || "Digital Project";
+        const contactVal = resolvedPhone || resolvedEmail;
+
+        const completedQual = {
+          ...activeQual,
+          status: "completed",
+          consentAsked: false,
+          answers: {
+            ...(activeQual.answers || {}),
+          },
+        };
+
+        quickReplies = ["Tell me about ESS", "Recent projects", "Office location"];
+
+        if (lang === "hindi") {
+          deterministicReply = `शानदार! धन्यवाद ${displayName || ""}! हमने आपके **${serviceTitle}** प्रोजेक्ट के लिए आपका संपर्क नंबर (**${contactVal}**) सुरक्षित रूप से नोट कर लिया है।\n\nहमारी तकनीकी टीम जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेगी! 🚀`;
+        } else if (lang === "hinglish") {
+          deterministicReply = `Great! Thank you ${displayName || ""}! Humne aapke **${serviceTitle}** project ke liye aapka contact number (**${contactVal}**) note kar liya hai.\n\nHamari technical team jald hi customized proposal aur project roadmap ke saath aapse connect karegi! 🚀`;
         } else {
-          deterministicReply = lang === "hindi"
-            ? `धन्यवाद ${displayName}! आपका संपर्क विवरण नोट कर लिया गया है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
-            : lang === "hinglish"
-            ? `Thank you ${displayName}! Aapki details note kar li gayi hain. Aap kaunsa digital solution develop karwana chahte hain?`
-            : `Thank you, ${displayName}! Your contact details have been recorded. Which digital solution are you planning to build?`;
+          deterministicReply = `Thank you, ${displayName || "there"}! We have recorded your contact number (**${contactVal}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`;
         }
 
-        // Immediately register lead with the visitor's name
+        const inquirySummary = formatQualificationInquiry(completedQual);
+        const qAnswers = completedQual.answers || {};
+
         leadsStore.createLead({
           sessionId: currentSessionId,
           botId: bot?.id || botId,
-          name: displayName,
-          email: resolvedEmail || "",
-          phone: resolvedPhone || "",
+          name: displayName || leadDetails.name || "Website Prospect",
+          email: resolvedEmail || leadDetails.email || "",
+          phone: resolvedPhone || leadDetails.phone || "",
           company: bot?.company || "Direct Inbound",
           bot: botName,
-          inquiry: "Visitor introduced themselves. Offered services options.",
-          budget: "₹50,000+",
+          inquiry: inquirySummary || `Qualified ${serviceTitle} Project Inbound`,
+          budget: qAnswers.budget || "₹50,000+",
           source: "Web Chatbot Widget",
+          qualification: completedQual,
         });
 
-        const existingC = conversationsStore.getConversation(currentSessionId);
-        if (existingC) {
-          conversationsStore.updateConversation(currentSessionId, {
-            visitorName: displayName,
-            ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
-            ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
-          });
-        }
+        conversationsStore.updateConversation(currentSessionId, {
+          qualification: completedQual,
+          status: "completed",
+          ...(displayName ? { visitorName: displayName } : {}),
+          ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+          ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+        });
       } else {
-        deterministicReply = lang === "hindi"
-          ? `धन्यवाद! आपका संपर्क विवरण नोट कर लिया गया है। क्या आप अपना **नाम** भी साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे व्यक्तिगत रूप से संपर्क कर सके?`
-          : lang === "hinglish"
-          ? `Thank you! Aapka contact number note kar liya gaya hai. Kya aap apna **Name** bhi share kar sakte hain taaki hamari technical team aapse personally connect kar sakein?`
-          : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
+        quickReplies = [...ALL_ESS_SERVICES];
+        if (displayName) {
+          if (!resolvedPhone && !resolvedEmail) {
+            deterministicReply = lang === "hindi"
+              ? `नमस्ते ${displayName}! Emperor Smart Solutions में आपका स्वागत है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
+              : lang === "hinglish"
+              ? `Nice to meet you, ${displayName}! Emperor Smart Solutions mein aapka swagat hai. Aap kaunsa project plan kar rahe hain?`
+              : `Nice to meet you, ${displayName}! Welcome to Emperor Smart Solutions. Which solution are you planning to build?`;
+          } else {
+            deterministicReply = lang === "hindi"
+              ? `धन्यवाद ${displayName}! आपका संपर्क विवरण नोट कर लिया गया है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
+              : lang === "hinglish"
+              ? `Thank you ${displayName}! Aapki details note kar li gayi hain. Aap kaunsa digital solution develop karwana chahte hain?`
+              : `Thank you, ${displayName}! Your contact details have been recorded. Which digital solution are you planning to build?`;
+          }
+
+          // Immediately register lead with the visitor's name
+          leadsStore.createLead({
+            sessionId: currentSessionId,
+            botId: bot?.id || botId,
+            name: displayName,
+            email: resolvedEmail || "",
+            phone: resolvedPhone || "",
+            company: bot?.company || "Direct Inbound",
+            bot: botName,
+            inquiry: "Visitor introduced themselves. Offered services options.",
+            budget: "₹50,000+",
+            source: "Web Chatbot Widget",
+          });
+
+          const existingC = conversationsStore.getConversation(currentSessionId);
+          if (existingC) {
+            conversationsStore.updateConversation(currentSessionId, {
+              visitorName: displayName,
+              ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+              ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+            });
+          }
+        } else {
+          deterministicReply = lang === "hindi"
+            ? `धन्यवाद! आपका संपर्क विवरण नोट कर लिया गया है। क्या आप अपना **नाम** भी साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे व्यक्तिगत रूप से संपर्क कर सके?`
+            : lang === "hinglish"
+            ? `Thank you! Aapka contact number note kar liya gaya hai. Kya aap apna **Name** bhi share kar sakte hain taaki hamari technical team aapse personally connect kar sakein?`
+            : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
+        }
       }
     } else if (isPureGreeting && !hasTechnicalKeywords) {
       quickReplies = [...ALL_ESS_SERVICES];

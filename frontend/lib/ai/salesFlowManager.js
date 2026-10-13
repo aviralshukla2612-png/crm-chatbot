@@ -1202,16 +1202,17 @@ export function handleSalesFlowTurn({
     return { shouldHandle: false };
   }
 
-  // 2. Check if user already provided consent to be contacted
+  // 2. Check if user already provided consent or submitted contact details
   if (current.consentAsked) {
-    if (/\b(?:yes|contact\s*me|sure|okay|definitely|call\s*me|haan|kar\s*lo|theek\s*hai)\b/i.test(cleanMsg)) {
+    if (Boolean(contactRecorded) || /\b(?:yes|contact\s*me|sure|okay|definitely|call\s*me|haan|kar\s*lo|theek\s*hai)\b/i.test(cleanMsg)) {
       current.status = "completed";
+      const serviceTitle = QUALIFICATION_FLOWS[current.service]?.serviceName || "Digital Project";
       const promptText = contactRecorded
         ? (lang === "hindi"
-            ? `धन्यवाद ${visitorName || ""}! हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${contactRecorded}**) दर्ज है और वे जल्द ही आपसे संपर्क करेंगे! 🚀`
+            ? `शानदार! धन्यवाद ${visitorName || ""}! हमने आपके **${serviceTitle}** प्रोजेक्ट के लिए आपका संपर्क नंबर (**${contactRecorded}**) सुरक्षित रूप से नोट कर लिया है।\n\nहमारी तकनीकी टीम जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेगी! 🚀`
             : lang === "hinglish"
-            ? `Thank you ${visitorName || ""}! Hamari technical team ke paas aapka contact details (**${contactRecorded}**) available hai aur hamari team jald hi customized proposal ke saath aapse connect karegi! 🚀`
-            : `Thank you, ${visitorName || "there"}! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal! 🚀`)
+            ? `Great! Thank you ${visitorName || ""}! Humne aapke **${serviceTitle}** project ke liye aapka contact number (**${contactRecorded}**) note kar liya hai.\n\nHamari technical team jald hi customized proposal aur project roadmap ke saath aapse connect karegi! 🚀`
+            : `Thank you, ${visitorName || "there"}! We have recorded your contact number (**${contactRecorded}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`)
         : (lang === "hindi"
             ? (visitorName ? `धन्यवाद ${visitorName}! कृपया अपना **फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।` : "कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।")
             : lang === "hinglish"
