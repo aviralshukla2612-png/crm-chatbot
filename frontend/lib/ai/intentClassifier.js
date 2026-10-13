@@ -58,6 +58,11 @@ const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
 
   // 4. Health and medical advice
   /\b(?:medical\s*advice|symptoms?|disease\s*diagnosis|medicine\s*dosage|prescription\s*advice|treatment\s*recommendations?|home\s*remedies|pregnancy\s*advice|mental\s*health\s*diagnosis|therapy\s*advice|medical\s*emergency|doctor\s*consultation|fitness\s*diagnosis|nutrition\s*treatment|drug\s*interactions?|headache|fever|cough|flu|covid|cancer\s*cure|paracetamol|antibiotics?|prescription|dosage)\b/i,
+  /\b(?:what|which)\s+(?:medicine|pill|drug|tablet|treatment|cure|remedy)\s+(?:should|can|to|do)\s+i\s+(?:take|use|have|buy|consume)\b/i,
+  /\b(?:medicine|pills?|tablets?|drugs?)\s+(?:should|to)\s+i\s+take\b/i,
+  /\b(?:should\s+i\s+take\s+(?:any\s+)?(?:medicine|pills?|tablets?|drugs?))\b/i,
+  /\b(?:what|which)\s+medicine\b/i,
+  /\bmedicine\b.*\b(?:take|dose|dosage)\b/i,
 
   // 5. Politics and religion
   /\b(?:politics|political\s*parties?|elections?|voting\s*advice|political\s*debates?|politicians?|political\s*campaigns?|government\s*controversies|religious\s*debates?|religious\s*conversion|religious\s*disputes?|theological\s*arguments?|political\s*propaganda|political\s*predictions?|meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i,
@@ -81,6 +86,11 @@ const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
   /\b(?:is|does|which\s+is)\s+[a-z\s]+\s+better\s+than\s+[a-z\s]+/i,
   /\b(?:which\s+(?:is|one\s+is)\s+better)\b/i,
   /\b(?:should\s+i\s+buy|which\s+(?:phone|laptop|car|bike|tv|gadget)\s+(?:should|to)\s+buy)\b/i,
+];
+
+// Offensive, harmful, or cybercrime instructions (Category 9: strictly blocked)
+const HARMFUL_AND_ILLEGAL_PATTERNS = [
+  /\b(?:pornography|porn|nsfw|xxx|explicit\s*sexual\s*content|sexual\s*roleplay|erotic|hate\s*speech|violent\s*fantasies|kill\s*someone|make\s*bomb|build\s*bomb|drug\s*manufacturing|make\s*drugs|malware|ransomware|keylogger|phishing\s*attack|cybercrime|ddos\s*attack\s+script)\b/i,
 ];
 
 // Legitimate security & technical question markers (to prevent false-positive UNSAFE triggers)
@@ -185,15 +195,64 @@ export function classifyMessageIntent({
     };
   }
 
-  // 5. Check for BUSINESS_TECHNICAL: Legitimate technical questions (even if containing suspicious words like SQL injection)
-  const isSecurityOrArchQuery =
+  // 5. Check for Harmful or Illegal instructions (Category 9: strictly blocked)
+  const isSecurityDefense =
     LEGITIMATE_TECH_CONTEXT_PATTERNS[0].test(trimmed) &&
     LEGITIMATE_TECH_CONTEXT_PATTERNS[1].test(trimmed);
 
-  const isTechSoftwareQuery =
-    /\b(?:flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|graphql|rest|database|postgres|pgvector|docker|kubernetes|aws|cloud|ai|rag|llm|agent|chatbot|architecture|microservices|integration|webhook)\b/i.test(trimmed);
+  if (!isSecurityDefense) {
+    for (const pattern of HARMFUL_AND_ILLEGAL_PATTERNS) {
+      if (pattern.test(trimmed)) {
+        return {
+          intent: "UNSAFE_OR_UNAUTHORIZED",
+          confidence: 0.98,
+          reason: "Harmful, explicit, or illegal instruction detected",
+          subCategory: "harmful_content",
+          action: "RESTRICT",
+          refusalReply:
+            lang === "hindi"
+              ? "सुरक्षा और व्यावसायिक नीतियों के अनुसार इस प्रकार के हानिकारक या अवैध अनुरोधों पर कार्रवाई नहीं की जा सकती।"
+              : lang === "hinglish"
+              ? "Security aur ethical policies ke mutabiq harmful ya illegal requests entertain nahi ki ja sakti."
+              : "In accordance with our safety and business policies, requests involving harmful, explicit, or illegal activities cannot be processed.",
+          clarificationPrompt: null,
+        };
+      }
+    }
+  }
 
-  if (isSecurityOrArchQuery || isTechSoftwareQuery) {
+  // 6. Check for Software / AI Project Intent & Legitimate Technical Queries:
+  // "Help me build a dating app", "Build an AI chatbot for a hospital", "What is the cost of an Android app?",
+  // "Explain AI in simple terms", "Can you build an e-commerce website for shoes?"
+  // As required: determine the intent of the full question rather than blocking solely because of a word like 'dating' or 'hospital'.
+  const isSoftwareProjectIntent =
+    (/\b(?:build|develop|create|make|design|engineer|launch|quote|cost|pricing|price|budget|estimate|timeline|sprint|proposal|hire|integrate|integration)\b/i.test(trimmed) &&
+     /\b(?:app|application|apps|website|web|portal|platform|saas|software|bot|chatbot|ai|system|dashboard|mvp|prototype|solution|ecommerce|store|crm|erp)\b/i.test(trimmed)) ||
+    /\b(?:build|develop|create|make)\s+(?:an?\s+)?(?:app|application|website|web|software|portal|platform|saas|ai|bot|chatbot|ecommerce|store)\b/i.test(trimmed);
+
+  const isTechSoftwareQuery =
+    isSecurityDefense ||
+    /\b(?:flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|graphql|rest|database|postgres|pgvector|docker|kubernetes|aws|cloud|ai|rag|llm|agent|chatbot|architecture|microservices|integration|webhook|android|ios|website|web\s*(?:app|application|platform|dev|development|portal)|software)\b/i.test(trimmed);
+
+  const isServicesOrOfferings =
+    /\b(?:services?|offerings?|solutions?|what\s+can\s+you\s+(?:do|build|make)|what\s+(?:do\s+you|they|does\s+company)\s+(?:do|provide|offer)|capabilities|expertise)\b/i.test(trimmed) ||
+    /\b(?:cost|price|pricing|quote|budget|estimate|timeline|sprint|proposal|package|hire)\b/i.test(trimmed) ||
+    /\b(?:projects?|portfolio|case\s*studies|demo|clients?)\b/i.test(trimmed) ||
+    /^(?:hi+|hello+|hey+|namaste|greetings)\b/i.test(trimmed);
+
+  if (isSoftwareProjectIntent || isServicesOrOfferings) {
+    return {
+      intent: "BUSINESS_RELEVANT",
+      confidence: 0.95,
+      reason: "Core business service discovery, software project inquiry, or valid customer onboarding",
+      subCategory: "service_discovery",
+      action: "PROCEED",
+      refusalReply: null,
+      clarificationPrompt: null,
+    };
+  }
+
+  if (isTechSoftwareQuery) {
     return {
       intent: "BUSINESS_TECHNICAL",
       confidence: 0.94,
@@ -205,27 +264,7 @@ export function classifyMessageIntent({
     };
   }
 
-  // 6. Check for BUSINESS_RELEVANT: Services, projects, pricing, quotes, development, greetings
-  const isServicesOrOfferings =
-    /\b(?:services?|offerings?|solutions?|what\s+can\s+you\s+(?:do|build|make)|what\s+(?:do\s+you|they|does\s+company)\s+(?:do|provide|offer)|capabilities|expertise)\b/i.test(trimmed) ||
-    /\b(?:build|develop|create|make)\s+(?:an?\s+)?(?:app|application|website|web|software|portal|platform|saas|ai|bot|chatbot|ecommerce|store)\b/i.test(trimmed) ||
-    /\b(?:cost|price|pricing|quote|budget|estimate|timeline|sprint|proposal|package|hire)\b/i.test(trimmed) ||
-    /\b(?:projects?|portfolio|case\s*studies|demo|clients?)\b/i.test(trimmed) ||
-    /^(?:hi+|hello+|hey+|namaste|greetings)\b/i.test(trimmed);
-
-  if (isServicesOrOfferings) {
-    return {
-      intent: "BUSINESS_RELEVANT",
-      confidence: 0.95,
-      reason: "Core business service discovery, commercial proposal, or valid customer onboarding",
-      subCategory: "service_discovery",
-      action: "PROCEED",
-      refusalReply: null,
-      clarificationPrompt: null,
-    };
-  }
-
-  // 7. Check for OUT_OF_SCOPE: Entertainment, movies, sports, recipes, trivia
+  // 7. Check for OUT_OF_SCOPE: Entertainment, movies, sports, recipes, trivia, personal advice, etc.
   let isExplicitOffTopic = false;
   for (const pattern of ENTERTAINMENT_AND_TRIVIA_PATTERNS) {
     if (pattern.test(trimmed)) {
@@ -237,9 +276,9 @@ export function classifyMessageIntent({
   if (isExplicitOffTopic) {
     const refusal =
       lang === "hindi"
-        ? `मैं ${businessName} का आधिकारिक AI बिजनेस कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और AI समाधानों पर केंद्रित है। मैं सामान्य व्यक्तिगत सलाह, मनोरंजन या गैर-व्यावसायिक विषयों पर चर्चा नहीं करता। क्या आपके पास कोई डिजिटल प्रोजेक्ट है जिस पर हम चर्चा कर सकते हैं?`
+        ? `मैं ${businessName} का आधिकारिक AI सेल्स कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर इंजीनियरिंग, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और एंटरप्राइज़ AI समाधानों पर केंद्रित है। मैं सामान्य व्यक्तिगत सलाह, संबंध मार्गदर्शन, मनोरंजन या सामान्य सामान्य ज्ञान प्रदान नहीं करता, लेकिन आपके डिजिटल प्रोजेक्ट पर चर्चा करने में मुझे बेहद खुशी होगी! आप कौन सा समाधान बनाने की योजना बना रहे हैं?`
         : lang === "hinglish"
-        ? `Main ${businessName} ka official AI Business Consultant hoon, jo specifically custom software, mobile apps, web platforms, aur AI solutions par focus karta hai. Main personal advice, entertainment, ya non-business topics discuss nahi karta. Kya aap kisi digital project par kaam kar rahe hain?`
+        ? `Main ${businessName} ka official AI Sales Consultant hoon, jo specifically custom software engineering, mobile apps, web platforms, aur enterprise AI solutions par focus karta hai. Main personal advice, relationship guidance, entertainment ya general trivia discuss nahi karta, lekin aapke digital project ko build ya scale karne par discuss karne mein mujhe khushi hogi! Aap kaun sa solution build karne ki planning kar rahe hain?`
         : `I am the official AI Sales Consultant for ${businessName}, focusing exclusively on custom software engineering, mobile applications, web platforms, and enterprise AI solutions. I don't provide personal advice, relationship guidance, entertainment, or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! Which solution are you planning to build?`;
 
     return {
