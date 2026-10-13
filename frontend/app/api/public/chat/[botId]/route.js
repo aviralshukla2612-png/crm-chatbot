@@ -443,6 +443,13 @@ export async function POST(request, { params }) {
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
 
+    const lastAssistantMessage = (sessionHistory || []).filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
+    const wasAskedForName =
+      /\b(?:name|naam|may\s+i\s+know\s+your\s+name|share\s+your\s+name|apna\s+name)\b/i.test(lastAssistantMessage) ||
+      lastAssistantMessage.includes("May I know your name") ||
+      lastAssistantMessage.includes("अपना नाम") ||
+      lastAssistantMessage.includes("apna Name");
+
     const isNameIntroductionOnly =
       !hasTechnicalKeywords &&
       !resolvedPhone &&
@@ -452,16 +459,22 @@ export async function POST(request, { params }) {
          trimmedMsg.startsWith("i am ") ||
          trimmedMsg.startsWith("my name is ") ||
          trimmedMsg.startsWith("my name ") ||
-         trimmedMsg.startsWith("mera naam ")));
+         trimmedMsg.startsWith("mera naam ") ||
+         trimmedMsg.endsWith(" here") ||
+         /\b(?:i am|my name|mera naam|call me|myself)\b/i.test(trimmedMsg) ||
+         wasAskedForName));
 
     const isContactSubmission =
       !hasTechnicalKeywords &&
       !isContactDetailsQuery &&
       !isOfferingToShareContact &&
-      (Boolean(resolvedPhone) || Boolean(resolvedEmail) || isNameIntroductionOnly) &&
-      (/\b(?:name|naam|number|nunmber|phone|mobile|whatsapp|email|here\s+it\s+is|this\s+is|call\s+me)\b/i.test(message) ||
-       (leadDetails.phone && message.includes(leadDetails.phone)) ||
-       (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
+      (isNameIntroductionOnly ||
+       ((Boolean(resolvedPhone) || Boolean(resolvedEmail)) &&
+        (/\b(?:name|naam|number|nunmber|phone|mobile|whatsapp|email|here\s+it\s+is|this\s+is|call\s+me)\b/i.test(message) ||
+         (leadDetails.phone && message.includes(leadDetails.phone)) ||
+         (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())) ||
+         /\b[6-9]\d{9}\b/.test(message) ||
+         /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(message))));
 
     const isEntertainmentOrTrivia =
       /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
@@ -536,6 +549,15 @@ export async function POST(request, { params }) {
           budget: "₹50,000+",
           source: "Web Chatbot Widget",
         });
+
+        const existingC = conversationsStore.getConversation(currentSessionId);
+        if (existingC) {
+          conversationsStore.updateConversation(currentSessionId, {
+            visitorName: displayName,
+            ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+            ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+          });
+        }
       } else {
         deterministicReply = lang === "hindi"
           ? `धन्यवाद! आपका संपर्क विवरण नोट कर लिया गया है। क्या आप अपना **नाम** भी साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे व्यक्तिगत रूप से संपर्क कर सके?`

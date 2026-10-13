@@ -214,7 +214,43 @@ export function classifyMessageIntent({
     };
   }
 
-  // 8. Check for AMBIGUOUS: Too short or ambiguous intent
+  // 8. Check for Person Introduction, Contact Submission, or Qualification Answer
+  const isPersonName =
+    /^[A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20}){0,2}$/.test(trimmed) &&
+    !/^(?:what|where|who|how|why|when|which|is|are|can|could|will|would|do|does|did|show|give|tell|help|need|want|build|make|create|price|cost|quote|budget|srk|salman)\b/i.test(trimmed);
+
+  const hasPhoneOrEmail =
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(trimmed) ||
+    /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/.test(trimmed) ||
+    /\b\d{10,12}\b/.test(trimmed);
+
+  const isQualificationChoice =
+    /^(?:yes|no|haan|nahi|new website|redesign|business website|e-commerce|ecommerce|portfolio|blog|web application|mobile application|mobile app|ai chatbot|custom software|ui\/ux|cloud|seo|android|ios|cross-platform|not sure|personal portfolio|student project|non-profit)\b/i.test(trimmed);
+
+  const lastAssistantMsg = (history || [])
+    .filter((m) => typeof m === "object" && m.role === "assistant")
+    .slice(-1)[0]?.content || "";
+
+  const wasAskedForNameOrChoice =
+    Boolean(lastAssistantMsg) &&
+    (/\b(?:name|naam|number|phone|whatsapp|contact|email|who\s+are\s+you|introduce|website|app|service|interested|solution)\b/i.test(lastAssistantMsg) ||
+     lastAssistantMsg.includes("May I know your name") ||
+     lastAssistantMsg.includes("अपना नाम") ||
+     lastAssistantMsg.includes("apna Name"));
+
+  if (isPersonName || hasPhoneOrEmail || isQualificationChoice || wasAskedForNameOrChoice) {
+    return {
+      intent: (isPersonName || hasPhoneOrEmail || wasAskedForNameOrChoice) ? "CUSTOMER_SPECIFIC" : "BUSINESS_RELEVANT",
+      confidence: 0.95,
+      reason: "Customer introducing themselves, sharing contact, or responding to qualification prompt",
+      subCategory: "customer_onboarding",
+      action: "PROCEED",
+      refusalReply: null,
+      clarificationPrompt: null,
+    };
+  }
+
+  // 9. Check for AMBIGUOUS: Truly underspecified or gibberish queries
   if (trimmed.length <= 15 && !/^(?:hi|hello|hey|yes|no|ok|sure|thanks|thank you)\b/i.test(trimmed)) {
     const clarification =
       lang === "hindi"
