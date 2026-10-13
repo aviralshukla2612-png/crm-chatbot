@@ -30,24 +30,42 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // 2. Extract Phone (Indian 10-digit mobile starting with 6-9, with optional +91/0, plus global formats)
+  // 2. Extract Phone (Indian mobile, 10-12 digits, labeled phone with typos, global formats)
+  function formatPhoneNumber(raw) {
+    if (!raw) return "";
+    const clean = raw.trim();
+    const digits = clean.replace(/\D/g, "");
+    if (digits.length === 10 && /^[6-9]/.test(digits)) {
+      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+    }
+    if (digits.length === 12 && digits.startsWith("91") && /^[6-9]/.test(digits.slice(2))) {
+      return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+    }
+    return clean;
+  }
+
   let phone = "";
-  const indianPhoneRegex = /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5}\b/;
+  const indianPhoneRegex = /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5,6}\b/;
+  const labeledPhoneRegex = /(?:phone|number|nunmber|mobile|whatsapp|contact|no)\s*(?:is|:|-)?\s*(\+?\d{10,12})\b/i;
+  const rawDigitsRegex = /\b[6-9]\d{9,11}\b/;
   const globalPhoneRegex = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
 
   let indianMatch = null;
   for (const text of userTexts.slice().reverse()) {
+    const labeledMatch = text.match(labeledPhoneRegex);
+    if (labeledMatch && labeledMatch[1]) {
+      phone = formatPhoneNumber(labeledMatch[1]);
+      break;
+    }
     const indMatch = text.match(indianPhoneRegex);
     if (indMatch) {
       indianMatch = indMatch;
-      const digits = indMatch[0].replace(/\D/g, "");
-      if (digits.length === 10) {
-        phone = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-      } else if (digits.length === 12 && digits.startsWith("91")) {
-        phone = `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
-      } else {
-        phone = indMatch[0].trim();
-      }
+      phone = formatPhoneNumber(indMatch[0]);
+      break;
+    }
+    const rawMatch = text.match(rawDigitsRegex);
+    if (rawMatch) {
+      phone = formatPhoneNumber(rawMatch[0]);
       break;
     }
     const globMatch = text.match(globalPhoneRegex);
@@ -113,8 +131,8 @@ export function extractLeadDetails(message = "", history = []) {
   }
 
   const namePatterns = [
-    /(?:my\s+name\s+is|i\s+am|i'm|this\s+is|call\s+me|myself)\s+([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
-    /(?:name\s*[:\-])\s*([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
+    /(?:my\s+name\s+(?:is\s+)?|i\s+am|i'm|this\s+is|call\s+me|myself|mera\s+naam\s+(?:hai\s+)?)\s*([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
+    /(?:name\s*[:\-\s]\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
   ];
 
   for (const text of recentTexts.slice().reverse()) {

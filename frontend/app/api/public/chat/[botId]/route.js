@@ -284,40 +284,15 @@ export async function POST(request, { params }) {
     const hasTechnicalKeywords = Boolean(message.toLowerCase().match(/\b(cost|price|quote|how much|build|flutter|app|website|software|ai|service|hire|develop|office|address)\b/i));
     const hasSoftwareOrCompanyContext = Boolean(message.toLowerCase().match(/\b(flutter|react|native|next\.?js|node|python|backend|frontend|fullstack|api|database|postgres|aws|cloud|ai|rag|llm|agent|chatbot|automation|erp|crm|saas|mvp|prototype|architecture|ui|ux|design|dev|code|coding|software|website|web|app|apps|application|mobile|ios|android|ecommerce|e-commerce|store|portal|platform|custom\s*software|cost|price|pricing|quote|budget|hire|developer|engineer|timeline|sprint|estimate|proposal|package|5k|10k|50k|rupees|inr|rs|ess|emperor|smart\s*solutions|yash|karan|sharma|makwana|shitiratna|panchvati|navrangpura|ahmedabad|consultation|meeting|demo)\b/i));
 
-    const isContactSubmissionOnly = !hasTechnicalKeywords && (resolvedPhone || resolvedEmail) && ((leadDetails.phone && message.includes(leadDetails.phone)) || (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
-
-    const isLowBudgetQuery =
-      /\b(?:[1-9]k|[1-4]\d\s*k|[1-9]\d{2,4})\b/i.test(message) &&
-      /\b(?:budget|only|have|afford|pay|give|price|cost|rs|inr|rupees)\b/i.test(message);
-
-    const isExternalEntityQuery =
-      /\b(?:owner|founder|co-founder|ceo|cto|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)/i.test(message) ||
-      /\b(?:mahindra|tata|reliance|adani|google|microsoft|apple|amazon|facebook|meta|tesla|netflix|infosys|tcs|wipro|twitter|openai|nvidia|flipkart|zomato|swiggy|bjp|congress)\b/i.test(message);
-
-    const isEssLeadershipQuery =
-      !isExternalEntityQuery &&
-      (/\b(?:who\s+(?:is|are)\s+(?:the\s+)?(?:founder|co-founder|founder's|ceo|cto|owner|leader|team|boss)\b)/i.test(message) ||
-       /\b(?:yash\s+sharma|karan\s+makwana)\b/i.test(message) ||
-       /\b(?:founder|co-founder|owner|ceo|cto|leader|boss)\s+of\s+(?:ess|emperor)/i.test(message) ||
-       /\b(?:kisne|kone)\s+(?:banaya|banayi|start\s*ki|start\s*kiya|shuru\s*kiya|shuru\s*ki|create\s*kiya|setup\s*kiya|found\s*kiya)\b/i.test(message) ||
-       /\b(?:kiski|kiska)\s+(?:company|firm|agency|startup|hai)\b/i.test(message) ||
-       /\b(?:founder|owner|malik|ceo|cto|leader)\s+(?:kaun|kon)\s+(?:hai|h)\b/i.test(message) ||
-       /\b(?:kaun|kon)\s+(?:hai|h)\s+(?:founder|owner|malik|ceo)\b/i.test(message) ||
-       /\b(?:ess|emperor)\s+(?:kisne|kiska|kiski|kaun)\b/i.test(message) ||
-       /[\u0900-\u097F].*(?:संस्थापक|मालिक|किसने बनाया|किसकी कंपनी)/i.test(message));
-
-    const isEntertainmentOrTrivia =
-      /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
-      /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
-      /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i.test(message) ||
-      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i.test(message) ||
-      /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message) ||
-      /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
-      /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
-      /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
+    const isOfferingToShareContact =
+      !hasTechnicalKeywords &&
+      (/\b(?:note|save|take|record|write|keep)\s+(?:down\s+)?(?:my\s+)?(?:name|number|phone|details|contact|whatsapp)\b/i.test(message) ||
+       /\b(?:my\s+name\s+and\s+number|my\s+name\s+&\s+number)\b/i.test(message));
 
     const isContactDetailsQuery =
-      /\b(?:c?o[in]*tact|cont[ae]ct|details?|dertails?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|pata|number|no)\b/i.test(message) &&
+      !isOfferingToShareContact &&
+      !/\b(?:my\s+(?:name|number|phone|contact|details|email))\b/i.test(message) &&
+      /\b(?:c?o[in]*tact|cont[ae]ct|dertails?|details?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|pata)\b/i.test(message) &&
       (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company|chahiye|chaiye|vchaiye|mangta|batao|dedo|de\s*do|bhejo|kahan|kidhar|kaha|kya\s+hai)\b/i.test(message) || message.trim().length <= 35);
 
     const isLanguageSwitchQuery =
@@ -332,15 +307,77 @@ export async function POST(request, { params }) {
       (/\b(?:baat|bol|bolte|bolna|bolo|sakte|sakta|kar\s+sakte)\b/i.test(message) ||
        /\b(?:speak|talk|know|understand|switch|change|converse|support)\b/i.test(message));
 
+    const isLowBudgetQuery =
+      /\b(?:[1-9]k|[1-4]\d\s*k|[1-9]\d{2,4})\b/i.test(message) &&
+      /\b(?:budget|only|have|afford|pay|give|price|cost|rs|inr|rupees)\b/i.test(message);
+
+    const isExternalEntityQuery =
+      /\b(?:owner|founder|co-founder|ceo|cto|leader|chairman|director|president|creator)\s+of\s+(?!ess\b|emperor\b|this\b|your\b)/i.test(message) ||
+      /\b(?:mahindra|tata|reliance|adani|google|microsoft|apple|amazon|facebook|meta|tesla|netflix|infosys|tcs|wipro|twitter|openai|nvidia|flipkart|zomato|swiggy|bjp|congress)\b/i.test(message);
+
+    const isEssLeadershipQuery =
+      !isExternalEntityQuery &&
+      (/\b(?:who\s+(?:is|are|was)\s+(?:the\s+)?(?:founder|co-founder|founder's|ceo|cto|owner|leader|team|boss))\b/i.test(message) ||
+       /\b(?:founder|co-founder|owner|ceo|cto|leader|boss)\b/i.test(message) && /\b(?:who|what|name|kiska|kisne|kon|kaun|ess|emperor|emepror|company|agency|details?)\b/i.test(message) ||
+       /\b(?:founder|co-founder|owner|ceo|cto|leader|boss)\s*(?:of\s+.*|name)?$/i.test(message) ||
+       /\b(?:who\s+(?:is|was|are)\s+)?\b(?:yash\s+sharma|karan\s+makwana)\b/i.test(message) ||
+       /\bwho\s+(?:is|was)\s+(?:yash|karan)\b/i.test(message) ||
+       /\b(?:who\s+is|who's)\s+karan\b/i.test(message) ||
+       /\b(?:who\s+is|who's)\s+yash\b/i.test(message) ||
+       /\b(?:kisne|kone)\s+(?:banaya|banayi|start\s*ki|start\s*kiya|shuru\s*kiya|shuru\s*ki|create\s*kiya|setup\s*kiya|found\s*kiya)\b/i.test(message) ||
+       /\b(?:kiski|kiska)\s+(?:company|firm|agency|startup|hai)\b/i.test(message) ||
+       /\b(?:founder|owner|malik|ceo|cto|leader)\s+(?:kaun|kon)\s+(?:hai|h)\b/i.test(message) ||
+       /\b(?:kaun|kon)\s+(?:hai|h)\s+(?:founder|owner|malik|ceo)\b/i.test(message) ||
+       /\b(?:ess|emperor|emepror)\s+(?:kisne|kiska|kiski|kaun|founder)\b/i.test(message) ||
+       /[\u0900-\u097F].*(?:संस्थापक|मालिक|किसने बनाया|किसकी कंपनी)/i.test(message));
+
+    const isProjectsPortfolioQuery =
+      !hasTechnicalKeywords &&
+      /\b(?:projects?|portfolio|recent\s*works?|past\s*works?|case\s*studies|clients?|completed\s*projects?|live\s*projects?)\b/i.test(message) &&
+      (/\b(?:how\s+many|show|give|list|tell|view|see|completed|done|worked|details?|sample|example|what|share)\b/i.test(message) || message.trim().length <= 35);
+
+    const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
+
+    const isNameIntroductionOnly =
+      !hasTechnicalKeywords &&
+      !resolvedPhone &&
+      !resolvedEmail &&
+      Boolean(resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect" &&
+        (cleanLower === resolvedName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+         trimmedMsg.startsWith("i am ") ||
+         trimmedMsg.startsWith("my name is ") ||
+         trimmedMsg.startsWith("my name ") ||
+         trimmedMsg.startsWith("mera naam ")));
+
+    const isContactSubmission =
+      !hasTechnicalKeywords &&
+      !isContactDetailsQuery &&
+      !isOfferingToShareContact &&
+      (Boolean(resolvedPhone) || Boolean(resolvedEmail) || isNameIntroductionOnly) &&
+      (/\b(?:name|naam|number|nunmber|phone|mobile|whatsapp|email|here\s+it\s+is|this\s+is|call\s+me)\b/i.test(message) ||
+       (leadDetails.phone && message.includes(leadDetails.phone)) ||
+       (resolvedName && message.toLowerCase().includes(resolvedName.toLowerCase())));
+
+    const isEntertainmentOrTrivia =
+      /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
+      /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
+      /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i.test(message) ||
+      /\b(?:salman|shah\s*rukh|srk|aamir|akshay|deepika|katrina|alia|ranbir|ranveer|kareena|priyanka|amitabh|bachchan|hrithik|rajinikanth|prabhas|allu\s*arjun|modi|rahul\s*gandhi|nehru|gandhi|bjp|congress|trump|biden|putin|obama|elon\s*musk|ambani|adani|tata|mahindra|bill\s*gates|steve\s*jobs|zuckerberg|sundar\s*pichai|satya\s*nadella|hasan\s*minhaj|john\s*mulaney|ali\s*wong|trevor\s*noah|zakir\s*khan|bassie|samay\s*raina|munawar)\b/i.test(message) ||
+      /\b(?:recipe|recipes|cook|cooking|bake|baking|fry|boil|ingredients|dish|dishes|curry|paneer|chicken|biryani|pizza|burger|pasta|noodles|cake|dessert|calories|diet|workout|gym)\b/i.test(message) ||
+      /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i.test(message) ||
+      /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|joke|riddle|puzzle|horoscope|astrology|zodiac)\b/i.test(message) ||
+      /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i.test(message);
+
     const isCelebrityOrTriviaQuery =
       !isContactDetailsQuery &&
       !isLanguageSwitchQuery &&
       !isEnglishSwitchQuery &&
+      !isOfferingToShareContact &&
+      !isProjectsPortfolioQuery &&
+      !isContactSubmission &&
       (isExternalEntityQuery ||
       (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
-      (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && !isContactSubmissionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
-
-    const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
+      (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
 
     let deterministicReply = null;
     if (isLanguageSwitchQuery) {
@@ -353,6 +390,27 @@ export async function POST(request, { params }) {
     } else if (isEnglishSwitchQuery) {
       lang = "english";
       deterministicReply = `Yes, absolutely! I can converse fluently in English. Emperor Smart Solutions specializes in custom mobile apps, web platforms, and enterprise AI solutions. What kind of project are you looking to build?`;
+    } else if (isOfferingToShareContact) {
+      deterministicReply = lang === "hindi"
+        ? `जरूर! कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें, ताकि हम इसे सुरक्षित रूप से नोट कर सकें और हमारी तकनीकी टीम आपसे संपर्क कर सके।`
+        : lang === "hinglish"
+        ? `Sure! Please apna **Name aur Phone Number (ya WhatsApp)** share karein, hum ise note kar lenge aur hamari technical team aapse connect karegi.`
+        : `Sure! Please share your **Name and Phone Number (or WhatsApp)** here, and I'll make sure our technical team connects with you promptly.`;
+    } else if (isContactSubmission) {
+      const displayName = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : "";
+      if (displayName) {
+        deterministicReply = lang === "hindi"
+          ? `धन्यवाद ${displayName}! आपकी जानकारी नोट कर ली गई है। हमारी तकनीकी टीम आपके प्रोजेक्ट पर चर्चा करने के लिए शीघ्र ही आपसे संपर्क करेगी। आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
+          : lang === "hinglish"
+          ? `Thank you ${displayName}! Aapki details note kar li gayi hain. Hamari technical team aapse jald hi connect karegi. Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
+          : `Thank you, ${displayName}! Your details have been recorded. Our technical team will reach out to you shortly to discuss your project. How can Emperor Smart Solutions help you today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+      } else {
+        deterministicReply = lang === "hindi"
+          ? `धन्यवाद! आपका संपर्क विवरण नोट कर लिया गया है। क्या आप अपना **नाम** भी साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे व्यक्तिगत रूप से संपर्क कर सके?`
+          : lang === "hinglish"
+          ? `Thank you! Aapka contact number note kar liya gaya hai. Kya aap apna **Name** bhi share kar sakte hain taaki hamari technical team aapse personally connect kar sakein?`
+          : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
+      }
     } else if (isPureGreeting && !hasTechnicalKeywords) {
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         deterministicReply = lang === "hindi"
@@ -414,31 +472,70 @@ Aap hamare office visit kar sakte hain ya directly WhatsApp/email par connect ka
 
 Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
       }
-    } else if (isCelebrityOrTriviaQuery) {
-      deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+    } else if (isProjectsPortfolioQuery) {
+      deterministicReply = lang === "hindi"
+        ? `Emperor Smart Solutions ने मोबाइल ऐप्स, एंटरप्राइज वेब प्लेटफ़ॉर्म और कस्टम AI सिस्टम में **50 से अधिक सफल प्रोजेक्ट्स** पूरे किए हैं! 🚀
+
+हमारे प्रमुख डोमेन:
+• **कस्टम मोबाइल ऐप्स:** Flutter, iOS और Android (ई-कॉमर्स, फिनटेक, लॉजिस्टिक्स)
+• **वेब प्लेटफ़ॉर्म:** Next.js, React और Node.js एंटरप्राइज पोर्टल्स
+• **एंटरप्राइज AI:** कस्टम RAG पाइपलाइन, स्वायत्त AI एजेंट्स और वर्कफ़्लो ऑटोमेशन
+
+क्या आप अपने डोमेन के अनुसार केस स्टडीज या लाइव डेमो देखना चाहेंगे? कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी टीम आपके साथ कस्टमाइज्ड पोर्टफोलियो साझा कर सके!`
+        : lang === "hinglish"
+        ? `Emperor Smart Solutions ne mobile apps, enterprise web platforms, aur custom AI systems mein **50+ successful projects** deliver kiye hain! 🚀
+
+Hamare key domains:
+• **Custom Mobile Apps:** Flutter, iOS & Android (E-commerce, FinTech, Logistics)
+• **Web Platforms:** Next.js, React & Node.js enterprise portals
+• **Enterprise AI:** Custom RAG pipelines, autonomous AI agents & workflow automation
+
+Kya aap apne domain ke related case studies ya live demos dekhna chahenge? Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapko relevant portfolio share kar sake!`
+        : `Emperor Smart Solutions has successfully delivered **over 50+ projects** across mobile applications, enterprise web platforms, and custom AI systems! 🚀
+
+Our key portfolio areas include:
+• **Custom Mobile Applications:** High-performance apps in Flutter, iOS, and Android for E-Commerce, FinTech, and Logistics.
+• **Full-Stack Web Platforms:** Scalable web portals and SaaS platforms built with Next.js, React, and Node.js.
+• **Enterprise AI Solutions:** Production RAG pipelines, autonomous AI agents, and enterprise workflow automation.
+
+Would you like to see relevant case studies or a live demo for your industry? Could you please share your **Name and Phone Number (or WhatsApp)** so our team can send over a tailored portfolio?`;
     } else if (isEssLeadershipQuery) {
-      if (lang === "hindi") {
-        deterministicReply = `Emperor Smart Solutions (ESS) के संस्थापक और नेतृत्व हैं:
+      if (/\b(?:karan|karan\s+makwana)\b/i.test(message) && !/\byash\b/i.test(message)) {
+        deterministicReply = lang === "hindi"
+          ? `करण मकवाना (Karan Makwana) Emperor Smart Solutions के सह-संस्थापक (Co-Founder) हैं। वे कंपनी के रणनीतिक विकास और तकनीकी पहलों का नेतृत्व करते हैं। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
+          : lang === "hinglish"
+          ? `Karan Makwana Emperor Smart Solutions ke Co-Founder hain. Woh company ke strategic growth aur technology initiatives lead karte hain. Aaj hum aapke digital project mein kaise help kar sakte hain?`
+          : `Karan Makwana is the Co-Founder of Emperor Smart Solutions. He leads strategic growth and technology initiatives at ESS. How can Emperor Smart Solutions assist you with your project today?`;
+      } else if (/\b(?:yash|yash\s+sharma)\b/i.test(message) && !/\bkaran\b/i.test(message)) {
+        deterministicReply = lang === "hindi"
+          ? `यश शर्मा (Yash Sharma) Emperor Smart Solutions के संस्थापक (Founder) हैं। वे एंटरप्राइज AI और कस्टम सॉफ्टवेयर इंजीनियरिंग का नेतृत्व करते हैं। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
+          : lang === "hinglish"
+          ? `Yash Sharma Emperor Smart Solutions ke Founder hain. Woh enterprise AI aur custom software engineering lead karte hain. Aaj hum aapke digital project mein kaise help kar sakte hain?`
+          : `Yash Sharma is the Founder of Emperor Smart Solutions. He leads custom engineering and enterprise AI initiatives at ESS. How can Emperor Smart Solutions assist you with your project today?`;
+      } else {
+        deterministicReply = lang === "hindi"
+          ? `Emperor Smart Solutions (ESS) के संस्थापक और नेतृत्व हैं:
 
 1. **Yash Sharma** — Founder (संस्थापक)
 2. **Karan Makwana** — Co-Founder (सह-संस्थापक)
 
-Emperor Smart Solutions एक प्रमुख कस्टम सॉफ्टवेयर इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है, जिसका मुख्यालय अहमदाबाद, गुजरात में स्थित है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`;
-      } else if (lang === "hinglish") {
-        deterministicReply = `Emperor Smart Solutions (ESS) ke founders aur leadership yeh hain:
+Emperor Smart Solutions एक प्रमुख कस्टम सॉफ्टवेयर इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है, जिसका मुख्यालय अहमदाबाद, गुजरात में स्थित है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
+          : lang === "hinglish"
+          ? `Emperor Smart Solutions (ESS) ke founders aur leadership yeh hain:
 
 1. **Yash Sharma** — Founder
 2. **Karan Makwana** — Co-Founder
 
-Emperor Smart Solutions ek premier custom software engineering aur enterprise AI development company hai, jiska head office Ahmedabad, Gujarat mein hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`;
-      } else {
-        deterministicReply = `The founders and leadership of Emperor Smart Solutions (ESS) are:
+Emperor Smart Solutions ek premier custom software engineering aur enterprise AI development company hai, jiska head office Ahmedabad, Gujarat mein hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`
+          : `The founders and leadership of Emperor Smart Solutions (ESS) are:
 
 1. **Yash Sharma** — Founder
 2. **Karan Makwana** — Co-Founder
 
 Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
       }
+    } else if (isCelebrityOrTriviaQuery) {
+      deterministicReply = `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide general trivia, entertainment news, or information about other organizations, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : (
@@ -478,29 +575,6 @@ Here are our official contact details to speak with our engineering leadership:
 📧 **Email:** contact@emperorsmartsolutions.com
 🌐 **Website:** https://emperorsmartsolutions.com${askForLead}`;
       }
-    } else if (isContactSubmissionOnly && resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
-      deterministicReply = lang === "hindi"
-        ? `नमस्ते ${resolvedName}! अपने संपर्क विवरण साझा करने के लिए धन्यवाद। आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
-        : lang === "hinglish"
-        ? `Hi ${resolvedName}! Apne contact details share karne ke liye shukriya. Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
-        : `Hi ${resolvedName}! Thank you for sharing your contact details. How can Emperor Smart Solutions help you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
-    } else if (
-      !hasTechnicalKeywords &&
-      !resolvedPhone &&
-      !resolvedEmail &&
-      resolvedName &&
-      resolvedName !== "Website Visitor" &&
-      resolvedName !== "Website Prospect" &&
-      (cleanLower === resolvedName.toLowerCase().replace(/[^a-z0-9]/g, "") ||
-       trimmedMsg.startsWith("i am ") ||
-       trimmedMsg.startsWith("my name is ") ||
-       trimmedMsg.startsWith("mera naam "))
-    ) {
-      deterministicReply = lang === "hindi"
-        ? `आपसे मिलकर खुशी हुई, ${resolvedName}! आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
-        : lang === "hinglish"
-        ? `Aapse milkar accha laga, ${resolvedName}! Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
-        : `Nice to meet you, ${resolvedName}! How can Emperor Smart Solutions assist you with your project today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
     }
 
     // --- PHASE 3: REAL-TIME SSE STREAMING (if requested) ---

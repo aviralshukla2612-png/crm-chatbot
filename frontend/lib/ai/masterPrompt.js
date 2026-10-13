@@ -285,6 +285,22 @@ Emperor Smart Solutions ek premier custom software engineering aur enterprise AI
 Emperor Smart Solutions is a premier custom software engineering and enterprise AI development company headquartered in Ahmedabad, Gujarat. How can we assist you with your project today?`;
   }
 
+  // Personal data / Privacy refusal intercept: LLM refusing to take or acknowledge user's name/number
+  if (
+    /(?:can'?t|cannot)\s+provide\s+personal\s+(?:data|information)/i.test(cleaned) ||
+    /(?:names?\s+and\s+numbers?|personal\s+data|personal\s+information)\s+of\s+any\s+individual/i.test(cleaned) ||
+    /i\s+can'?t\s+provide\s+personal\s+data/i.test(cleaned)
+  ) {
+    const thankName = visitorName && visitorName !== "Website Visitor" && visitorName !== "Website Prospect" ? `, ${visitorName}` : "";
+    if (lang === "hindi") {
+      return `धन्यवाद${thankName}! आपकी जानकारी नोट कर ली गई है। हमारी तकनीकी टीम आपके प्रोजेक्ट पर चर्चा करने के लिए शीघ्र ही आपसे संपर्क करेगी। आप किस प्रकार का समाधान बनवाना चाहते हैं?`;
+    }
+    if (lang === "hinglish") {
+      return `Thank you${thankName}! Aapki details note kar li gayi hain. Hamari technical team aapse jald hi connect karegi. Aap kis tarah ka digital solution build karwana chahte hain?`;
+    }
+    return `Thank you${thankName}! We have noted your details. Our technical team will connect with you shortly to discuss your project. What kind of solution are you looking to build?`;
+  }
+
   // Safety refusal intercept: If model ever hallucinates a payment/budget refusal (e.g. "I can't provide a response that includes a request for payment of or more...")
   if (
     /(?:can'?t|cannot)\s+provide\s+a\s+response\s+that\s+includes\s+(?:a\s+)?request\s+for\s+payment/i.test(cleaned) ||

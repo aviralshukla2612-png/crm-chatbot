@@ -49,3 +49,15 @@ test("LeadExtractor - extracts standalone name when assistant previously asked f
   assert.equal(result.hasLeadData, true);
   assert.equal(result.name, "Aviral Shukla");
 });
+
+test("LeadExtractor - extracts name and typo phone from 'sure here it is my name karan &nunmber is 66666666666'", () => {
+  const result = extractLeadDetails("sure here it is my name karan &nunmber is 66666666666");
+  assert.equal(result.hasLeadData, true);
+  assert.equal(result.name, "Karan");
+  assert.equal(result.phone, "66666666666");
+});
+
+test("LeadExtractor - does not extract lead from 'note my name and number'", () => {
+  const result = extractLeadDetails("note my name and number");
+  assert.equal(result.hasLeadData, false);
+});

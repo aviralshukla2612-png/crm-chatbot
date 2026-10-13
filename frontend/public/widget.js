@@ -637,12 +637,25 @@
           }
         }
       } else {
-        const data = await res.json();
-        messages.push({
-          role: "assistant",
-          content: data.reply || "Hello! Welcome to Emperor Smart Solutions. How can I assist you with your project today?",
-          sources: data.sources || [],
-        });
+        if (!res.ok) {
+          let errText = "I'm currently assisting multiple visitors. Please ask your question again or leave your email for human follow-up.";
+          try {
+            const errData = await res.json();
+            if (errData && errData.error) errText = errData.error;
+          } catch (e) {}
+          messages.push({
+            role: "assistant",
+            content: errText,
+            sources: [],
+          });
+        } else {
+          const data = await res.json();
+          messages.push({
+            role: "assistant",
+            content: data.reply || "I am ready to assist you. What kind of digital project are you looking to create?",
+            sources: data.sources || [],
+          });
+        }
       }
     } catch (e) {
       messages.push({
