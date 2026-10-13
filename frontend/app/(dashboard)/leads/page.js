@@ -23,6 +23,70 @@ import { leadsApi } from "@/lib/api/leads";
 import { useRealtimeSync } from "@/lib/hooks/useRealtimeSync";
 import RealtimeBadge from "@/components/ui/RealtimeBadge";
 
+const ANSWER_LABELS = {
+  is_business: "For Business",
+  is_redesign: "Build Type",
+  website_type: "Website Type",
+  budget: "Project Budget",
+  timeline: "Target Timeline",
+  non_business_type: "Project Purpose",
+  needs_admin: "Admin Panel",
+  needs_payment: "Online Payments",
+  platform: "Target Platform",
+  is_new_app: "App Category",
+  needs_backend: "Custom Backend",
+  needs_integrations: "Third-party Integrations",
+  channel: "Chatbot Channel",
+  purpose: "Bot Purpose",
+  needs_docs: "Document Training (RAG)",
+  needs_crm: "CRM Sync",
+  system_type: "System Type",
+  has_existing_data: "Data Migration",
+  needs_role_access: "Role-Based Access",
+  design_target: "Design Scope",
+  prototype_depth: "Prototypes Required",
+  brand_identity: "Brand Guidelines",
+  cloud_platform: "Cloud Infrastructure",
+  needs_cicd: "Automated CI/CD",
+  needs_db_ha: "High Availability DB",
+  website_status: "Current Website",
+  target_market: "Target Market",
+  scope_focus: "SEO Scope",
+};
+
+function formatAnswerValue(val) {
+  if (val === true || val === "true") return { text: "Yes", type: "yes" };
+  if (val === false || val === "false") return { text: "No", type: "no" };
+  if (!val) return { text: "Not specified", type: "neutral" };
+  return { text: String(val), type: "value" };
+}
+
+function getLeadEffectiveAnswers(lead) {
+  if (!lead) return {};
+  const directAnswers = lead.answers && Object.keys(lead.answers).length > 0 ? lead.answers : null;
+  const qualAnswers = lead.qualification?.answers && Object.keys(lead.qualification.answers).length > 0 ? lead.qualification.answers : null;
+  if (directAnswers || qualAnswers) {
+    return { ...(qualAnswers || {}), ...(directAnswers || {}) };
+  }
+  // Fallback: parse from inquiry string if present
+  if (lead.inquiry && lead.inquiry.includes(":")) {
+    const parsed = {};
+    const parts = lead.inquiry.split("|").map((p) => p.trim());
+    parts.forEach((p) => {
+      const idx = p.indexOf(":");
+      if (idx > -1) {
+        const k = p.slice(0, idx).trim();
+        const v = p.slice(idx + 1).trim();
+        if (k && v && !k.toLowerCase().includes("inquiry")) {
+          parsed[k] = v;
+        }
+      }
+    });
+    if (Object.keys(parsed).length > 0) return parsed;
+  }
+  return {};
+}
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -316,8 +380,13 @@ export default function LeadsPage() {
                           className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
                         />
                       </td>
-                      <td className="py-4 px-4 font-semibold text-slate-900">
-                        {item.name}
+                      <td className="py-4 px-4">
+                        <p className="font-semibold text-slate-900">{item.name}</p>
+                        {item.inquiry && item.inquiry !== "Inquired via live chat widget" && !item.inquiry.startsWith("Visitor introduced") && (
+                          <p className="text-[11px] text-indigo-600 font-medium truncate max-w-xs mt-0.5">
+                            {item.inquiry}
+                          </p>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-slate-600">
                         {item.email || item.phone}
@@ -429,12 +498,79 @@ export default function LeadsPage() {
                   <span className="font-medium">Created: {selectedLead.created}</span>
                 </div>
               </div>
+
+              {/* Project Requirements & Scoping Answers Section */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Project Scope & Answers
+                  </label>
+                  {selectedLead.budget && (
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80">
+                      Budget: {selectedLead.budget}
+                    </span>
+                  )}
+                </div>
+
+                {selectedLead.inquiry && (
+                  <div className="p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-100/80 space-y-1">
+                    <p className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">
+                      Requirements Summary
+                    </p>
+                    <p className="text-xs text-indigo-950 font-medium leading-relaxed">
+                      {selectedLead.inquiry}
+                    </p>
+                  </div>
+                )}
+
+                {(() => {
+                  const effectiveAnswers = getLeadEffectiveAnswers(selectedLead);
+                  const entries = Object.entries(effectiveAnswers);
+                  if (entries.length === 0) {
+                    return (
+                      <div className="p-4 bg-slate-50/60 rounded-2xl border border-slate-100 text-center text-xs text-slate-400">
+                        No scoping questions answered yet.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Customer Answers Breakdown
+                      </p>
+                      {entries.map(([k, rawVal]) => {
+                        const label = ANSWER_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                        const { text, type } = formatAnswerValue(rawVal);
+                        return (
+                          <div
+                            key={k}
+                            className="flex items-center justify-between py-1.5 border-b border-slate-200/50 last:border-0 text-xs"
+                          >
+                            <span className="text-slate-600 font-medium">{label}</span>
+                            <span
+                              className={`font-semibold px-2.5 py-0.5 rounded-md text-[11px] ${
+                                type === "yes"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : type === "no"
+                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                  : "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                              }`}
+                            >
+                              {text}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
               <button
                 onClick={() => setSelectedLead(null)}
-                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
+                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
               >
                 Close
               </button>

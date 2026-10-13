@@ -54,6 +54,11 @@ export default function AdminLeadsPage() {
                     <td className="p-4">
                       <p className="font-bold text-slate-900">{l.name || "Website Prospect"}</p>
                       <p className="text-[11px] text-slate-500">{l.phone || l.email || "No contact shared yet"}</p>
+                      {l.inquiry && l.inquiry !== "Inquired via live chat widget" && !l.inquiry.startsWith("Visitor introduced") && (
+                        <p className="text-[11px] text-indigo-600 font-medium truncate max-w-xs mt-0.5">
+                          {l.inquiry}
+                        </p>
+                      )}
                     </td>
                     <td className="p-4 text-slate-700 font-medium">{l.company || "Direct Inbound"}</td>
                     <td className="p-4 text-slate-600">{l.bot || l.botName || "aa"}</td>

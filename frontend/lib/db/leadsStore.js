@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { sseBroker } from "./sseBroker.js";
 import { queryDb } from "./dbPool.js";
+import { conversationsStore } from "./conversationsStore.js";
+import { formatQualificationInquiry } from "../ai/salesFlowManager.js";
 
 function resolveDataFile() {
   const frontendPath = path.join(process.cwd(), "frontend", "data", "leads.json");
@@ -56,6 +58,26 @@ function saveToDisk(data) {
 export const leadsStore = {
   getLeads(filters = {}) {
     let list = loadFromDisk();
+
+    // Auto-enrich answers, qualification, and inquiry from conversationsStore if missing
+    list.forEach((l) => {
+      const cleanDigits = (p) => (p || "").replace(/\D/g, "");
+      const conv = (l.sessionId && conversationsStore.getConversation(l.sessionId)) ||
+        conversationsStore.getConversations().find((c) =>
+          (l.phone && c.visitorPhone && cleanDigits(c.visitorPhone) === cleanDigits(l.phone)) ||
+          (l.name && l.name !== "Website Prospect" && l.name !== "Website Visitor" && c.visitorName && c.visitorName.toLowerCase() === l.name.toLowerCase())
+        );
+
+      if (conv?.qualification) {
+        if (!l.qualification) l.qualification = conv.qualification;
+        if (conv.qualification.answers) {
+          l.answers = { ...(conv.qualification.answers || {}), ...(l.answers || {}) };
+        }
+        if (!l.inquiry || l.inquiry === "Inquired via live chat widget" || l.inquiry.startsWith("Visitor introduced")) {
+          l.inquiry = formatQualificationInquiry(conv.qualification);
+        }
+      }
+    });
 
     // Sanitize: filter out invalid entries without contact info, real name, or qualification answers, or bogus question names
     list = list.filter((l) => {
@@ -119,10 +141,25 @@ export const leadsStore = {
       if (data.phone) existing.phone = data.phone;
       if (data.email) existing.email = data.email;
       if (data.sessionId && !existing.sessionId) existing.sessionId = data.sessionId;
-      if (data.inquiry) existing.inquiry = data.inquiry;
-      if (data.budget) existing.budget = data.budget;
-      if (data.qualification) existing.qualification = data.qualification;
-      if (data.answers) existing.answers = { ...(existing.answers || {}), ...data.answers };
+      if (data.inquiry && data.inquiry !== "Inquired via live chat widget" && !data.inquiry.startsWith("Visitor introduced")) {
+        existing.inquiry = data.inquiry;
+      } else if (!existing.inquiry) {
+        existing.inquiry = data.inquiry || "Inquired via live chat widget";
+      }
+      if (data.budget && data.budget !== "₹50,000+") {
+        existing.budget = data.budget;
+      } else if (!existing.budget) {
+        existing.budget = data.budget || "₹50,000+";
+      }
+      if (data.qualification) {
+        existing.qualification = data.qualification;
+        if (data.qualification.answers) {
+          existing.answers = { ...(existing.answers || {}), ...data.qualification.answers };
+        }
+      }
+      if (data.answers && Object.keys(data.answers).length > 0) {
+        existing.answers = { ...(existing.answers || {}), ...data.answers };
+      }
       if (existing.phone && existing.email) existing.score = "Hot";
       existing.updatedAt = now.toISOString();
       saveToDisk(list);

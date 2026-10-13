@@ -432,14 +432,26 @@ export async function POST(request, { params }) {
        /\b(?:ess|emperor|emepror)\s+(?:kisne|kiska|kiski|kaun|founder)\b/i.test(message) ||
        /[\u0900-\u097F].*(?:संस्थापक|मालिक|किसने बनाया|किसकी कंपनी)/i.test(message));
 
+    const lastAssistantMessage = (sessionHistory || []).filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
+    const activeQual = existingConv?.qualification || recoverQualificationFromHistory(sessionHistory);
+    const hasActiveProject = Boolean(activeQual && activeQual.service);
+
+    const isAnsweringQualificationOption =
+      hasActiveProject &&
+      (/\b(?:portfolio|e-commerce|business\s*website|web\s*application|not\s*sure|new\s*website|redesign|yes|no|personal\s*portfolio|blog|student|ngo|non-profit|android|ios|cross-platform|custom|full-stack|mvp|prototype|under\s*₹?50|₹?50,000|above\s*₹?1|₹?1,00,000)\b/i.test(message) ||
+       /\b(?:business\s+website,\s+e-commerce\s+store,\s+portfolio|new\s+website\s+or\s+a\s+redesign|website\s+for\s+your\s+business|personal\s+portfolio,\s+blog|approximate\s+budget)\b/i.test(lastAssistantMessage));
+
     const isProjectsPortfolioQuery =
       !hasTechnicalKeywords &&
+      !isAnsweringQualificationOption &&
       /\b(?:projects?|portfolio|recent\s*works?|past\s*works?|case\s*studies|clients?|completed\s*projects?|live\s*projects?)\b/i.test(message) &&
-      (/\b(?:how\s+many|show|give|list|tell|view|see|completed|done|worked|details?|sample|example|what|share)\b/i.test(message) || message.trim().length <= 35);
+      (/\b(?:how\s+many|show|give|list|tell|view|see|completed|done|worked|details?|sample|example|what|share)\b/i.test(message) ||
+       (!hasActiveProject && message.trim().length <= 35));
 
     const isServicesQuery =
       !isContactDetailsQuery &&
       !isProjectsPortfolioQuery &&
+      !isAnsweringQualificationOption &&
       !isEssLeadershipQuery &&
       (/\b(?:services?|offerings?|capabilities|expertise)\b/i.test(message) ||
        /\bwhat\s+(?:services?|solutions?)\s+(?:they|you|do\s+you|are|does\s+ess|does\s+emperor)\b/i.test(message) ||
@@ -449,8 +461,6 @@ export async function POST(request, { params }) {
        /\b(?:kya\s+karte\s+ho|kya\s+karti\s+hai|kya\s+service\s+dete\s+ho)\b/i.test(message));
 
     const isFirstMessageQuery = /\bwhat\s+(?:was|is)\s+(?:my\s+)?(?:first|1st|1)\s*(?:message|msg|messgae)\b/i.test(message);
-
-    const lastAssistantMessage = (sessionHistory || []).filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
     const wasAskedForName =
       /\b(?:name|naam|may\s+i\s+know\s+your\s+name|share\s+your\s+name|apna\s+name)\b/i.test(lastAssistantMessage) ||
       lastAssistantMessage.includes("May I know your name") ||
@@ -567,6 +577,7 @@ export async function POST(request, { params }) {
           inquiry: inquirySummary || `Qualified ${serviceTitle} Project Inbound`,
           budget: qAnswers.budget || "₹50,000+",
           source: "Web Chatbot Widget",
+          answers: qAnswers,
           qualification: completedQual,
         });
 
@@ -713,6 +724,19 @@ Aap hamare office visit kar sakte hain ya directly WhatsApp/email par connect ka
 Feel free to visit our office or reach out via WhatsApp/email! How else can we assist you with your project?`;
       }
     } else if (isProjectsPortfolioQuery) {
+      const knownContact = resolvedPhone || resolvedEmail;
+      const portfolioContactText = knownContact
+        ? (lang === "hindi"
+            ? `शानदार! हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${knownContact}**) पहले से दर्ज है और वे जल्द ही आपके डोमेन के लिए प्रासंगिक केस स्टडीज और लाइव डेमो आपके साथ साझा करेंगे!`
+            : lang === "hinglish"
+            ? `Great! Hamari technical team ke paas aapka contact details (**${knownContact}**) already recorded hai aur hamari team jald hi aapke domain ki case studies aur live demos share karegi!`
+            : `Our technical team already has your contact details (**${knownContact}**) recorded and will share relevant case studies and live demos with you promptly!`)
+        : (lang === "hindi"
+            ? `क्या आप अपने डोमेन के अनुसार केस स्टडीज या लाइव डेमो देखना चाहेंगे? कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी टीम आपके साथ कस्टमाइज्ड पोर्टफोलियो साझा कर सके!`
+            : lang === "hinglish"
+            ? `Kya aap apne domain ke related case studies ya live demos dekhna chahenge? Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapko relevant portfolio share kar sake!`
+            : `Would you like to see relevant case studies or a live demo for your industry? Could you please share your **Name and Phone Number (or WhatsApp)** so our team can send over a tailored portfolio?`);
+
       deterministicReply = lang === "hindi"
         ? `Emperor Smart Solutions ने मोबाइल ऐप्स, एंटरप्राइज वेब प्लेटफ़ॉर्म और कस्टम AI सिस्टम में **50 से अधिक सफल प्रोजेक्ट्स** पूरे किए हैं! 🚀
 
@@ -721,7 +745,7 @@ Feel free to visit our office or reach out via WhatsApp/email! How else can we a
 • **वेब प्लेटफ़ॉर्म:** Next.js, React और Node.js एंटरप्राइज पोर्टल्स
 • **एंटरप्राइज AI:** कस्टम RAG पाइपलाइन, स्वायत्त AI एजेंट्स और वर्कफ़्लो ऑटोमेशन
 
-क्या आप अपने डोमेन के अनुसार केस स्टडीज या लाइव डेमो देखना चाहेंगे? कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी टीम आपके साथ कस्टमाइज्ड पोर्टफोलियो साझा कर सके!`
+${portfolioContactText}`
         : lang === "hinglish"
         ? `Emperor Smart Solutions ne mobile apps, enterprise web platforms, aur custom AI systems mein **50+ successful projects** deliver kiye hain! 🚀
 
@@ -730,7 +754,7 @@ Hamare key domains:
 • **Web Platforms:** Next.js, React & Node.js enterprise portals
 • **Enterprise AI:** Custom RAG pipelines, autonomous AI agents & workflow automation
 
-Kya aap apne domain ke related case studies ya live demos dekhna chahenge? Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapko relevant portfolio share kar sake!`
+${portfolioContactText}`
         : `Emperor Smart Solutions has successfully delivered **over 50+ projects** across mobile applications, enterprise web platforms, and custom AI systems! 🚀
 
 Our key portfolio areas include:
@@ -738,7 +762,7 @@ Our key portfolio areas include:
 • **Full-Stack Web Platforms:** Scalable web portals and SaaS platforms built with Next.js, React, and Node.js.
 • **Enterprise AI Solutions:** Production RAG pipelines, autonomous AI agents, and enterprise workflow automation.
 
-Would you like to see relevant case studies or a live demo for your industry? Could you please share your **Name and Phone Number (or WhatsApp)** so our team can send over a tailored portfolio?`;
+${portfolioContactText}`;
     } else if (isServicesQuery) {
       deterministicReply = lang === "hindi"
         ? `Emperor Smart Solutions (ESS) एक प्रमुख डिजिटल इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है। हमारी मुख्य सेवाएं इस प्रकार हैं:
@@ -953,6 +977,11 @@ Here are our official contact details to speak with our engineering leadership:
         }
         const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
         if (hasActionableContact) {
+          const currentConv = conversationsStore.getConversation(currentSessionId);
+          const qual = currentConv?.qualification || activeQual;
+          const qualAnswers = qual?.answers || {};
+          const qualInquiry = qual ? formatQualificationInquiry(qual) : "";
+
           const leadData = {
             sessionId: currentSessionId,
             botId: bot?.id || "bot_aa",
@@ -962,7 +991,10 @@ Here are our official contact details to speak with our engineering leadership:
             company: bot?.company || "Direct Inbound",
             bot: botName,
             score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
-            inquiry: leadDetails.inquiry || "Inquired via live chat widget",
+            inquiry: qualInquiry || leadDetails.inquiry || "Inquired via live chat widget",
+            answers: qualAnswers,
+            qualification: qual,
+            budget: qualAnswers.budget || "₹50,000+",
             source: "Web Chatbot Widget",
           };
           leadsStore.createLead(leadData);
@@ -1063,9 +1095,13 @@ Here are our official contact details to speak with our engineering leadership:
             });
           }
 
-          // Check lead capture: require email or phone before creating a CRM lead
           const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
           if (hasActionableContact) {
+            const currentConv = conversationsStore.getConversation(currentSessionId);
+            const qual = currentConv?.qualification || activeQual;
+            const qualAnswers = qual?.answers || {};
+            const qualInquiry = qual ? formatQualificationInquiry(qual) : "";
+
             const leadData = {
               sessionId: currentSessionId,
               botId: bot?.id || "bot_aa",
@@ -1075,7 +1111,10 @@ Here are our official contact details to speak with our engineering leadership:
               company: bot?.company || "Direct Inbound",
               bot: botName,
               score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
-              inquiry: leadDetails.inquiry || "Inquired via live chat widget",
+              inquiry: qualInquiry || leadDetails.inquiry || "Inquired via live chat widget",
+              answers: qualAnswers,
+              qualification: qual,
+              budget: qualAnswers.budget || "₹50,000+",
               source: "Web Chatbot Widget",
             };
             leadsStore.createLead(leadData);
@@ -1123,6 +1162,11 @@ Here are our official contact details to speak with our engineering leadership:
     // Capture Lead: require email or phone before creating a CRM lead
     const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
     if (hasActionableContact) {
+      const currentConv = conversationsStore.getConversation(currentSessionId);
+      const qual = currentConv?.qualification || activeQual;
+      const qualAnswers = qual?.answers || {};
+      const qualInquiry = qual ? formatQualificationInquiry(qual) : "";
+
       const leadData = {
         sessionId: currentSessionId,
         botId: bot?.id || "bot_aa",
@@ -1132,7 +1176,10 @@ Here are our official contact details to speak with our engineering leadership:
         company: bot?.company || "Direct Inbound",
         bot: botName,
         score: (resolvedPhone && resolvedEmail) ? "Hot" : (leadDetails.score || "High"),
-        inquiry: leadDetails.inquiry || "Inquired via live chat widget",
+        inquiry: qualInquiry || leadDetails.inquiry || "Inquired via live chat widget",
+        answers: qualAnswers,
+        qualification: qual,
+        budget: qualAnswers.budget || "₹50,000+",
         source: "Web Chatbot Widget",
       };
       leadsStore.createLead(leadData);
