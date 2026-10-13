@@ -133,6 +133,25 @@ assert(foundLead !== undefined, "Lead with qualification answers is visible in C
 assert(foundLead.answers.is_business === true, "CRM lead retains is_business answer");
 assert(foundLead.answers.is_redesign === "New website", "CRM lead retains is_redesign answer");
 
+// Step 7: Verify 'No' response branches to non-business options (skips redesign, admin, payment)
+console.log("\nStep 7: Verify 'No' response branches to non-business options");
+const noTurn1 = handleSalesFlowTurn({ message: "Website Development" });
+const noTurn2 = handleSalesFlowTurn({
+  message: "No",
+  existingQualification: noTurn1.updatedQualification,
+});
+assert(noTurn2.shouldHandle === true, "Flow handled 'No' response");
+assert(noTurn2.reply.includes("personal portfolio, blog, non-profit"), "Bot asked non-business question instead of redesign");
+assert(noTurn2.quickReplies.includes("Personal portfolio"), "Quick replies include 'Personal portfolio'");
+assert(!noTurn2.reply.includes("redesign"), "Bot did NOT ask about redesign when marked 'No'");
+
+const noTurn3 = handleSalesFlowTurn({
+  message: "Personal portfolio",
+  existingQualification: noTurn2.updatedQualification,
+});
+assert(noTurn3.reply.includes("approximate budget"), "Directly asked budget (skipping admin panel and payments)");
+assert(noTurn3.updatedQualification.answers.non_business_type === "Personal portfolio", "Recorded non_business_type: Personal portfolio");
+
 console.log("\n======================================================================");
 console.log("🎉 ALL TESTS PASSED: User-reported flow and lead saving verified!");
 console.log("======================================================================\n");

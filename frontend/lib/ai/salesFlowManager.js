@@ -40,12 +40,34 @@ export const QUALIFICATION_FLOWS = {
         },
         extract: (text) => {
           if (/\b(?:yes|yep|yeah|haan|ha|bilkul|sure|definitely|business|company|clinic|shop|store|hospital)\b/i.test(text)) return true;
-          if (/\b(?:no|nope|nah|nahi|personal|hobby|student)\b/i.test(text)) return false;
+          if (/\b(?:no|nope|nah|nahi|personal|hobby|student|portfolio|blog)\b/i.test(text)) return false;
+          return null;
+        },
+      },
+      {
+        id: "non_business_type",
+        condition: (answers) => answers.is_business === false,
+        text: {
+          english: "Got it! Is this for a personal portfolio, blog, non-profit, or student project?",
+          hindi: "समझ गया! क्या यह व्यक्तिगत पोर्टफोलियो, ब्लॉग, गैर-लाभकारी (NGO) या छात्र प्रोजेक्ट के लिए है?",
+          hinglish: "Samajh gaya! Yeh personal portfolio, blog, NGO ya student project ke liye hai?",
+        },
+        quickReplies: {
+          english: ["Personal portfolio", "Blog / Content", "Non-profit / NGO", "Student project"],
+          hindi: ["व्यक्तिगत पोर्टफोलियो", "ब्लॉग / कंटेंट", "NGO / गैर-लाभकारी", "छात्र प्रोजेक्ट"],
+          hinglish: ["Personal portfolio", "Blog / Content", "Non-profit / NGO", "Student project"],
+        },
+        extract: (text) => {
+          if (/\b(?:portfolio|resume|personal|showcase)\b/i.test(text)) return "Personal portfolio";
+          if (/\b(?:blog|article|content|news|publishing)\b/i.test(text)) return "Blog / Content";
+          if (/\b(?:ngo|non-?profit|charity|trust|community|foundation)\b/i.test(text)) return "Non-profit / NGO";
+          if (/\b(?:student|college|university|academic|school|final\s*year|assignment)\b/i.test(text)) return "Student project";
           return null;
         },
       },
       {
         id: "is_redesign",
+        condition: (answers) => answers.is_business !== false,
         text: {
           english: "Do you need a new website or a redesign?",
           hindi: "क्या आपको एक नई वेबसाइट चाहिए या मौजूदा वेबसाइट का नया डिज़ाइन?",
@@ -64,6 +86,7 @@ export const QUALIFICATION_FLOWS = {
       },
       {
         id: "website_type",
+        condition: (answers) => answers.is_business !== false,
         text: {
           english: "Is it a business website, e-commerce store, portfolio, or web application?",
           hindi: "क्या यह एक बिजनेस वेबसाइट, ई-कॉमर्स स्टोर, पोर्टफोलियो या वेब एप्लिकेशन है?",
@@ -85,6 +108,7 @@ export const QUALIFICATION_FLOWS = {
       },
       {
         id: "needs_admin",
+        condition: (answers) => answers.is_business !== false,
         text: {
           english: "Do you need an admin panel to manage content and users?",
           hindi: "क्या आपको सामग्री और उपयोगकर्ताओं को प्रबंधित करने के लिए एडमिन पैनल चाहिए?",
@@ -104,6 +128,7 @@ export const QUALIFICATION_FLOWS = {
       },
       {
         id: "needs_payment",
+        condition: (answers) => answers.is_business !== false,
         text: {
           english: "Do you need online payment gateway integration?",
           hindi: "क्या आपको ऑनलाइन पेमेंट गेटवे इंटीग्रेशन की आवश्यकता है?",
@@ -840,6 +865,9 @@ export function formatQualificationInquiry(qualification) {
     if (answers.is_business !== undefined) {
       parts.push(`Business: ${answers.is_business ? "Yes" : "No"}`);
     }
+    if (answers.non_business_type) {
+      parts.push(`Type: ${answers.non_business_type}`);
+    }
     if (answers.is_redesign) {
       parts.push(`Project: ${answers.is_redesign}`);
     }
@@ -981,6 +1009,9 @@ export function extractAnswersFromMessage(message = "", service = "website", cur
   const updated = { ...currentAnswers };
 
   for (const q of flow.questions) {
+    if (typeof q.condition === "function" && !q.condition(updated)) {
+      continue;
+    }
     if (updated[q.id] === undefined || updated[q.id] === null || updated[q.id] === "") {
       const extracted = q.extract(message);
       if (extracted !== null && extracted !== undefined) {
@@ -1000,6 +1031,9 @@ export function getNextQuestion(service = "website", answers = {}, lang = "engli
   if (!flow) return null;
 
   for (const q of flow.questions) {
+    if (typeof q.condition === "function" && !q.condition(answers)) {
+      continue;
+    }
     if (answers[q.id] === undefined || answers[q.id] === null || answers[q.id] === "") {
       const qText = q.text[lang] || q.text.english;
       const qReplies = q.quickReplies[lang] || q.quickReplies.english;
@@ -1023,10 +1057,14 @@ export function generateRequirementsSummary(service = "website", answers = {}, l
   const parts = [];
 
   if (service === "website") {
-    if (answers.website_type) parts.push(answers.website_type);
-    if (answers.is_redesign) parts.push(answers.is_redesign === "Redesign" ? "redesign" : "new build");
-    if (answers.needs_admin === "Yes") parts.push("with admin panel");
-    if (answers.needs_payment === "Yes") parts.push("online payment gateway");
+    if (answers.is_business === false && answers.non_business_type) {
+      parts.push(answers.non_business_type);
+    } else {
+      if (answers.website_type) parts.push(answers.website_type);
+      if (answers.is_redesign) parts.push(answers.is_redesign === "Redesign" ? "redesign" : "new build");
+      if (answers.needs_admin === "Yes") parts.push("with admin panel");
+      if (answers.needs_payment === "Yes") parts.push("online payment gateway");
+    }
     if (answers.budget) parts.push(`budget: ${answers.budget}`);
     if (answers.timeline) parts.push(`target launch: ${answers.timeline}`);
   } else if (service === "mobile_app") {
