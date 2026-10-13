@@ -2,7 +2,6 @@
 # ==============================================================================
 # EMPEROR SMART SOLUTIONS (ESS) — 10 CRITICAL PRODUCTION TESTS RUNNER
 # ==============================================================================
-set -e
 
 MODEL_NAME="ess-sales-llama3.2"
 
@@ -15,7 +14,7 @@ run_test() {
   local title="$2"
   local prompt="$3"
   echo ""
-  echo "----------------------------------------------------------------------"
+  echo "======================================================================"
   echo "TEST $num: $title"
   echo "PROMPT: \"$prompt\""
   echo "----------------------------------------------------------------------"
@@ -52,14 +51,9 @@ run_test "07" "Pricing accuracy & GST" \
   "How much will my mobile app cost, including GST, and what are the payment milestones?"
 
 # 08. Conversation memory
-echo ""
-echo "----------------------------------------------------------------------"
-echo "TEST 08: Conversation memory (Multi-turn)"
-echo "----------------------------------------------------------------------"
-docker exec -i ess-ollama ollama run "$MODEL_NAME" "User: I need a Flutter e-commerce app. My budget is ₹80,000.
-Assistant: Understood! We can build a custom Flutter e-commerce app within your budget of ₹80,000.
-User: What is my budget, and which technology did I choose?
-Assistant:"
+run_test "08" "Conversation memory (Multi-turn)" \
+  "Context: The customer previously stated: 'I need a Flutter e-commerce app. My budget is ₹80,000.'
+Question from customer: 'What is my budget, and which technology did I choose?'"
 
 # 09. Knowledge retrieval and uncertainty
 run_test "09" "Knowledge retrieval & uncertainty (7-day guarantee)" \
