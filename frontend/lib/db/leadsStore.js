@@ -77,12 +77,14 @@ export const leadsStore = {
   getLeads(filters = {}) {
     let list = loadFromDisk();
 
-    // Sanitize: filter out invalid entries without contact info (no email AND no phone) or bogus question names
+    // Sanitize: filter out invalid entries without contact info, real name, or qualification answers, or bogus question names
     list = list.filter((l) => {
       const hasContact = Boolean(l.email || l.phone);
+      const hasAnswers = Boolean(l.answers && Object.keys(l.answers).length > 0);
+      const hasRealName = Boolean(l.name && l.name !== "Website Prospect" && l.name !== "Website Visitor");
       const isBogusName = /^(?:who\s+is|what\s+is|can\s+you|tell\s+me|i\s+want|how\s+much|hello|hi)\b/i.test(l.name || "");
       if (isBogusName) return false;
-      if (!hasContact) return false;
+      if (!hasContact && !hasAnswers && !hasRealName) return false;
       return true;
     });
 
@@ -138,6 +140,9 @@ export const leadsStore = {
       if (data.email) existing.email = data.email;
       if (data.sessionId && !existing.sessionId) existing.sessionId = data.sessionId;
       if (data.inquiry) existing.inquiry = data.inquiry;
+      if (data.budget) existing.budget = data.budget;
+      if (data.qualification) existing.qualification = data.qualification;
+      if (data.answers) existing.answers = { ...(existing.answers || {}), ...data.answers };
       if (existing.phone && existing.email) existing.score = "Hot";
       existing.updatedAt = now.toISOString();
       saveToDisk(list);
@@ -189,6 +194,8 @@ export const leadsStore = {
       updatedAt: now.toISOString(),
       inquiry: data.inquiry || "Inquired via live chat widget",
       budget: data.budget || "₹50,000+",
+      answers: data.answers || {},
+      qualification: data.qualification || null,
       source: data.source || "Web Chatbot Widget",
     };
 

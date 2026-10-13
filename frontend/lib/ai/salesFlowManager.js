@@ -422,12 +422,138 @@ export function detectServiceIntent(message = "", currentService = null) {
     return "website";
   }
 
+  // Custom Software / System Intent
+  if (/\b(?:custom\s*software|software\s*development|software|erp|crm|custom\s*system)\b/i.test(clean)) {
+    return "website";
+  }
+
   // Generic Software / Web requirement
   if (/\b(?:build|develop|create|want|need)\s+(?:a|an)?\s*(?:new\s+)?(?:system|software|portal|platform)\b/i.test(clean)) {
     return currentService || "website";
   }
 
   return currentService || null;
+}
+
+/**
+ * Formats all qualification answers into an informative inquiry string for the CRM lead
+ */
+export function formatQualificationInquiry(qualification) {
+  if (!qualification || !qualification.service) return "Inquired via live chat widget";
+  const flow = QUALIFICATION_FLOWS[qualification.service];
+  const serviceName = flow ? flow.serviceName : qualification.service;
+  const answers = qualification.answers || {};
+
+  const parts = [];
+  if (qualification.service === "website") {
+    if (answers.is_business !== undefined) {
+      parts.push(`Business: ${answers.is_business ? "Yes" : "No"}`);
+    }
+    if (answers.is_redesign) {
+      parts.push(`Project: ${answers.is_redesign}`);
+    }
+    if (answers.website_type) {
+      parts.push(`Type: ${answers.website_type}`);
+    }
+    if (answers.needs_admin) {
+      parts.push(`Admin Panel: ${answers.needs_admin}`);
+    }
+    if (answers.needs_payment) {
+      parts.push(`Online Payments: ${answers.needs_payment}`);
+    }
+  } else if (qualification.service === "mobile_app") {
+    if (answers.platform) parts.push(`Platform: ${answers.platform}`);
+    if (answers.is_new_app) parts.push(`App Type: ${answers.is_new_app}`);
+    if (answers.needs_backend) parts.push(`Backend/Admin: ${answers.needs_backend}`);
+    if (answers.needs_integrations) parts.push(`Integrations: ${answers.needs_integrations}`);
+  } else if (qualification.service === "ai_chatbot") {
+    if (answers.channel) parts.push(`Channel: ${answers.channel}`);
+    if (answers.purpose) parts.push(`Purpose: ${answers.purpose}`);
+    if (answers.needs_docs) parts.push(`Document RAG: ${answers.needs_docs}`);
+    if (answers.needs_crm) parts.push(`CRM Sync: ${answers.needs_crm}`);
+  }
+
+  if (answers.budget) parts.push(`Budget: ${answers.budget}`);
+  if (answers.timeline) parts.push(`Timeline: ${answers.timeline}`);
+
+  if (parts.length === 0) {
+    return `${serviceName} Inquiry (In progress)`;
+  }
+  return `${serviceName}: ${parts.join(" | ")}`;
+}
+
+/**
+ * Recovers qualification state from session history if existingQualification is missing
+ */
+export function recoverQualificationFromHistory(sessionHistory = []) {
+  if (!Array.isArray(sessionHistory) || sessionHistory.length === 0) return null;
+
+  let service = null;
+  const askedQuestions = [];
+  const answers = {};
+
+  for (const m of sessionHistory) {
+    const text = m.content || "";
+    if (m.role === "assistant") {
+      if (/website\s+for\s+your\s+business|new\s+website\s+or\s+a\s+redesign|business\s+website,\s+e-commerce/i.test(text)) {
+        service = "website";
+      } else if (/Android\s+app,\s+iOS\s+app|new\s+app\s+or\s+an\s+extension/i.test(text)) {
+        service = "mobile_app";
+      } else if (/chatbot\s+for\s+your\s+website|answer\s+from\s+your\s+company\s+documents/i.test(text)) {
+        service = "ai_chatbot";
+      }
+    } else if (m.role === "user" && !service) {
+      const detected = detectServiceIntent(text);
+      if (detected) service = detected;
+    }
+  }
+
+  if (!service) return null;
+  const flow = QUALIFICATION_FLOWS[service];
+  if (!flow) return null;
+
+  for (let i = 0; i < sessionHistory.length; i++) {
+    const msg = sessionHistory[i];
+    if (msg.role === "assistant") {
+      const astText = msg.content || "";
+      for (const q of flow.questions) {
+        if (
+          astText.includes(q.text.english) ||
+          astText.includes(q.text.hindi) ||
+          astText.includes(q.text.hinglish) ||
+          (q.id === "is_business" && /website\s+for\s+your\s+business/i.test(astText)) ||
+          (q.id === "is_redesign" && /new\s+website\s+or\s+(?:a\s+)?redesign/i.test(astText)) ||
+          (q.id === "website_type" && /e-commerce\s+store,\s+portfolio/i.test(astText)) ||
+          (q.id === "needs_admin" && /admin\s+panel/i.test(astText)) ||
+          (q.id === "needs_payment" && /payment/i.test(astText)) ||
+          (q.id === "budget" && /budget/i.test(astText)) ||
+          (q.id === "timeline" && /launch/i.test(astText)) ||
+          (q.id === "platform" && /Android\s+app,\s+iOS\s+app/i.test(astText))
+        ) {
+          if (!askedQuestions.includes(q.id)) askedQuestions.push(q.id);
+          for (let j = i + 1; j < sessionHistory.length; j++) {
+            if (sessionHistory[j].role === "user") {
+              const uText = sessionHistory[j].content || "";
+              const ans = q.extract(uText);
+              if (ans !== null && ans !== undefined) {
+                answers[q.id] = ans;
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    service,
+    answers,
+    askedQuestions,
+    currentStage: askedQuestions[askedQuestions.length - 1] || "init",
+    status: "in_progress",
+    consentAsked: false,
+  };
 }
 
 /**
@@ -579,6 +705,18 @@ export function handleSalesFlowTurn({
         consentAsked: false,
       };
 
+  // 0. Auto-recover service and qualification from sessionHistory if missing
+  if (!current.service && Array.isArray(sessionHistory) && sessionHistory.length > 0) {
+    const recovered = recoverQualificationFromHistory(sessionHistory);
+    if (recovered && recovered.service) {
+      current.service = recovered.service;
+      current.answers = { ...(recovered.answers || {}), ...(current.answers || {}) };
+      current.askedQuestions = Array.from(new Set([...(recovered.askedQuestions || []), ...(current.askedQuestions || [])]));
+      current.currentStage = recovered.currentStage;
+      current.status = "in_progress";
+    }
+  }
+
   // 1. Detect service or switch of service
   const detectedService = detectServiceIntent(cleanMsg, current.service);
   const serviceChanged = Boolean(detectedService && current.service && detectedService !== current.service);
@@ -612,7 +750,11 @@ export function handleSalesFlowTurn({
         reply: promptText,
         quickReplies: [],
         updatedQualification: current,
-        leadDataToSave: null,
+        leadDataToSave: {
+          service: current.service,
+          answers: current.answers,
+          summary: formatQualificationInquiry(current),
+        },
       };
     } else if (/\b(?:no|not\s*now|later|nahi|badme|baad\s*mein|not\s*right\s*now)\b/i.test(cleanMsg)) {
       current.status = "completed";
@@ -626,12 +768,28 @@ export function handleSalesFlowTurn({
         reply: replyText,
         quickReplies: ["Tell me about ESS", "Recent projects", "Tech stack"],
         updatedQualification: current,
-        leadDataToSave: null,
+        leadDataToSave: {
+          service: current.service,
+          answers: current.answers,
+          summary: formatQualificationInquiry(current),
+        },
       };
     }
   }
 
   // 3. Extract answers from incoming message across all attributes
+  // Prioritize answering currentStage if cleanMsg is a direct reply like "Yes", "No", "New website", etc.
+  if (current.currentStage && current.service) {
+    const flow = QUALIFICATION_FLOWS[current.service];
+    const currentQ = flow?.questions.find((q) => q.id === current.currentStage);
+    if (currentQ && (current.answers[currentQ.id] === undefined || current.answers[currentQ.id] === null)) {
+      const singleAns = currentQ.extract(cleanMsg);
+      if (singleAns !== null && singleAns !== undefined) {
+        current.answers[currentQ.id] = singleAns;
+      }
+    }
+  }
+
   current.answers = extractAnswersFromMessage(cleanMsg, current.service, current.answers);
 
   // 4. Check if user asked a direct question mid-flow
@@ -655,7 +813,11 @@ export function handleSalesFlowTurn({
       reply: finalReply,
       quickReplies: nextQ.quickReplies,
       updatedQualification: current,
-      leadDataToSave: null,
+      leadDataToSave: {
+        service: current.service,
+        answers: current.answers,
+        summary: formatQualificationInquiry(current),
+      },
     };
   }
 

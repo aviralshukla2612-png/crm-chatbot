@@ -217,6 +217,15 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
 
   let cleaned = reply.trim();
 
+  // 0.001 Hallucinated System Policy Acknowledgement Intercept: Never echo "You've confirmed that you've read and understood..."
+  if (/you'?ve\s+confirmed\s+that\s+you'?ve\s+read\s+and\s+understood/i.test(cleaned)) {
+    return lang === "hindi"
+      ? "क्या आपको एक नई वेबसाइट चाहिए या मौजूदा वेबसाइट का नया डिज़ाइन?"
+      : lang === "hinglish"
+      ? "Aapko nayi website chahiye ya existing website ka redesign?"
+      : "Do you need a new website or a redesign?";
+  }
+
   // 0. Competitor / Third-Party Agency Referral Intercept: Never tell user to look for other companies
   const competitorReferralRegex = /(?:would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+|any\s+|different\s+)*(?:companies|agencies|firms|freelancers|developers)/i;
   if (competitorReferralRegex.test(cleaned)) {

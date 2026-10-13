@@ -11,7 +11,7 @@ import {
 } from "@/lib/ai/masterPrompt";
 import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
 import { extractLeadDetails } from "@/lib/ai/leadExtractor";
-import { handleSalesFlowTurn } from "@/lib/ai/salesFlowManager";
+import { handleSalesFlowTurn, formatQualificationInquiry } from "@/lib/ai/salesFlowManager";
 import { InferenceProvider } from "@/lib/ai/inferenceProvider";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
@@ -506,14 +506,36 @@ export async function POST(request, { params }) {
         ? `Sure! Please apna **Name aur Phone Number (ya WhatsApp)** share karein, hum ise note kar lenge aur hamari technical team aapse connect karegi.`
         : `Sure! Please share your **Name and Phone Number (or WhatsApp)** here, and I'll make sure our technical team connects with you promptly.`;
     } else if (isContactSubmission) {
-      quickReplies = ["Website development", "Mobile app", "AI Chatbot"];
+      quickReplies = ["Website Development", "Mobile Application", "AI Chatbot", "Custom Software"];
       const displayName = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : "";
       if (displayName) {
-        deterministicReply = lang === "hindi"
-          ? `धन्यवाद ${displayName}! आपकी जानकारी नोट कर ली गई है। हमारी तकनीकी टीम आपके प्रोजेक्ट पर चर्चा करने के लिए शीघ्र ही आपसे संपर्क करेगी। आज Emperor Smart Solutions आपके प्रोजेक्ट में किस प्रकार सहायता कर सकता है? क्या आप कोई मोबाइल ऐप, वेब प्लेटफ़ॉर्म या कस्टम AI समाधान बनवाना चाहते हैं?`
-          : lang === "hinglish"
-          ? `Thank you ${displayName}! Aapki details note kar li gayi hain. Hamari technical team aapse jald hi connect karegi. Aaj Emperor Smart Solutions aapke project mein kaise help kar sakta hai? Kya aap mobile app, web platform, ya custom AI solution develop karwana chahte hain?`
-          : `Thank you, ${displayName}! Your details have been recorded. Our technical team will reach out to you shortly to discuss your project. How can Emperor Smart Solutions help you today? Are you looking to build a mobile app, web platform, or custom AI solution?`;
+        if (!resolvedPhone && !resolvedEmail) {
+          deterministicReply = lang === "hindi"
+            ? `नमस्ते ${displayName}! Emperor Smart Solutions में आपका स्वागत है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
+            : lang === "hinglish"
+            ? `Nice to meet you, ${displayName}! Emperor Smart Solutions mein aapka swagat hai. Aap kaunsa project plan kar rahe hain?`
+            : `Nice to meet you, ${displayName}! Welcome to Emperor Smart Solutions. Which solution are you planning to build?`;
+        } else {
+          deterministicReply = lang === "hindi"
+            ? `धन्यवाद ${displayName}! आपका संपर्क विवरण नोट कर लिया गया है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
+            : lang === "hinglish"
+            ? `Thank you ${displayName}! Aapki details note kar li gayi hain. Aap kaunsa digital solution develop karwana chahte hain?`
+            : `Thank you, ${displayName}! Your contact details have been recorded. Which digital solution are you planning to build?`;
+        }
+
+        // Immediately register lead with the visitor's name
+        leadsStore.createLead({
+          sessionId: currentSessionId,
+          botId: bot?.id || botId,
+          name: displayName,
+          email: resolvedEmail || "",
+          phone: resolvedPhone || "",
+          company: bot?.company || "Direct Inbound",
+          bot: botName,
+          inquiry: "Visitor introduced themselves. Offered services options.",
+          budget: "₹50,000+",
+          source: "Web Chatbot Widget",
+        });
       } else {
         deterministicReply = lang === "hindi"
           ? `धन्यवाद! आपका संपर्क विवरण नोट कर लिया गया है। क्या आप अपना **नाम** भी साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे व्यक्तिगत रूप से संपर्क कर सके?`
@@ -522,19 +544,19 @@ export async function POST(request, { params }) {
           : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
       }
     } else if (isPureGreeting && !hasTechnicalKeywords) {
-      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
+      quickReplies = ["Website Development", "Mobile Application", "AI Chatbot", "Custom Software"];
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         deterministicReply = lang === "hindi"
-          ? `नमस्ते ${resolvedName}! Emperor Smart Solutions में आपका स्वागत है। आज हम आपके प्रोजेक्ट में किस प्रकार सहायता कर सकते हैं?`
+          ? `नमस्ते ${resolvedName}! Emperor Smart Solutions में आपका स्वागत है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
           : lang === "hinglish"
-          ? `Hi ${resolvedName}! Emperor Smart Solutions mein aapka swagat hai. Aaj hum aapke digital project mein kaise help kar sakte hain?`
-          : `Hi ${resolvedName}! Great to hear from you. How can Emperor Smart Solutions assist you with your project today?`;
+          ? `Hi ${resolvedName}! Emperor Smart Solutions mein aapka swagat hai. Aap kaunsa project plan kar rahe hain?`
+          : `Hi ${resolvedName}! Welcome to Emperor Smart Solutions. Which solution are you planning to build?`;
       } else {
         deterministicReply = lang === "hindi"
-          ? `नमस्ते! Emperor Smart Solutions में आपका स्वागत है। क्या आप अपना नाम और फ़ोन नंबर (या WhatsApp) साझा कर सकते हैं ताकि हम बेहतर सहायता कर सकें?`
+          ? `नमस्ते! Emperor Smart Solutions में आपका स्वागत है। क्या आप अपना नाम साझा कर सकते हैं ताकि हम बेहतर सहायता कर सकें?`
           : lang === "hinglish"
-          ? `Hello! Emperor Smart Solutions mein aapka swagat hai. Kya aap apna Name aur Phone Number (ya WhatsApp) share kar sakte hain taaki hum aapko personalize assist kar sakein?`
-          : `Hello! Welcome to Emperor Smart Solutions. May I know your name and contact number (or WhatsApp) so I can assist you better and personalize our conversation?`;
+          ? `Hello! Emperor Smart Solutions mein aapka swagat hai. Kya aap apna Name share kar sakte hain taaki hum aapko personalize assist kar sakein?`
+          : `Hello! Welcome to Emperor Smart Solutions. May I know your name so I can assist you better and personalize our conversation?`;
       }
     } else if (isFirstMessageQuery) {
       let firstUserMsg = "";
@@ -783,12 +805,44 @@ Here are our official contact details to speak with our engineering leadership:
         deterministicReply = salesResult.reply;
         quickReplies = salesResult.quickReplies || [];
         if (salesResult.updatedQualification) {
-          conversationsStore.updateConversation(currentSessionId, {
+          const conv = conversationsStore.getConversation(currentSessionId);
+          if (conv) {
+            conversationsStore.updateConversation(currentSessionId, {
+              qualification: salesResult.updatedQualification,
+              ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
+              ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+              ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+            });
+          } else {
+            conversationsStore.createConversation({
+              id: currentSessionId,
+              botId: bot?.id || botId,
+              botName: botName,
+              visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "Website Visitor",
+              visitorEmail: resolvedEmail || "",
+              visitorPhone: resolvedPhone || "",
+              qualification: salesResult.updatedQualification,
+              messages: [],
+            });
+          }
+
+          // Persist real-time qualification progress and every Yes/No answer to the Lead
+          const qAnswers = salesResult.updatedQualification.answers || {};
+          const inquirySummary = salesResult.leadDataToSave?.summary || formatQualificationInquiry(salesResult.updatedQualification);
+          leadsStore.createLead({
+            sessionId: currentSessionId,
+            botId: bot?.id || botId,
+            name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
+            email: resolvedEmail || "",
+            phone: resolvedPhone || "",
+            company: bot?.company || "Direct Inbound",
+            bot: botName,
+            inquiry: inquirySummary,
+            budget: qAnswers.budget || "₹50,000+",
+            answers: qAnswers,
             qualification: salesResult.updatedQualification,
+            source: "Web Chatbot Widget",
           });
-        }
-        if (salesResult.leadDataToSave && hasActionableContact) {
-          leadDetails.inquiry = salesResult.leadDataToSave.summary;
         }
       }
     }
