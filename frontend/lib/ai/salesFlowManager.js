@@ -1205,6 +1205,11 @@ export function handleSalesFlowTurn({
     return { shouldHandle: false };
   }
 
+  // If qualification was already completed in a previous turn, do not hijack subsequent queries
+  if (current.status === "completed" && !serviceChanged) {
+    return { shouldHandle: false };
+  }
+
   // 2. Check if user already provided consent or submitted contact details
   if (current.consentAsked) {
     if (Boolean(contactRecorded) || /\b(?:yes|contact\s*me|sure|okay|definitely|call\s*me|haan|kar\s*lo|theek\s*hai)\b/i.test(cleanMsg)) {

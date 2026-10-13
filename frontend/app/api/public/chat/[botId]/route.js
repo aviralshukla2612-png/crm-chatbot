@@ -435,7 +435,11 @@ export async function POST(request, { params }) {
 
     const lastAssistantMessage = (sessionHistory || []).filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
     const activeQual = existingConv?.qualification || recoverQualificationFromHistory(sessionHistory);
-    const hasActiveProject = Boolean(activeQual && activeQual.service);
+    const hasActiveProject = Boolean(activeQual && activeQual.service && activeQual.status !== "completed");
+
+    const isCompanyOverviewQuery =
+      (/\b(?:tell\s+me\s+about\s+(?:ess|emperor|company)|about\s+(?:ess|emperor|the\s+company)|who\s+(?:is|are)\s+(?:ess|emperor\s*smart\s*solutions)|what\s+is\s+(?:ess|emperor\s*smart\s*solutions)|company\s+overview|company\s+details|introduce\s+(?:ess|emperor))\b/i.test(message) ||
+       /^(?:tell\s+me\s+about\s+ess|about\s+ess|what\s+is\s+ess|who\s+is\s+ess|overview|about\s+the\s+company)$/i.test(message.trim()));
 
     const isAnsweringQualificationOption =
       hasActiveProject &&
@@ -445,12 +449,14 @@ export async function POST(request, { params }) {
     const isProjectsPortfolioQuery =
       !hasTechnicalKeywords &&
       !isAnsweringQualificationOption &&
+      !isCompanyOverviewQuery &&
       /\b(?:projects?|portfolio|recent\s*works?|past\s*works?|case\s*studies|clients?|completed\s*projects?|live\s*projects?)\b/i.test(message) &&
       (/\b(?:how\s+many|show|give|list|tell|view|see|completed|done|worked|details?|sample|example|what|share)\b/i.test(message) ||
        (!hasActiveProject && message.trim().length <= 35));
 
     const isServicesQuery =
       !isContactDetailsQuery &&
+      !isCompanyOverviewQuery &&
       !isProjectsPortfolioQuery &&
       !isAnsweringQualificationOption &&
       !isEssLeadershipQuery &&
@@ -510,6 +516,7 @@ export async function POST(request, { params }) {
       !isEnglishSwitchQuery &&
       !isOfferingToShareContact &&
       !isProjectsPortfolioQuery &&
+      !isCompanyOverviewQuery &&
       !isServicesQuery &&
       !isContactSubmission &&
       (isExternalEntityQuery ||
@@ -764,6 +771,45 @@ Our key portfolio areas include:
 • **Enterprise AI Solutions:** Production RAG pipelines, autonomous AI agents, and enterprise workflow automation.
 
 ${portfolioContactText}`;
+    } else if (isCompanyOverviewQuery) {
+      quickReplies = ["Recent projects", "Office location", "Website Development", "Mobile Applications"];
+      if (lang === "hindi") {
+        deterministicReply = `**Emperor Smart Solutions (ESS)** एक प्रमुख डिजिटल इंजीनियरिंग, कस्टम सॉफ्टवेयर और एंटरप्राइज AI सॉल्यूशंस कंसल्टेंसी है। 🚀
+
+🔹 **हमारी प्रमुख विशेषज्ञता:**
+• **कस्टम मोबाइल ऐप्स:** Flutter, React Native, iOS और Android में स्केलेबल व सिक्योर ऐप्स
+• **फुल-स्टैक वेब प्लेटफॉर्म्स:** Next.js, React, Node.js और PostgreSQL आधारित हाई-परफॉर्मेंस सिस्टम्स
+• **एंटरप्राइज AI और RAG:** इंटेलिजेंट ऑटोनॉमस एजेंट्स, डॉक्यूमेंट QA, और WhatsApp ऑटोमेशन
+• **स्कूल मैनेजमेंट ERP:** उपस्थिति, फीस और अभिभावक पोर्टल सहित संपूर्ण सिस्टम
+
+🏢 **मुख्यालय:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+👥 **संस्थापक:** यश शर्मा (Yash Sharma) और करण मकवाना (Karan Makwana)।
+50+ सफल प्रोजेक्ट्स के ट्रैक रिकॉर्ड के साथ, हम उद्योग मानकों के अनुसार गुणवत्ता और सुरक्षा सुनिश्चित करते हैं। क्या आप किसी नए प्रोजेक्ट पर चर्चा करना चाहते हैं?`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `**Emperor Smart Solutions (ESS)** ek premier digital engineering, custom software, aur enterprise AI solutions company hai. 🚀
+
+🔹 **Hamari Key Capabilities:**
+• **Custom Mobile Apps:** Scalable apps in Flutter, React Native, iOS & Android
+• **Full-Stack Web Platforms:** Enterprise web portals built with Next.js, React, Node.js & PostgreSQL
+• **Enterprise AI & RAG:** Autonomous AI agents, customer support bots, and WhatsApp automations
+• **School Management ERP:** End-to-end attendance, fees, and parent-student portals
+
+🏢 **Head Office:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat.
+👥 **Founders:** Yash Sharma & Karan Makwana.
+50+ se zyada successful projects deliver karne ke track record ke saath hum enterprise-grade engineering provide karte hain! Kya aap kisi naye project ke bare mein baat karna chahte hain?`;
+      } else {
+        deterministicReply = `**Emperor Smart Solutions (ESS)** is a premier digital engineering, custom software, and enterprise AI consultancy. 🚀
+
+🔹 **Our Core Capabilities:**
+• **Custom Mobile Applications:** High-performance native & cross-platform apps in Flutter, React Native, iOS, and Android.
+• **Full-Stack Web Platforms:** Modern, scalable web portals and SaaS platforms built using Next.js, React, Node.js, and PostgreSQL.
+• **Enterprise AI & RAG Solutions:** Production-grade RAG pipelines, autonomous AI sales consultants, and WhatsApp automations.
+• **Educational ERP & School Management:** Comprehensive attendance, fee management, student records, and parent portals.
+
+🏢 **Headquarters:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
+👥 **Founders:** Yash Sharma & Karan Makwana.
+With a proven track record of 50+ delivered projects across FinTech, Healthcare, E-Commerce, and Education, we engineer scalable, secure, and production-ready digital products! How else can we assist you with your project?`;
+      }
     } else if (isServicesQuery) {
       deterministicReply = lang === "hindi"
         ? `Emperor Smart Solutions (ESS) एक प्रमुख डिजिटल इंजीनियरिंग और एंटरप्राइज AI डेवलपमेंट कंपनी है। हमारी मुख्य सेवाएं इस प्रकार हैं:
