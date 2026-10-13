@@ -246,9 +246,23 @@
     .nexus-msg-user {
       align-self: flex-end;
       background: ${botConfig.primaryColor};
-      color: #ffffff;
+      color: #ffffff !important;
       border-bottom-right-radius: 4px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .nexus-msg-user,
+    .nexus-msg-user * {
+      color: #ffffff !important;
+    }
+    .nexus-msg-user a {
+      color: #ffffff !important;
+      text-decoration: underline !important;
+      font-weight: 600 !important;
+      word-break: break-all !important;
+    }
+    .nexus-msg-user strong {
+      color: #ffffff !important;
+      font-weight: 700 !important;
     }
     .nexus-msg-bot {
       align-self: flex-start;
@@ -500,9 +514,26 @@
     });
   }
 
-  function formatMessage(text) {
+  function formatMessage(text, isUser = false) {
     if (!text || typeof text !== "string") return "";
     let html = text;
+
+    if (isUser) {
+      // Safe HTML escaping for user messages
+      html = html
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Auto-link standalone URLs in user bubble with WHITE text
+      html = html.replace(
+        /(https?:\/\/[^\s<)]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#ffffff!important;text-decoration:underline;font-weight:600;word-break:break-all;">$1</a>'
+      );
+
+      // Newlines to <br/>
+      return html.replace(/\n/g, "<br/>");
+    }
 
     // Filter out leaked system prompt directives or meta headers
     html = html.replace(/^(?:(?:You are|The visitor is|The user is)\s+writing in[^\n]*\n*)+/gim, "");
@@ -518,10 +549,10 @@
     html = html.replace(/\*{2,3}([^*]+)\*{2,3}/g, '<strong style="font-weight:700!important;color:#0f172a!important;opacity:1!important;">$1</strong>');
 
     // Convert markdown links: [Title](https://...) -> <a href="https://..." target="_blank" rel="noopener noreferrer">Title</a>
-    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;font-weight:600;">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, `<a href="$2" target="_blank" rel="noopener noreferrer" style="color:${botConfig.primaryColor};text-decoration:underline;font-weight:600;">$1</a>`);
 
     // Auto-link standalone https:// URLs
-    html = html.replace(/(^|[\s(])(https:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;font-weight:600;">$2</a>');
+    html = html.replace(/(^|[\s(])(https:\/\/[^\s<)]+)/g, `$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color:${botConfig.primaryColor};text-decoration:underline;font-weight:600;">$2</a>`);
 
     // Bullet points: * Item or - Item
     html = html.replace(/^[*-]\s+(.+)$/gm, "• $1");
@@ -572,12 +603,13 @@
     }
 
     messages.forEach((m, idx) => {
+      const isUser = m.role === "user";
       const el = document.createElement("div");
-      el.className = `nexus-msg ${m.role === "user" ? "nexus-msg-user" : "nexus-msg-bot"}`;
-      if (m.role === "user") {
+      el.className = `nexus-msg ${isUser ? "nexus-msg-user" : "nexus-msg-bot"}`;
+      if (isUser) {
         el.style.background = botConfig.primaryColor;
       }
-      el.innerHTML = formatMessage(m.content);
+      el.innerHTML = formatMessage(m.content, isUser);
 
       if (m.role === "assistant" && idx === messages.length - 1 && m.quickReplies && Array.isArray(m.quickReplies) && m.quickReplies.length > 0) {
         const qrContainer = document.createElement("div");

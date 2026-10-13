@@ -443,6 +443,10 @@ export async function POST(request, { params }) {
       (/\b(?:tell\s+me\s+about\s+(?:ess|emperor|company)|about\s+(?:ess|emperor|the\s+company)|who\s+(?:is|are)\s+(?:ess|emperor\s*smart\s*solutions)|what\s+is\s+(?:ess|emperor\s*smart\s*solutions)|company\s+overview|company\s+details|introduce\s+(?:ess|emperor))\b/i.test(message) ||
        /^(?:tell\s+me\s+about\s+ess|about\s+ess|what\s+is\s+ess|who\s+is\s+ess|overview|about\s+the\s+company)$/i.test(message.trim()));
 
+    const isWebsiteUrlQuery =
+      /\b(?:emperorsmartsolutions\.com|official\s+website|website\s+link|website\s+url|share\s+(?:the\s+)?website|your\s+website|link\s+of\s+(?:your\s+)?website)\b/i.test(message) ||
+      /^\[?https?:\/\/(?:www\.)?emperorsmartsolutions\.com\/?\]?(?:\(https?:\/\/(?:www\.)?emperorsmartsolutions\.com\/?\))?$/i.test(message.trim());
+
     const isAnsweringQualificationOption =
       hasActiveProject &&
       (/\b(?:portfolio|e-commerce|business\s*website|web\s*application|not\s*sure|new\s*website|redesign|yes|no|personal\s*portfolio|blog|student|ngo|non-profit|android|ios|cross-platform|custom|full-stack|mvp|prototype|under\s*₹?50|₹?50,000|above\s*₹?1|₹?1,00,000)\b/i.test(message) ||
@@ -535,6 +539,7 @@ export async function POST(request, { params }) {
       !isOfferingToShareContact &&
       !isProjectsPortfolioQuery &&
       !isCompanyOverviewQuery &&
+      !isWebsiteUrlQuery &&
       !isServicesQuery &&
       !isContactSubmission &&
       (isExternalEntityQuery ||
@@ -832,6 +837,15 @@ ${portfolioContactText}`;
 🏢 **Headquarters:** 202, Shitiratna Complex, Panchvati, Navrangpura, Ahmedabad - 380009, Gujarat, India.
 👥 **Founders:** Yash Sharma & Karan Makwana.
 With a proven track record of 50+ delivered projects across FinTech, Healthcare, E-Commerce, and Education, we engineer scalable, secure, and production-ready digital products! How else can we assist you with your project?`;
+      }
+    } else if (isWebsiteUrlQuery) {
+      quickReplies = ["Website Development", "Mobile Applications", "Recent projects", "Office location"];
+      if (lang === "hindi") {
+        deterministicReply = `हाँ बिल्कुल! **Emperor Smart Solutions** की आधिकारिक वेबसाइट [https://emperorsmartsolutions.com](https://emperorsmartsolutions.com) है। 🌐\n\nयहाँ आप हमारे संपूर्ण डिजिटल इंजीनियरिंग पोर्टफोलियो, एंटरप्राइज AI समाधान और केस स्टडीज देख सकते हैं। क्या आप किसी विशिष्ट डिजिटल प्रोजेक्ट (वेबसाइट, मोबाइल ऐप या AI समाधान) पर चर्चा करना चाहते हैं?`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Haan bilkul! **Emperor Smart Solutions** ki official website [https://emperorsmartsolutions.com](https://emperorsmartsolutions.com) hai. 🌐\n\nYahan aap hamara digital engineering portfolio, enterprise AI capabilities, aur software services explore kar sakte hain. Kya aap kisi specific digital project par discuss karna chahte hain?`;
+      } else {
+        deterministicReply = `Yes! That is the official website for **Emperor Smart Solutions**: 🌐 [https://emperorsmartsolutions.com](https://emperorsmartsolutions.com)\n\nYou can explore our full-stack engineering portfolio, case studies, and enterprise AI solutions there. Which digital solution (website, mobile app, AI, or custom software) would you like to build?`;
       }
     } else if (isServicesQuery) {
       deterministicReply = lang === "hindi"
