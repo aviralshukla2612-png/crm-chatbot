@@ -19,18 +19,18 @@ export default function AdminConversationsPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
           Global Platform Conversations
         </h1>
-        <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
           Monitor chat transcripts and question compliance across all client deployments.
         </p>
       </div>
 
-      <div className="rounded-2xl bg-neutral-950 border border-neutral-800 overflow-hidden shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-900 text-neutral-400 font-medium uppercase text-[10px] border-b border-neutral-800">
+            <thead className="bg-slate-50/80 text-slate-500 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-200/80">
               <tr>
                 <th className="p-4">Visitor / Client</th>
                 <th className="p-4">Tenant Bot</th>
@@ -41,33 +41,33 @@ export default function AdminConversationsPage() {
                 <th className="p-4 text-right">Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/80">
+            <tbody className="divide-y divide-slate-100">
               {conversations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-neutral-400">
+                  <td colSpan={7} className="p-8 text-center text-slate-400">
                     No conversations yet. When visitors chat with your bots, sessions will appear here live.
                   </td>
                 </tr>
               ) : (
                 conversations.map((c) => (
-                  <tr key={c.id} className="hover:bg-neutral-900/60 transition-colors">
-                    <td className="p-4 font-bold text-white">{c.visitorName || "Website Visitor"}</td>
-                    <td className="p-4 text-neutral-300">{c.botName || "aa"}</td>
-                    <td className="p-4 text-neutral-400 max-w-xs truncate">{c.lastMessage || "(In progress)"}</td>
-                    <td className="p-4 font-mono text-neutral-400">{c.duration || "1m"}</td>
+                  <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="p-4 font-bold text-slate-900">{c.visitorName || "Website Visitor"}</td>
+                    <td className="p-4 text-slate-700 font-medium">{c.botName || "aa"}</td>
+                    <td className="p-4 text-slate-500 max-w-xs truncate">{c.lastMessage || "(In progress)"}</td>
+                    <td className="p-4 font-mono text-slate-500">{c.duration || "1m"}</td>
                     <td className="p-4">
                       {c.isLead ? (
-                        <span className="font-bold text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded-full">
+                        <span className="font-bold text-emerald-700 text-[10px] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                           YES
                         </span>
                       ) : (
-                        <span className="text-neutral-500 text-[10px]">No</span>
+                        <span className="text-slate-400 text-[10px]">No</span>
                       )}
                     </td>
                     <td className="p-4">
                       <StatusBadge status={c.status || "Active"} size="sm" />
                     </td>
-                    <td className="p-4 text-right text-neutral-400">{c.startedAt || "Just now"}</td>
+                    <td className="p-4 text-right text-slate-400">{c.startedAt || "Just now"}</td>
                   </tr>
                 ))
               )}
