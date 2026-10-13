@@ -193,6 +193,15 @@ export const conversationsStore = {
     conv.lastMessage = newMsg.content;
     conv.updatedAt = now.toISOString();
 
+    conv.memory = conv.memory || {
+      requirements: "",
+      projectType: "",
+      budget: "",
+      timeline: "",
+      techPreferences: [],
+      notes: [],
+    };
+
     // Check if visitor just shared contact info inside the message
     const msgText = newMsg.content;
     const emailMatch = msgText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -208,6 +217,22 @@ export const conversationsStore = {
       conv.isLead = true;
     }
 
+    // Auto-capture customer requirements and budget disclosures
+    const budgetMatch = msgText.match(/\b(?:budget\s+(?:is|of)?|have)\s+(?:₹|inr|rs\.?)?\s*([0-9,]+(?:\s*k|\s*lakh)?)/i);
+    if (budgetMatch) {
+      conv.memory.budget = budgetMatch[1].trim();
+    }
+    const projectMatch = msgText.match(/\b(?:build|need|want|develop|create)\s+(?:an?\s+)?([a-zA-Z\s]{3,35}(?:app|website|platform|software|portal|agent|bot|rag))/i);
+    if (projectMatch) {
+      conv.memory.projectType = projectMatch[1].trim();
+      conv.memory.requirements = projectMatch[0].trim();
+    }
+
+    // Customer correction handling
+    if (msgText.match(/\b(?:your\s+previous\s+answer\s+was\s+(?:incorrect|wrong)|actually\s+my|correction)\b/i)) {
+      conv.memory.notes.push(`Customer Correction: ${msgText.slice(0, 150)}`);
+    }
+
     saveToDisk(list);
 
     // Broadcast in real-time to all connected dashboards
@@ -218,6 +243,24 @@ export const conversationsStore = {
     });
 
     return { message: newMsg, conversation: conv };
+  },
+
+  getMemory(id) {
+    const conv = this.getConversation(id);
+    return conv?.memory || null;
+  },
+
+  updateMemory(id, memoryUpdates = {}) {
+    const list = loadFromDisk();
+    const conv = list.find((c) => c.id === id);
+    if (!conv) return null;
+    conv.memory = {
+      ...(conv.memory || {}),
+      ...memoryUpdates,
+    };
+    conv.updatedAt = new Date().toISOString();
+    saveToDisk(list);
+    return conv.memory;
   },
 
   updateConversation(id, updates = {}) {

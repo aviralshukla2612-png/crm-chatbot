@@ -17,11 +17,13 @@ import {
   ArrowLeft,
   ChevronRight,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminNavItems = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
+  { name: "AI Evaluations", href: "/admin/ai-evaluations", icon: Sparkles },
   { name: "Organizations", href: "/admin/organizations", icon: Building2 },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Bots", href: "/admin/bots", icon: Bot },

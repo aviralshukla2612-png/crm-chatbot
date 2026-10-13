@@ -9,6 +9,7 @@ import {
   validateOutput,
   detectLanguage,
 } from "@/lib/ai/masterPrompt";
+import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
 import { extractLeadDetails } from "@/lib/ai/leadExtractor";
 import { InferenceProvider } from "@/lib/ai/inferenceProvider";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
@@ -209,6 +210,38 @@ export async function POST(request, { params }) {
           }
         }
       }
+    }
+
+    // Step 3.1: Server-Side Intent Classification & Business Scope Gate
+    const intentResult = classifyMessageIntent({
+      message,
+      bot,
+      history: sessionHistory,
+      lang,
+    });
+
+    if (intentResult.action === "REFUSE" || intentResult.action === "RESTRICT") {
+      return corsResponse(
+        NextResponse.json({
+          success: true,
+          reply: intentResult.refusalReply,
+          intent: intentResult.intent,
+          sources: [],
+          sessionId: currentSessionId,
+        })
+      );
+    }
+
+    if (intentResult.action === "CLARIFY" && intentResult.clarificationPrompt) {
+      return corsResponse(
+        NextResponse.json({
+          success: true,
+          reply: intentResult.clarificationPrompt,
+          intent: intentResult.intent,
+          sources: [],
+          sessionId: currentSessionId,
+        })
+      );
     }
 
     // 4. Step 4: Multi-Tenant Vector Search over Authorized Knowledge (Top 2 chunks for fast evaluation)
