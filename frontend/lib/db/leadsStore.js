@@ -119,19 +119,23 @@ export const leadsStore = {
     const list = loadFromDisk();
     const now = new Date();
 
-    // Check if lead already exists by sessionId, email, or phone to enrich details
+    // Check if lead already exists by sessionId, email, phone, or name to enrich details
+    const cleanDigits = (p) => (p || "").replace(/\D/g, "");
     const existing = list.find(
       (l) =>
         (data.sessionId && l.sessionId && l.sessionId === data.sessionId) ||
         (data.email && l.email && l.email.toLowerCase() === data.email.toLowerCase()) ||
-        (data.phone && l.phone && l.phone.replace(/\D/g, "") === data.phone.replace(/\D/g, ""))
+        (data.phone && l.phone && cleanDigits(l.phone) === cleanDigits(data.phone)) ||
+        (data.name && data.name !== "Website Prospect" && data.name !== "Website Visitor" && l.name && l.name.toLowerCase() === data.name.toLowerCase())
     );
     if (existing) {
-      if (data.name && (!existing.name || existing.name === "Website Prospect" || existing.name.length < data.name.length)) {
+      if (data.name && data.name !== "Website Prospect" && data.name !== "Website Visitor") {
         existing.name = data.name;
+      } else if (!existing.name || existing.name === "Website Prospect" || existing.name === "Website Visitor") {
+        if (data.name) existing.name = data.name;
       }
-      if (data.phone && !existing.phone) existing.phone = data.phone;
-      if (data.email && !existing.email) existing.email = data.email;
+      if (data.phone) existing.phone = data.phone;
+      if (data.email) existing.email = data.email;
       if (data.sessionId && !existing.sessionId) existing.sessionId = data.sessionId;
       if (data.inquiry) existing.inquiry = data.inquiry;
       if (existing.phone && existing.email) existing.score = "Hot";

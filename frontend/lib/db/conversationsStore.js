@@ -203,34 +203,44 @@ export const conversationsStore = {
     };
 
     // Check if visitor just shared contact info inside the message
-    const msgText = newMsg.content;
-    const emailMatch = msgText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    const phoneMatch = msgText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+    if (newMsg.role === "user") {
+      const msgText = newMsg.content || "";
+      const isCompanyEmail = (em) =>
+        /emperorsmartsolutions\.com|emperorsmartsolutions@gmail\.com|^contact@|^sales@|^info@/i.test(em || "");
+      const isCompanyPhone = (ph) => /63591\s*20081/.test((ph || "").replace(/\D/g, ""));
 
-    if (emailMatch && !conv.visitorEmail) {
-      conv.visitorEmail = emailMatch[0];
-      conv.isLead = true;
-      conv.leadScore = "High";
-    }
-    if (phoneMatch && !conv.visitorPhone) {
-      conv.visitorPhone = phoneMatch[0];
-      conv.isLead = true;
-    }
+      const emailMatch = msgText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const phoneMatch = msgText.match(/(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5,6}\b|(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b|\b\d{10,12}\b/);
 
-    // Auto-capture customer requirements and budget disclosures
-    const budgetMatch = msgText.match(/\b(?:budget\s+(?:is|of)?|have)\s+(?:₹|inr|rs\.?)?\s*([0-9,]+(?:\s*k|\s*lakh)?)/i);
-    if (budgetMatch) {
-      conv.memory.budget = budgetMatch[1].trim();
-    }
-    const projectMatch = msgText.match(/\b(?:build|need|want|develop|create)\s+(?:an?\s+)?([a-zA-Z\s]{3,35}(?:app|website|platform|software|portal|agent|bot|rag))/i);
-    if (projectMatch) {
-      conv.memory.projectType = projectMatch[1].trim();
-      conv.memory.requirements = projectMatch[0].trim();
-    }
+      if (emailMatch && !isCompanyEmail(emailMatch[0])) {
+        conv.visitorEmail = emailMatch[0].trim();
+        conv.isLead = true;
+        conv.leadScore = "High";
+      }
+      if (phoneMatch && !isCompanyPhone(phoneMatch[0])) {
+        conv.visitorPhone = phoneMatch[0].trim();
+        conv.isLead = true;
+      }
+      const nameMatch = msgText.match(/(?:(?:my\s+)?name\s*(?:is|:|-|\s)\s*|i\s+am|i'm|this\s+is|call\s+me|mera\s+naam\s*(?:hai|:|-|\s)?\s*)([A-Za-z.']{2,20})/i);
+      if (nameMatch && nameMatch[1]) {
+        conv.visitorName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase();
+      }
 
-    // Customer correction handling
-    if (msgText.match(/\b(?:your\s+previous\s+answer\s+was\s+(?:incorrect|wrong)|actually\s+my|correction)\b/i)) {
-      conv.memory.notes.push(`Customer Correction: ${msgText.slice(0, 150)}`);
+      // Auto-capture customer requirements and budget disclosures
+      const budgetMatch = msgText.match(/\b(?:budget\s+(?:is|of)?|have)\s+(?:₹|inr|rs\.?)?\s*([0-9,]+(?:\s*k|\s*lakh)?)/i);
+      if (budgetMatch) {
+        conv.memory.budget = budgetMatch[1].trim();
+      }
+      const projectMatch = msgText.match(/\b(?:build|need|want|develop|create)\s+(?:an?\s+)?([a-zA-Z\s]{3,35}(?:app|website|platform|software|portal|agent|bot|rag))/i);
+      if (projectMatch) {
+        conv.memory.projectType = projectMatch[1].trim();
+        conv.memory.requirements = projectMatch[0].trim();
+      }
+
+      // Customer correction handling
+      if (msgText.match(/\b(?:your\s+previous\s+answer\s+was\s+(?:incorrect|wrong)|actually\s+my|correction)\b/i)) {
+        conv.memory.notes.push(`Customer Correction: ${msgText.slice(0, 150)}`);
+      }
     }
 
     saveToDisk(list);

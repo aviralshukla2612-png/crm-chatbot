@@ -285,34 +285,55 @@ export async function POST(request, { params }) {
       .join("\n\n");
 
     // 5. Step 5: Extract lead details and resolve visitor identity
-    const leadDetails = extractLeadDetails(message, sessionHistory);
-
-    let resolvedName = visitor?.name || "";
-    if (!resolvedName && existingConv?.visitorName && existingConv.visitorName !== "Website Visitor" && existingConv.visitorName !== "Website Prospect") {
-      resolvedName = existingConv.visitorName;
-    }
-    if (!resolvedName && leadDetails.name) {
-      resolvedName = leadDetails.name;
-    }
+    const currentMsgLead = extractLeadDetails(message, []);
+    const sessionLead = extractLeadDetails(message, sessionHistory);
+    const leadDetails = sessionLead;
 
     const isCompanyEmail = (em) =>
       /emperorsmartsolutions\.com|emperorsmartsolutions@gmail\.com|^contact@|^sales@|^info@|^support@|^careers@/i.test(em || "");
     const isCompanyPhone = (ph) => /63591\s*20081/.test((ph || "").replace(/\D/g, ""));
+    const isPlaceholderName = (n) => !n || n === "Website Visitor" || n === "Website Prospect";
 
+    // 1. Phone Resolution (Current message has top priority!)
     let resolvedPhone = "";
-    if (visitor?.phone && !isCompanyPhone(visitor.phone)) resolvedPhone = visitor.phone;
-    else if (existingConv?.visitorPhone && !isCompanyPhone(existingConv.visitorPhone)) resolvedPhone = existingConv.visitorPhone;
-    else if (leadDetails.phone && !isCompanyPhone(leadDetails.phone)) resolvedPhone = leadDetails.phone;
+    if (currentMsgLead.phone && !isCompanyPhone(currentMsgLead.phone)) {
+      resolvedPhone = currentMsgLead.phone;
+    } else if (sessionLead.phone && !isCompanyPhone(sessionLead.phone)) {
+      resolvedPhone = sessionLead.phone;
+    } else if (existingConv?.visitorPhone && !isCompanyPhone(existingConv.visitorPhone)) {
+      resolvedPhone = existingConv.visitorPhone;
+    } else if (visitor?.phone && !isCompanyPhone(visitor.phone)) {
+      resolvedPhone = visitor.phone;
+    }
 
+    // 2. Email Resolution (Current message has top priority!)
     let resolvedEmail = "";
-    if (visitor?.email && !isCompanyEmail(visitor.email)) resolvedEmail = visitor.email;
-    else if (existingConv?.visitorEmail && !isCompanyEmail(existingConv.visitorEmail)) resolvedEmail = existingConv.visitorEmail;
-    else if (leadDetails.email && !isCompanyEmail(leadDetails.email)) resolvedEmail = leadDetails.email;
+    if (currentMsgLead.email && !isCompanyEmail(currentMsgLead.email)) {
+      resolvedEmail = currentMsgLead.email;
+    } else if (sessionLead.email && !isCompanyEmail(sessionLead.email)) {
+      resolvedEmail = sessionLead.email;
+    } else if (existingConv?.visitorEmail && !isCompanyEmail(existingConv.visitorEmail)) {
+      resolvedEmail = existingConv.visitorEmail;
+    } else if (visitor?.email && !isCompanyEmail(visitor.email)) {
+      resolvedEmail = visitor.email;
+    }
+
+    // 3. Name Resolution (Current message has top priority!)
+    let resolvedName = "";
+    if (currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
+      resolvedName = currentMsgLead.name;
+    } else if (sessionLead.name && !isPlaceholderName(sessionLead.name)) {
+      resolvedName = sessionLead.name;
+    } else if (existingConv?.visitorName && !isPlaceholderName(existingConv.visitorName)) {
+      resolvedName = existingConv.visitorName;
+    } else if (visitor?.name && !isPlaceholderName(visitor.name)) {
+      resolvedName = visitor.name;
+    }
 
     const hasVisitorDetails = Boolean(
       resolvedPhone ||
       resolvedEmail ||
-      (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ||
+      !isPlaceholderName(resolvedName) ||
       sessionHistory
         .filter((m) => m.role === "user")
         .some((m) =>
@@ -356,8 +377,13 @@ export async function POST(request, { params }) {
       (/\b(?:note|save|take|record|write|keep)\s+(?:down\s+)?(?:my\s+)?(?:name|number|phone|details|contact|whatsapp)\b/i.test(message) ||
        /\b(?:my\s+name\s+and\s+number|my\s+name\s+&\s+number)\b/i.test(message));
 
+    const isSavedUserDetailsQuery =
+      /\b(?:what\s+details?\s+(?:you\s+(?:have\s+)?(?:saved|hared|recorded)|did\s+you\s+save|are\s+saved)|what\s+did\s+you\s+save|show\s+(?:my\s+)?(?:details?|info)|what\s+have\s+you\s+(?:saved|noted))\b/i.test(message) ||
+      /\b(?:what\s+details?\s+you\s+ha[a-z]*e\s+hared)\b/i.test(message);
+
     const isContactDetailsQuery =
       !isOfferingToShareContact &&
+      !isSavedUserDetailsQuery &&
       !/\b(?:my\s+(?:name|number|phone|contact|details|email))\b/i.test(message) &&
       /\b(?:c?o[in]*tact|cont[ae]ct|dertails?|details?|phone|whatsapp|email|address|office|location|head\s*office|reach\s*(?:out)?|call|speak\s*to\s*(?:someone|team)|talk\s*to\s*human|sampark|pata)\b/i.test(message) &&
       (/\b(?:give|tell|what|share|show|provide|how\s+to|where|send|details?|contact|ess|emperor|your|company|chahiye|chaiye|vchaiye|mangta|batao|dedo|de\s*do|bhejo|kahan|kidhar|kaha|kya\s+hai)\b/i.test(message) || message.trim().length <= 35);
@@ -519,6 +545,32 @@ export async function POST(request, { params }) {
         firstUserMsg = userMessages.length > 0 ? userMessages[0].content : message;
       }
       deterministicReply = `Your first message was:\n\n"${firstUserMsg}"`;
+    } else if (isSavedUserDetailsQuery) {
+      const savedName = (!isPlaceholderName(resolvedName))
+        ? resolvedName
+        : (leadDetails.name || "Not specified");
+      const savedPhone = resolvedPhone || (leadDetails.phone ? leadDetails.phone : "Not specified");
+      const savedEmail = resolvedEmail || (leadDetails.email ? leadDetails.email : "Not specified");
+
+      if (lang === "hindi") {
+        deterministicReply = `यहाँ आपके प्रोजेक्ट पूछताछ के लिए वर्तमान में रिकॉर्ड किए गए संपर्क विवरण हैं:
+• **नाम:** ${savedName}
+• **फ़ोन / WhatsApp:** ${savedPhone}
+${savedEmail !== "Not specified" ? `• **ईमेल:** ${savedEmail}\n` : ""}
+यदि आप अपना फ़ोन नंबर, ईमेल या प्रोजेक्ट विवरण अपडेट करना चाहते हैं, तो कृपया साझा करें और मैं तुरंत आपका रिकॉर्ड अपडेट कर दूँगा!`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Yeh rahe aapke project inquiry ke liye currently recorded contact details:
+• **Name:** ${savedName}
+• **Phone / WhatsApp:** ${savedPhone}
+${savedEmail !== "Not specified" ? `• **Email:** ${savedEmail}\n` : ""}
+Agar aap apna phone number, email ya project requirements update karna chahte hain, toh please share karein aur main turant aapka record update kar dunga!`;
+      } else {
+        deterministicReply = `Here are the contact details I currently have recorded for your project inquiry:
+• **Name:** ${savedName}
+• **Phone / WhatsApp:** ${savedPhone}
+${savedEmail !== "Not specified" ? `• **Email:** ${savedEmail}\n` : ""}
+If you would like to update your phone number, email, or project requirements, please feel free to share them and I will immediately update your record!`;
+      }
     } else if (isContactDetailsQuery) {
       if (lang === "hindi") {
         deterministicReply = `Emperor Smart Solutions के आधिकारिक संपर्क विवरण और मुख्य कार्यालय का पता इस प्रकार है:
@@ -761,12 +813,12 @@ Here are our official contact details to speak with our engineering leadership:
       if (deterministicReply) {
         conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
         conversationsStore.addMessage(currentSessionId, { role: "assistant", content: deterministicReply });
-        if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+        if (resolvedName || resolvedPhone || resolvedEmail) {
           conversationsStore.updateConversation(currentSessionId, {
-            visitorName: resolvedName,
-            visitorPhone: resolvedPhone || undefined,
-            visitorEmail: resolvedEmail || undefined,
-            isLead: true,
+            ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
+            ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+            ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+            ...(resolvedPhone || resolvedEmail ? { isLead: true } : {}),
           });
         }
         const hasActionableContact = Boolean(resolvedEmail || resolvedPhone);
@@ -774,7 +826,7 @@ Here are our official contact details to speak with our engineering leadership:
           const leadData = {
             sessionId: currentSessionId,
             botId: bot?.id || "bot_aa",
-            name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
+            name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
             email: resolvedEmail,
             phone: resolvedPhone,
             company: bot?.company || "Direct Inbound",
@@ -870,12 +922,12 @@ Here are our official contact details to speak with our engineering leadership:
           conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
           conversationsStore.addMessage(currentSessionId, { role: "assistant", content: validated });
 
-          if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+          if (resolvedName || resolvedPhone || resolvedEmail) {
             conversationsStore.updateConversation(currentSessionId, {
-              visitorName: resolvedName,
-              visitorPhone: resolvedPhone || undefined,
-              visitorEmail: resolvedEmail || undefined,
-              isLead: true,
+              ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
+              ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+              ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+              ...(resolvedPhone || resolvedEmail ? { isLead: true } : {}),
             });
           }
 
@@ -885,7 +937,7 @@ Here are our official contact details to speak with our engineering leadership:
             const leadData = {
               sessionId: currentSessionId,
               botId: bot?.id || "bot_aa",
-              name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
+              name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
               email: resolvedEmail,
               phone: resolvedPhone,
               company: bot?.company || "Direct Inbound",
@@ -942,7 +994,7 @@ Here are our official contact details to speak with our engineering leadership:
       const leadData = {
         sessionId: currentSessionId,
         botId: bot?.id || "bot_aa",
-        name: (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : (leadDetails.name || "Website Prospect"),
+        name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
         email: resolvedEmail,
         phone: resolvedPhone,
         company: bot?.company || "Direct Inbound",
@@ -963,12 +1015,12 @@ Here are our official contact details to speak with our engineering leadership:
         role: "assistant",
         content: botReply,
       });
-      if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
+      if (resolvedName || resolvedPhone || resolvedEmail) {
         conversationsStore.updateConversation(currentSessionId, {
-          visitorName: resolvedName,
-          visitorPhone: resolvedPhone || reloadedConv.visitorPhone,
-          visitorEmail: resolvedEmail || reloadedConv.visitorEmail,
-          isLead: true,
+          ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
+          ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
+          ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+          ...(resolvedPhone || resolvedEmail ? { isLead: true } : {}),
         });
       }
     } else {
@@ -976,7 +1028,7 @@ Here are our official contact details to speak with our engineering leadership:
         id: currentSessionId,
         botId: bot?.id || botId,
         botName: botName,
-        visitorName: resolvedName || "Website Visitor",
+        visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "Website Visitor",
         visitorEmail: resolvedEmail,
         visitorPhone: resolvedPhone,
         isLead: Boolean(leadDetails.hasLeadData || resolvedEmail || resolvedPhone),

@@ -41,12 +41,15 @@ export function extractLeadDetails(message = "", history = []) {
     if (digits.length === 12 && digits.startsWith("91") && /^[6-9]/.test(digits.slice(2))) {
       return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
     }
+    if (digits.length === 10) {
+      return digits;
+    }
     return clean;
   }
 
   let phone = "";
   const indianPhoneRegex = /(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5,6}\b/;
-  const labeledPhoneRegex = /(?:phone|number|nunmber|mobile|whatsapp|contact|no)\s*(?:is|:|-)?\s*(\+?\d{10,12})\b/i;
+  const labeledPhoneRegex = /(?:phone|number|nunmber|mobile|mobilenumber|nmobiele|nmobile|whatsapp|contact|no)\s*(?:is|:|-)?\s*(\+?\d{10,12})\b/i;
   const rawDigitsRegex = /\b[6-9]\d{9,11}\b/;
   const globalPhoneRegex = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
 
@@ -113,6 +116,9 @@ export function extractLeadDetails(message = "", history = []) {
     "rs", "inr", "dollar", "dollars", "k", "lakh", "crore",
     "info", "details", "contact", "number", "phone", "email", "address", "office",
     "location", "founder", "founders", "cofounder", "ceo", "cto", "developer", "engineer",
+    "clinic", "hospital", "healthcare", "medical", "doctor", "business", "service", "services",
+    "portfolio", "demo", "sample", "work", "features", "feature", "inquiry", "internship",
+    "job", "career", "careers", "opportunity", "intern",
     "srk", "salman", "khan", "actor", "movie", "film", "star", "celebrity"
   ]);
 
@@ -131,7 +137,7 @@ export function extractLeadDetails(message = "", history = []) {
   }
 
   const namePatterns = [
-    /(?:my\s+name\s+(?:is\s+)?|i\s+am|i'm|this\s+is|call\s+me|myself|mera\s+naam\s+(?:hai\s+)?)\s*([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
+    /(?:(?:my\s+)?name\s*(?:is|:|-|\s)\s*|i\s+am|i'm|this\s+is|call\s+me|myself|mera\s+naam\s*(?:hai|:|-|\s)?\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
     /(?:name\s*[:\-\s]\s*)([A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20})?)/i,
   ];
 
@@ -139,7 +145,14 @@ export function extractLeadDetails(message = "", history = []) {
     for (const pattern of namePatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
-        const candidate = match[1].replace(/[.,:;!?]+$/, "").trim();
+        let candidate = match[1].replace(/[.,:;!?&]+.*$/, "").trim();
+        candidate = candidate.replace(/\s+(?:and|with|my|mobile|phone|number|mobilenumber|whatsapp|email|contact).*$/i, "").trim();
+        const candidateWords = candidate.split(/\s+/).filter(Boolean);
+        while (candidateWords.length > 0 && NON_NAME_WORDS.has(candidateWords[candidateWords.length - 1].toLowerCase())) {
+          candidateWords.pop();
+        }
+        candidate = candidateWords.join(" ");
+
         if (isValidPersonName(candidate)) {
           name = candidate.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
           break;
@@ -163,32 +176,14 @@ export function extractLeadDetails(message = "", history = []) {
     }
   }
 
-  // Check if any recent user turn was a standalone 1-3 word person name in response to an assistant asking for name
-  if (!name && Array.isArray(history)) {
-    for (let i = history.length - 1; i >= 0; i--) {
-      const turn = history[i];
-      if (turn && turn.role === "user" && typeof turn.content === "string") {
-        const clean = turn.content.trim();
-        if (isValidPersonName(clean)) {
-          const prevAssistant = history.slice(0, i).reverse().find((m) => m && m.role === "assistant");
-          const askedForName = prevAssistant && /name|naam|who are you|introduce|number|whatsapp|assist you better|personalize/i.test(prevAssistant.content || "");
-          if (askedForName) {
-            name = clean.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // Also check if current message is a standalone valid name following an assistant prompt asking for name
-  if (!name && Array.isArray(history) && history.length > 0) {
-    const cleanCurrent = (message || "").trim();
-    if (isValidPersonName(cleanCurrent)) {
-      const lastAssistantTurn = [...history].reverse().find((m) => m && m.role === "assistant");
-      const askedForName = lastAssistantTurn && /name|naam|who are you|introduce|number|whatsapp|assist you better|personalize/i.test(lastAssistantTurn.content || "");
-      if (askedForName) {
-        name = cleanCurrent.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  // Check if current message or any recent turn is a standalone 1-3 word person name
+  if (!name) {
+    for (const text of recentTexts.slice().reverse()) {
+      const clean = text.trim().replace(/[.,:;!?&]+$/, "").trim();
+      const words = clean.split(/\s+/).filter(Boolean);
+      if (words.length >= 1 && words.length <= 3 && isValidPersonName(clean)) {
+        name = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+        break;
       }
     }
   }
