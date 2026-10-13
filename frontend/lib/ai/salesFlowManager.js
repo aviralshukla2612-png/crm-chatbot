@@ -12,6 +12,16 @@
  * - Multi-language support (English, Hindi, Hinglish)
  */
 
+export const ALL_ESS_SERVICES = [
+  "Website Development",
+  "Mobile Application",
+  "AI Chatbot",
+  "Custom Software",
+  "UI/UX Design",
+  "Cloud & DevOps",
+  "SEO & Marketing",
+];
+
 export const QUALIFICATION_FLOWS = {
   website: {
     serviceName: "Website Development",
@@ -358,6 +368,372 @@ export const QUALIFICATION_FLOWS = {
       },
     ],
   },
+
+  custom_software: {
+    serviceName: "Custom Software & ERP",
+    questions: [
+      {
+        id: "system_type",
+        text: {
+          english: "Is this for enterprise ERP, CRM & sales, operations, or a custom portal?",
+          hindi: "क्या यह एंटरप्राइज ERP, CRM और बिक्री, संचालन या कस्टम पोर्टल के लिए है?",
+          hinglish: "Yeh enterprise ERP, CRM & sales, operations ya custom portal ke liye hai?",
+        },
+        quickReplies: {
+          english: ["Enterprise ERP", "CRM & Sales", "Operations Management", "Custom Portal"],
+          hindi: ["एंटरप्राइज ERP", "CRM और बिक्री", "संचालन प्रबंधन", "कस्टम पोर्टल"],
+          hinglish: ["Enterprise ERP", "CRM & Sales", "Operations Management", "Custom Portal"],
+        },
+        extract: (text) => {
+          if (/\b(?:erp|enterprise|resource)\b/i.test(text)) return "Enterprise ERP";
+          if (/\b(?:crm|sales|leads?|pipeline)\b/i.test(text)) return "CRM & Sales";
+          if (/\b(?:operations?|workflow|inventory|billing|hr|payroll)\b/i.test(text)) return "Operations Management";
+          if (/\b(?:custom\s*portal|client\s*portal|portal|dashboard)\b/i.test(text)) return "Custom Portal";
+          return null;
+        },
+      },
+      {
+        id: "has_existing_data",
+        text: {
+          english: "Do you have existing databases or spreadsheets to migrate?",
+          hindi: "क्या आपके पास माइग्रेट करने के लिए मौजूदा डेटाबेस या स्प्रेडशीट हैं?",
+          hinglish: "Kya aapke paas migrate karne ke liye existing databases ya spreadsheets hain?",
+        },
+        quickReplies: {
+          english: ["Yes", "No", "Not sure"],
+          hindi: ["हाँ", "नहीं", "पक्का नहीं"],
+          hinglish: ["Haan", "Nahi", "Not sure"],
+        },
+        extract: (text) => {
+          if (/\b(?:yes|yep|yeah|haan|excel|sheets?|sql|csv|existing)\b/i.test(text)) return "Yes";
+          if (/\b(?:no|nope|nah|nahi|fresh|scratch)\b/i.test(text)) return "No";
+          if (/\b(?:not\s+sure|don't\s+know)\b/i.test(text)) return "Not sure";
+          return null;
+        },
+      },
+      {
+        id: "needs_role_access",
+        text: {
+          english: "Do you need role-based staff permissions and automated reports?",
+          hindi: "क्या आपको भूमिका-आधारित कर्मचारी अनुमतियाँ और स्वचालित रिपोर्ट चाहिए?",
+          hinglish: "Kya aapko role-based staff permissions aur automated reports chahiye?",
+        },
+        quickReplies: {
+          english: ["Yes", "No", "Not sure"],
+          hindi: ["हाँ", "नहीं", "पक्का नहीं"],
+          hinglish: ["Haan", "Nahi", "Not sure"],
+        },
+        extract: (text) => {
+          if (/\b(?:yes|yep|yeah|haan|roles?|permissions?|reports?|admin)\b/i.test(text)) return "Yes";
+          if (/\b(?:no|nope|nah|nahi|simple)\b/i.test(text)) return "No";
+          if (/\b(?:not\s+sure|don't\s+know)\b/i.test(text)) return "Not sure";
+          return null;
+        },
+      },
+      {
+        id: "budget",
+        text: {
+          english: "What is your approximate budget for the software system?",
+          hindi: "सॉफ्टवेयर सिस्टम के लिए आपका अनुमानित बजट क्या है?",
+          hinglish: "Software system ke liye aapka approximate budget kitna hai?",
+        },
+        quickReplies: {
+          english: ["₹50,000–₹1,00,000", "₹1,00,000–₹2,00,000", "Above ₹2,00,000", "Not sure yet"],
+          hindi: ["₹50,000–₹1,00,000", "₹1,00,000–₹2,00,000", "₹2,00,000 से अधिक", "अभी तय नहीं"],
+          hinglish: ["₹50,000–₹1,00,000", "₹1,00,000–₹2,00,000", "Above ₹2,00,000", "Not sure yet"],
+        },
+        extract: (text) => extractBudgetAnswer(text),
+      },
+      {
+        id: "timeline",
+        text: {
+          english: "When would you like to deploy this software?",
+          hindi: "आप इस सॉफ्टवेयर को कब तक लागू (Deploy) करना चाहते हैं?",
+          hinglish: "Aap is software ko kab tak deploy karna chahte hain?",
+        },
+        quickReplies: {
+          english: ["Within a month", "1–3 months", "Flexible"],
+          hindi: ["1 महीने में", "1–3 महीने में", "लचीला (Flexible)"],
+          hinglish: ["Within a month", "1–3 months", "Flexible"],
+        },
+        extract: (text) => extractTimelineAnswer(text),
+      },
+    ],
+  },
+
+  ui_ux: {
+    serviceName: "UI/UX Design",
+    questions: [
+      {
+        id: "design_target",
+        text: {
+          english: "Is this UI/UX design for a mobile app, website, or enterprise dashboard?",
+          hindi: "क्या यह UI/UX डिज़ाइन मोबाइल ऐप, वेबसाइट या एंटरप्राइज डैशबोर्ड के लिए है?",
+          hinglish: "Yeh UI/UX design mobile app, website ya enterprise dashboard ke liye hai?",
+        },
+        quickReplies: {
+          english: ["Mobile App", "Website", "Dashboard / SaaS", "Both App & Web"],
+          hindi: ["मोबाइल ऐप", "वेबसाइट", "डैशबोर्ड / SaaS", "ऐप और वेब दोनों"],
+          hinglish: ["Mobile App", "Website", "Dashboard / SaaS", "Both App & Web"],
+        },
+        extract: (text) => {
+          if (/\b(?:both|all|dono)\b/i.test(text)) return "Both App & Web";
+          if (/\b(?:app|mobile|android|ios)\b/i.test(text)) return "Mobile App";
+          if (/\b(?:dashboard|saas|portal|crm|erp|admin)\b/i.test(text)) return "Dashboard / SaaS";
+          if (/\b(?:website|web|landing)\b/i.test(text)) return "Website";
+          return null;
+        },
+      },
+      {
+        id: "prototype_depth",
+        text: {
+          english: "Do you need clickable Figma prototypes and a design system?",
+          hindi: "क्या आपको क्लिक करने योग्य फ़िग्मा (Figma) प्रोटोटाइप और डिज़ाइन सिस्टम चाहिए?",
+          hinglish: "Kya aapko clickable Figma prototypes aur design system chahiye?",
+        },
+        quickReplies: {
+          english: ["Yes, full prototype", "Wireframes only", "Design system only"],
+          hindi: ["हाँ, पूर्ण प्रोटोटाइप", "केवल वायरफ्रेम", "केवल डिज़ाइन सिस्टम"],
+          hinglish: ["Yes, full prototype", "Wireframes only", "Design system only"],
+        },
+        extract: (text) => {
+          if (/\b(?:full|complete|clickable|prototype|yes|haan)\b/i.test(text)) return "Yes, full prototype";
+          if (/\b(?:wireframes?|rough|sketch)\b/i.test(text)) return "Wireframes only";
+          if (/\b(?:system|components?|tokens)\b/i.test(text)) return "Design system only";
+          return null;
+        },
+      },
+      {
+        id: "brand_identity",
+        text: {
+          english: "Do you already have brand guidelines and a logo?",
+          hindi: "क्या आपके पास पहले से ब्रांड दिशानिर्देश और लोगो है?",
+          hinglish: "Kya aapke paas already brand guidelines aur logo hai?",
+        },
+        quickReplies: {
+          english: ["Yes", "No", "Need branding too"],
+          hindi: ["हाँ", "नहीं", "ब्रांडिंग भी चाहिए"],
+          hinglish: ["Yes", "No", "Need branding too"],
+        },
+        extract: (text) => {
+          if (/\b(?:yes|yep|haan|already|have)\b/i.test(text)) return "Yes";
+          if (/\b(?:need|branding|logo|new)\b/i.test(text)) return "Need branding too";
+          if (/\b(?:no|nope|nah|nahi)\b/i.test(text)) return "No";
+          return null;
+        },
+      },
+      {
+        id: "budget",
+        text: {
+          english: "What is your approximate budget for UI/UX design?",
+          hindi: "UI/UX डिज़ाइन के लिए आपका अनुमानित बजट क्या है?",
+          hinglish: "UI/UX design ke liye aapka approximate budget kitna hai?",
+        },
+        quickReplies: {
+          english: ["Under ₹50,000", "₹50,000–₹1,00,000", "Above ₹1,00,000", "Flexible"],
+          hindi: ["₹50,000 से कम", "₹50,000–₹1,00,000", "₹1,00,000 से अधिक", "लचीला (Flexible)"],
+          hinglish: ["Under ₹50,000", "₹50,000–₹1,00,000", "Above ₹1,00,000", "Flexible"],
+        },
+        extract: (text) => extractBudgetAnswer(text),
+      },
+      {
+        id: "timeline",
+        text: {
+          english: "When do you need the finalized design?",
+          hindi: "आपको अंतिम डिज़ाइन कब तक चाहिए?",
+          hinglish: "Aapko finalized design kab tak chahiye?",
+        },
+        quickReplies: {
+          english: ["Within 2 weeks", "Within a month", "Flexible"],
+          hindi: ["2 सप्ताह में", "1 महीने में", "लचीला (Flexible)"],
+          hinglish: ["Within 2 weeks", "Within a month", "Flexible"],
+        },
+        extract: (text) => extractTimelineAnswer(text),
+      },
+    ],
+  },
+
+  cloud_devops: {
+    serviceName: "Cloud & DevOps",
+    questions: [
+      {
+        id: "cloud_platform",
+        text: {
+          english: "Which cloud platform do you prefer or currently use?",
+          hindi: "आप कौन सा क्लाउड प्लेटफ़ॉर्म पसंद करते हैं या उपयोग कर रहे हैं?",
+          hinglish: "Aap kaunsa cloud platform prefer karte hain ya use kar rahe hain?",
+        },
+        quickReplies: {
+          english: ["AWS", "Google Cloud", "Docker / VPS", "Need recommendation"],
+          hindi: ["AWS", "गूगल क्लाउड", "डॉकर / VPS", "सिफारिश चाहिए"],
+          hinglish: ["AWS", "Google Cloud", "Docker / VPS", "Need recommendation"],
+        },
+        extract: (text) => {
+          if (/\b(?:aws|amazon)\b/i.test(text)) return "AWS";
+          if (/\b(?:gcp|google\s*cloud|google)\b/i.test(text)) return "Google Cloud";
+          if (/\b(?:docker|vps|digitalocean|linode|hetzner)\b/i.test(text)) return "Docker / VPS";
+          if (/\b(?:recommend|suggest|not\s+sure|pata\s+nahi)\b/i.test(text)) return "Need recommendation";
+          return null;
+        },
+      },
+      {
+        id: "needs_cicd",
+        text: {
+          english: "Do you need automated CI/CD deployment pipelines configured?",
+          hindi: "क्या आपको स्वचालित CI/CD डिप्लॉयमेंट पाइपलाइन चाहिए?",
+          hinglish: "Kya aapko automated CI/CD deployment pipelines chahiye?",
+        },
+        quickReplies: {
+          english: ["Yes", "No", "Not sure"],
+          hindi: ["हाँ", "नहीं", "पक्का नहीं"],
+          hinglish: ["Haan", "Nahi", "Not sure"],
+        },
+        extract: (text) => {
+          if (/\b(?:yes|yep|haan|ci|cd|pipeline|github|gitlab|actions)\b/i.test(text)) return "Yes";
+          if (/\b(?:no|nope|nah|nahi|manual)\b/i.test(text)) return "No";
+          if (/\b(?:not\s+sure|don't\s+know)\b/i.test(text)) return "Not sure";
+          return null;
+        },
+      },
+      {
+        id: "needs_db_ha",
+        text: {
+          english: "Do you require database optimization and high-availability scaling?",
+          hindi: "क्या आपको डेटाबेस ऑप्टिमाइज़ेशन और उच्च-उपलब्धता स्केलिंग की आवश्यकता है?",
+          hinglish: "Kya aapko database optimization aur high-availability scaling chahiye?",
+        },
+        quickReplies: {
+          english: ["Yes", "No", "Not sure"],
+          hindi: ["हाँ", "नहीं", "पक्का नहीं"],
+          hinglish: ["Haan", "Nahi", "Not sure"],
+        },
+        extract: (text) => {
+          if (/\b(?:yes|yep|haan|scale|scaling|ha|postgres|cluster)\b/i.test(text)) return "Yes";
+          if (/\b(?:no|nope|nah|nahi|simple)\b/i.test(text)) return "No";
+          if (/\b(?:not\s+sure|don't\s+know)\b/i.test(text)) return "Not sure";
+          return null;
+        },
+      },
+      {
+        id: "budget",
+        text: {
+          english: "What is your approximate budget for cloud setup?",
+          hindi: "क्लाउड सेटअप के लिए आपका अनुमानित बजट क्या है?",
+          hinglish: "Cloud setup ke liye aapka approximate budget kitna hai?",
+        },
+        quickReplies: {
+          english: ["Under ₹50,000", "₹50,000–₹1,00,000", "Above ₹1,00,000", "Flexible"],
+          hindi: ["₹50,000 से कम", "₹50,000–₹1,00,000", "₹1,00,000 से अधिक", "लचीला (Flexible)"],
+          hinglish: ["Under ₹50,000", "₹50,000–₹1,00,000", "Above ₹1,00,000", "Flexible"],
+        },
+        extract: (text) => extractBudgetAnswer(text),
+      },
+      {
+        id: "timeline",
+        text: {
+          english: "When would you like this configured?",
+          hindi: "आप इसे कब तक कॉन्फ़िगर कराना चाहते हैं?",
+          hinglish: "Aap ise kab tak configure karwana chahte hain?",
+        },
+        quickReplies: {
+          english: ["Immediately", "Within 2 weeks", "Flexible"],
+          hindi: ["तुरंत (Immediately)", "2 सप्ताह में", "लचीला (Flexible)"],
+          hinglish: ["Immediately", "Within 2 weeks", "Flexible"],
+        },
+        extract: (text) => extractTimelineAnswer(text),
+      },
+    ],
+  },
+
+  seo_marketing: {
+    serviceName: "SEO & Digital Growth",
+    questions: [
+      {
+        id: "website_status",
+        text: {
+          english: "Is this for an existing website or a brand new business launch?",
+          hindi: "क्या यह किसी मौजूदा वेबसाइट के लिए है या नए व्यवसाय के लिए?",
+          hinglish: "Yeh existing website ke liye hai ya brand new business launch ke liye?",
+        },
+        quickReplies: {
+          english: ["Existing website", "New business launch"],
+          hindi: ["मौजूदा वेबसाइट", "नया व्यवसाय"],
+          hinglish: ["Existing website", "New business launch"],
+        },
+        extract: (text) => {
+          if (/\b(?:existing|current|already\s*live|old)\b/i.test(text)) return "Existing website";
+          if (/\b(?:new|launch|fresh|start)\b/i.test(text)) return "New business launch";
+          return null;
+        },
+      },
+      {
+        id: "target_market",
+        text: {
+          english: "Are you targeting local search rankings, nationwide India, or global?",
+          hindi: "क्या आप स्थानीय (Local) सर्च रैंकिंग, पूरे भारत या वैश्विक स्तर को लक्षित कर रहे हैं?",
+          hinglish: "Aap local search rankings, nationwide India ya global target kar rahe hain?",
+        },
+        quickReplies: {
+          english: ["Local SEO", "Nationwide India", "Global market"],
+          hindi: ["लोकल SEO (Local)", "अखिल भारतीय (India)", "ग्लोबल (Global)"],
+          hinglish: ["Local SEO", "Nationwide India", "Global market"],
+        },
+        extract: (text) => {
+          if (/\b(?:local|city|nearby|clinic|shop)\b/i.test(text)) return "Local SEO";
+          if (/\b(?:india|national|countrywide)\b/i.test(text)) return "Nationwide India";
+          if (/\b(?:global|world|international|usa|uk|worldwide)\b/i.test(text)) return "Global market";
+          return null;
+        },
+      },
+      {
+        id: "scope_focus",
+        text: {
+          english: "Do you need monthly organic SEO, technical audits, or keyword ranking?",
+          hindi: "क्या आपको मासिक ऑर्गेनिक SEO, तकनीकी ऑडिट या कीवर्ड रैंकिंग चाहिए?",
+          hinglish: "Aapko monthly organic SEO, technical audit ya keyword ranking chahiye?",
+        },
+        quickReplies: {
+          english: ["Monthly organic SEO", "Technical SEO audit", "Keyword ranking"],
+          hindi: ["मासिक ऑर्गेनिक SEO", "तकनीकी SEO ऑडिट", "कीवर्ड रैंकिंग"],
+          hinglish: ["Monthly organic SEO", "Technical SEO audit", "Keyword ranking"],
+        },
+        extract: (text) => {
+          if (/\b(?:monthly|organic|complete|package)\b/i.test(text)) return "Monthly organic SEO";
+          if (/\b(?:audit|technical|speed|fix)\b/i.test(text)) return "Technical SEO audit";
+          if (/\b(?:keyword|rank|ranking|google)\b/i.test(text)) return "Keyword ranking";
+          return null;
+        },
+      },
+      {
+        id: "budget",
+        text: {
+          english: "What is your approximate monthly budget for SEO & growth?",
+          hindi: "SEO और विकास के लिए आपका अनुमानित मासिक बजट क्या है?",
+          hinglish: "SEO aur growth ke liye aapka approximate monthly budget kitna hai?",
+        },
+        quickReplies: {
+          english: ["Under ₹25,000/mo", "₹25,000–₹50,000/mo", "Above ₹50,000/mo", "Flexible"],
+          hindi: ["₹25,000/माह से कम", "₹25,000–₹50,000/माह", "₹50,000/माह से अधिक", "लचीला (Flexible)"],
+          hinglish: ["Under ₹25,000/mo", "₹25,000–₹50,000/mo", "Above ₹50,000/mo", "Flexible"],
+        },
+        extract: (text) => extractBudgetAnswer(text),
+      },
+      {
+        id: "timeline",
+        text: {
+          english: "When would you like to start the campaign?",
+          hindi: "आप यह अभियान कब से शुरू करना चाहते हैं?",
+          hinglish: "Aap campaign kab start karna chahte hain?",
+        },
+        quickReplies: {
+          english: ["This month", "Next month", "Flexible"],
+          hindi: ["इसी महीने", "अगले महीने", "लचीला (Flexible)"],
+          hinglish: ["This month", "Next month", "Flexible"],
+        },
+        extract: (text) => extractTimelineAnswer(text),
+      },
+    ],
+  },
 };
 
 function extractBudgetAnswer(text) {
@@ -407,23 +783,38 @@ function extractTimelineAnswer(text) {
 export function detectServiceIntent(message = "", currentService = null) {
   const clean = message.toLowerCase();
 
+  // SEO & Digital Growth Intent
+  if (/\b(?:seo|search\s*engine\s*optimization|digital\s*marketing|organic\s*traffic|google\s*ranking|seo\s*&\s*digital\s*growth)\b/i.test(clean)) {
+    return "seo_marketing";
+  }
+
+  // UI/UX Design Intent
+  if (/\b(?:ui\s*\/?\s*ux|uiux|wireframe|figma|prototype|prototyping|design\s*system|ui\s*\/?\s*ux\s*design)\b/i.test(clean)) {
+    return "ui_ux";
+  }
+
+  // Cloud & DevOps Intent
+  if (/\b(?:cloud|devops|aws|docker|ci\s*\/?\s*cd|kubernetes|server\s*setup|cloud\s*&\s*devops|cloud\s*infrastructure)\b/i.test(clean)) {
+    return "cloud_devops";
+  }
+
+  // Custom Software & ERP Intent
+  if (/\b(?:custom\s*software|erp|crm|inventory\s*software|billing\s*software|management\s*system|custom\s*software\s*&\s*erp|software\s*development)\b/i.test(clean)) {
+    return "custom_software";
+  }
+
   // Mobile App Intent
   if (/\b(?:mobile\s*app|ios\s*app|android\s*app|flutter\s*app|react\s*native|build\s*an?\s*app|app\s*development|mobile\s*application)\b/i.test(clean)) {
     return "mobile_app";
   }
 
   // AI Chatbot Intent
-  if (/\b(?:ai\s*chatbot|chatbot|bot|whatsapp\s*bot|rag|support\s*bot|automated\s*agent|ai\s*agent)\b/i.test(clean)) {
+  if (/\b(?:ai\s*chatbot|chatbot|bot|whatsapp\s*bot|rag|support\s*bot|automated\s*agent|ai\s*agent|ai\s*chatbot\s*&\s*automation)\b/i.test(clean)) {
     return "ai_chatbot";
   }
 
   // Website Intent
-  if (/\b(?:website|web\s*site|web\s*portal|web\s*page|landing\s*page|e-?commerce\s*website|clinic\s*website|business\s*website|web\s*platform)\b/i.test(clean)) {
-    return "website";
-  }
-
-  // Custom Software / System Intent
-  if (/\b(?:custom\s*software|software\s*development|software|erp|crm|custom\s*system)\b/i.test(clean)) {
+  if (/\b(?:website|web\s*site|web\s*portal|web\s*page|landing\s*page|e-?commerce\s*website|clinic\s*website|business\s*website|web\s*platform|website\s*development)\b/i.test(clean)) {
     return "website";
   }
 
@@ -471,6 +862,22 @@ export function formatQualificationInquiry(qualification) {
     if (answers.purpose) parts.push(`Purpose: ${answers.purpose}`);
     if (answers.needs_docs) parts.push(`Document RAG: ${answers.needs_docs}`);
     if (answers.needs_crm) parts.push(`CRM Sync: ${answers.needs_crm}`);
+  } else if (qualification.service === "custom_software") {
+    if (answers.system_type) parts.push(`System: ${answers.system_type}`);
+    if (answers.has_existing_data) parts.push(`Existing Data: ${answers.has_existing_data}`);
+    if (answers.needs_role_access) parts.push(`Role Access: ${answers.needs_role_access}`);
+  } else if (qualification.service === "ui_ux") {
+    if (answers.design_target) parts.push(`Target: ${answers.design_target}`);
+    if (answers.prototype_depth) parts.push(`Scope: ${answers.prototype_depth}`);
+    if (answers.brand_identity) parts.push(`Branding: ${answers.brand_identity}`);
+  } else if (qualification.service === "cloud_devops") {
+    if (answers.cloud_platform) parts.push(`Platform: ${answers.cloud_platform}`);
+    if (answers.needs_cicd) parts.push(`CI/CD: ${answers.needs_cicd}`);
+    if (answers.needs_db_ha) parts.push(`High Availability: ${answers.needs_db_ha}`);
+  } else if (qualification.service === "seo_marketing") {
+    if (answers.website_status) parts.push(`Status: ${answers.website_status}`);
+    if (answers.target_market) parts.push(`Market: ${answers.target_market}`);
+    if (answers.scope_focus) parts.push(`Focus: ${answers.scope_focus}`);
   }
 
   if (answers.budget) parts.push(`Budget: ${answers.budget}`);
@@ -501,6 +908,14 @@ export function recoverQualificationFromHistory(sessionHistory = []) {
         service = "mobile_app";
       } else if (/chatbot\s+for\s+your\s+website|answer\s+from\s+your\s+company\s+documents/i.test(text)) {
         service = "ai_chatbot";
+      } else if (/enterprise\s+ERP|CRM\s+&\s+sales|databases\s+or\s+spreadsheets/i.test(text)) {
+        service = "custom_software";
+      } else if (/UI\/UX\s+design|Figma\s+prototypes|brand\s+guidelines/i.test(text)) {
+        service = "ui_ux";
+      } else if (/cloud\s+platform|CI\/CD\s+deployment|database\s+optimization/i.test(text)) {
+        service = "cloud_devops";
+      } else if (/organic\s+SEO|target\s+market|Local\s+SEO/i.test(text)) {
+        service = "seo_marketing";
       }
     } else if (m.role === "user" && !service) {
       const detected = detectServiceIntent(text);
@@ -628,6 +1043,30 @@ export function generateRequirementsSummary(service = "website", answers = {}, l
     if (answers.needs_crm === "Yes") parts.push("CRM integration");
     if (answers.budget) parts.push(`budget: ${answers.budget}`);
     if (answers.timeline) parts.push(`timeline: ${answers.timeline}`);
+  } else if (service === "custom_software") {
+    if (answers.system_type) parts.push(answers.system_type);
+    if (answers.has_existing_data === "Yes") parts.push("with data migration");
+    if (answers.needs_role_access === "Yes") parts.push("role-based access");
+    if (answers.budget) parts.push(`budget: ${answers.budget}`);
+    if (answers.timeline) parts.push(`target deploy: ${answers.timeline}`);
+  } else if (service === "ui_ux") {
+    if (answers.design_target) parts.push(`for ${answers.design_target}`);
+    if (answers.prototype_depth) parts.push(answers.prototype_depth);
+    if (answers.brand_identity) parts.push(`branding: ${answers.brand_identity}`);
+    if (answers.budget) parts.push(`budget: ${answers.budget}`);
+    if (answers.timeline) parts.push(`timeline: ${answers.timeline}`);
+  } else if (service === "cloud_devops") {
+    if (answers.cloud_platform) parts.push(`on ${answers.cloud_platform}`);
+    if (answers.needs_cicd === "Yes") parts.push("automated CI/CD");
+    if (answers.needs_db_ha === "Yes") parts.push("high-availability architecture");
+    if (answers.budget) parts.push(`budget: ${answers.budget}`);
+    if (answers.timeline) parts.push(`timeline: ${answers.timeline}`);
+  } else if (service === "seo_marketing") {
+    if (answers.website_status) parts.push(`for ${answers.website_status}`);
+    if (answers.target_market) parts.push(`targeting ${answers.target_market}`);
+    if (answers.scope_focus) parts.push(answers.scope_focus);
+    if (answers.budget) parts.push(`budget: ${answers.budget}`);
+    if (answers.timeline) parts.push(`start: ${answers.timeline}`);
   }
 
   const specString = parts.length > 0 ? parts.join(", ") : "custom features";
@@ -778,19 +1217,26 @@ export function handleSalesFlowTurn({
   }
 
   // 3. Extract answers from incoming message across all attributes
-  // Prioritize answering currentStage if cleanMsg is a direct reply like "Yes", "No", "New website", etc.
-  if (current.currentStage && current.service) {
-    const flow = QUALIFICATION_FLOWS[current.service];
-    const currentQ = flow?.questions.find((q) => q.id === current.currentStage);
-    if (currentQ && (current.answers[currentQ.id] === undefined || current.answers[currentQ.id] === null)) {
-      const singleAns = currentQ.extract(cleanMsg);
-      if (singleAns !== null && singleAns !== undefined) {
-        current.answers[currentQ.id] = singleAns;
+  // If user simply clicked a service button, do not treat the service name as an answer to question 0
+  const isPureServiceSelection = ALL_ESS_SERVICES.some(
+    (s) => s.toLowerCase() === cleanMsg.toLowerCase()
+  );
+
+  if (!isPureServiceSelection) {
+    // Prioritize answering currentStage if cleanMsg is a direct reply like "Yes", "No", "New website", etc.
+    if (current.currentStage && current.service) {
+      const flow = QUALIFICATION_FLOWS[current.service];
+      const currentQ = flow?.questions.find((q) => q.id === current.currentStage);
+      if (currentQ && (current.answers[currentQ.id] === undefined || current.answers[currentQ.id] === null)) {
+        const singleAns = currentQ.extract(cleanMsg);
+        if (singleAns !== null && singleAns !== undefined) {
+          current.answers[currentQ.id] = singleAns;
+        }
       }
     }
-  }
 
-  current.answers = extractAnswersFromMessage(cleanMsg, current.service, current.answers);
+    current.answers = extractAnswersFromMessage(cleanMsg, current.service, current.answers);
+  }
 
   // 4. Check if user asked a direct question mid-flow
   const directQ = detectDirectBusinessQuestion(cleanMsg);

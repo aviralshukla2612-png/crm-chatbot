@@ -11,7 +11,7 @@ import {
 } from "@/lib/ai/masterPrompt";
 import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
 import { extractLeadDetails } from "@/lib/ai/leadExtractor";
-import { handleSalesFlowTurn, formatQualificationInquiry } from "@/lib/ai/salesFlowManager";
+import { handleSalesFlowTurn, formatQualificationInquiry, ALL_ESS_SERVICES } from "@/lib/ai/salesFlowManager";
 import { InferenceProvider } from "@/lib/ai/inferenceProvider";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
@@ -489,7 +489,7 @@ export async function POST(request, { params }) {
     let quickReplies = [];
     if (isLanguageSwitchQuery) {
       lang = /[\u0900-\u097F]/.test(message) ? "hindi" : "hinglish";
-      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
+      quickReplies = [...ALL_ESS_SERVICES];
       if (lang === "hindi") {
         deterministicReply = `हाँ बिल्कुल! मैं हिंदी में बात कर सकता हूँ। Emperor Smart Solutions में आपका स्वागत है! मैं आपके डिजिटल प्रोजेक्ट में किस प्रकार सहायता कर सकता हूँ? क्या आप कोई मोबाइल ऐप, वेबसाइट या कस्टम AI समाधान बनवाना चाहते हैं?`;
       } else {
@@ -497,7 +497,7 @@ export async function POST(request, { params }) {
       }
     } else if (isEnglishSwitchQuery) {
       lang = "english";
-      quickReplies = ["Build a website", "Develop mobile app", "AI Chatbot"];
+      quickReplies = [...ALL_ESS_SERVICES];
       deterministicReply = `Yes, absolutely! I can converse fluently in English. Emperor Smart Solutions specializes in custom mobile apps, web platforms, and enterprise AI solutions. What kind of project are you looking to build?`;
     } else if (isOfferingToShareContact) {
       deterministicReply = lang === "hindi"
@@ -506,7 +506,7 @@ export async function POST(request, { params }) {
         ? `Sure! Please apna **Name aur Phone Number (ya WhatsApp)** share karein, hum ise note kar lenge aur hamari technical team aapse connect karegi.`
         : `Sure! Please share your **Name and Phone Number (or WhatsApp)** here, and I'll make sure our technical team connects with you promptly.`;
     } else if (isContactSubmission) {
-      quickReplies = ["Website Development", "Mobile Application", "AI Chatbot", "Custom Software"];
+      quickReplies = [...ALL_ESS_SERVICES];
       const displayName = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") ? resolvedName : "";
       if (displayName) {
         if (!resolvedPhone && !resolvedEmail) {
@@ -544,7 +544,7 @@ export async function POST(request, { params }) {
           : `Thank you! Your contact details have been noted. Could you also please share your **Name** so our technical team can address you personally?`;
       }
     } else if (isPureGreeting && !hasTechnicalKeywords) {
-      quickReplies = ["Website Development", "Mobile Application", "AI Chatbot", "Custom Software"];
+      quickReplies = [...ALL_ESS_SERVICES];
       if (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect") {
         deterministicReply = lang === "hindi"
           ? `नमस्ते ${resolvedName}! Emperor Smart Solutions में आपका स्वागत है। आप कौन सा प्रोजेक्ट या समाधान बनवाना चाहते हैं?`
@@ -748,8 +748,8 @@ Here is what our software engineering team builds for your clinic:
 
 Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.`;
     } else if (isCelebrityOrTriviaQuery) {
-      deterministicReply = `I can help with ESS's business and technology services. Are you planning a website, app, or AI solution?`;
-      quickReplies = ["Website", "Mobile App", "AI Chatbot"];
+      deterministicReply = `I can help with ESS's business and technology services. Which digital solution are you planning to build?`;
+      quickReplies = [...ALL_ESS_SERVICES];
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : (

@@ -544,6 +544,30 @@
       const welcomeEl = document.createElement("div");
       welcomeEl.className = "nexus-msg nexus-msg-bot";
       welcomeEl.textContent = botConfig.welcomeMessage;
+
+      const defaultServices = [
+        "Website Development",
+        "Mobile Application",
+        "AI Chatbot",
+        "Custom Software",
+        "UI/UX Design",
+        "Cloud & DevOps",
+        "SEO & Marketing",
+      ];
+      const qrContainer = document.createElement("div");
+      qrContainer.className = "nexus-quick-replies";
+      defaultServices.forEach((serviceText) => {
+        const qrBtn = document.createElement("button");
+        qrBtn.type = "button";
+        qrBtn.className = "nexus-quick-reply-btn";
+        qrBtn.textContent = serviceText;
+        qrBtn.addEventListener("click", () => {
+          qrContainer.querySelectorAll("button").forEach((b) => (b.disabled = true));
+          sendMessage(serviceText);
+        });
+        qrContainer.appendChild(qrBtn);
+      });
+      welcomeEl.appendChild(qrContainer);
       list.appendChild(welcomeEl);
     }
 

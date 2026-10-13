@@ -28,6 +28,15 @@ export default function BotPreviewWidget({
       id: "w_1",
       role: "assistant",
       content: welcomeMessage,
+      quickReplies: [
+        "Website Development",
+        "Mobile Application",
+        "AI Chatbot",
+        "Custom Software",
+        "UI/UX Design",
+        "Cloud & DevOps",
+        "SEO & Marketing",
+      ],
       sources: [],
     },
   ]);
