@@ -608,7 +608,9 @@ export async function POST(request, { params }) {
         } else if (lang === "hinglish") {
           deterministicReply = `Great! Thank you ${displayName || ""}! Humne aapke **${serviceTitle}** project ke liye aapka contact number (**${contactVal}**) note kar liya hai.\n\nHamari technical team jald hi customized proposal aur project roadmap ke saath aapse connect karegi! 🚀`;
         } else {
-          deterministicReply = `Thank you, ${displayName || "there"}! We have recorded your contact number (**${contactVal}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`;
+          deterministicReply = displayName
+            ? `Thank you, ${displayName}! We have recorded your contact number (**${contactVal}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`
+            : `Thank you! We have recorded your contact number (**${contactVal}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`;
         }
 
         const inquirySummary = formatQualificationInquiry(completedQual);

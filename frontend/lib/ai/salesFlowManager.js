@@ -1210,6 +1210,11 @@ export function handleSalesFlowTurn({
     return { shouldHandle: false };
   }
 
+  const cleanVisitorName = (visitorName && typeof visitorName === "string" && !/^(?:there|website visitor|website prospect|visitor|prospect|user|guest)$/i.test(visitorName.trim()))
+    ? visitorName.trim()
+    : "";
+  const hasRealName = Boolean(cleanVisitorName);
+
   // 2. Check if user already provided consent or submitted contact details
   if (current.consentAsked) {
     if (Boolean(contactRecorded) || /\b(?:yes|contact\s*me|sure|okay|definitely|call\s*me|haan|kar\s*lo|theek\s*hai)\b/i.test(cleanMsg)) {
@@ -1217,15 +1222,17 @@ export function handleSalesFlowTurn({
       const serviceTitle = QUALIFICATION_FLOWS[current.service]?.serviceName || "Digital Project";
       const promptText = contactRecorded
         ? (lang === "hindi"
-            ? `शानदार! धन्यवाद ${visitorName || ""}! हमने आपके **${serviceTitle}** प्रोजेक्ट के लिए आपका संपर्क नंबर (**${contactRecorded}**) सुरक्षित रूप से नोट कर लिया है।\n\nहमारी तकनीकी टीम जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेगी! 🚀`
+            ? `शानदार! धन्यवाद ${cleanVisitorName || ""}! हमने आपके **${serviceTitle}** प्रोजेक्ट के लिए आपका संपर्क नंबर (**${contactRecorded}**) सुरक्षित रूप से नोट कर लिया है।\n\nहमारी तकनीकी टीम जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेगी! 🚀`
             : lang === "hinglish"
-            ? `Great! Thank you ${visitorName || ""}! Humne aapke **${serviceTitle}** project ke liye aapka contact number (**${contactRecorded}**) note kar liya hai.\n\nHamari technical team jald hi customized proposal aur project roadmap ke saath aapse connect karegi! 🚀`
-            : `Thank you, ${visitorName || "there"}! We have recorded your contact number (**${contactRecorded}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`)
+            ? `Great! Thank you ${cleanVisitorName || ""}! Humne aapke **${serviceTitle}** project ke liye aapka contact number (**${contactRecorded}**) note kar liya hai.\n\nHamari technical team jald hi customized proposal aur project roadmap ke saath aapse connect karegi! 🚀`
+            : (hasRealName
+                ? `Thank you, ${cleanVisitorName}! We have recorded your contact number (**${contactRecorded}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`
+                : `Thank you! We have recorded your contact number (**${contactRecorded}**) for your **${serviceTitle}** project.\n\nOur technical team will reach out to you shortly with a customized proposal and project roadmap! 🚀`))
         : (lang === "hindi"
-            ? (visitorName ? `धन्यवाद ${visitorName}! कृपया अपना **फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।` : "कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।")
+            ? (hasRealName ? `धन्यवाद ${cleanVisitorName}! कृपया अपना **फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके।` : "कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे संपर्क कर सके और कस्टमाइज्ड प्रस्ताव तैयार कर सके।")
             : lang === "hinglish"
-            ? (visitorName ? `Thank you ${visitorName}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect karein.` : "Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sakein.")
-            : (visitorName ? `Thank you, ${visitorName}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can prepare your proposal?` : "Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can prepare a formal proposal?"));
+            ? (hasRealName ? `Thank you ${cleanVisitorName}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect karein.` : "Please apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sakein aur customized proposal share kar sakein.")
+            : (hasRealName ? `Thank you, ${cleanVisitorName}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can prepare your proposal?` : "Could you please share your **Name and Phone Number (or WhatsApp)** so our technical team can reach out to you with a customized proposal?"));
       return {
         shouldHandle: true,
         reply: promptText,
@@ -1318,10 +1325,12 @@ export function handleSalesFlowTurn({
     current.consentAsked = false;
 
     const completionText = lang === "hindi"
-      ? `शानदार! मैंने आपकी **${serviceTitle}** आवश्यकताओं को नोट कर लिया है।\n\nधन्यवाद ${visitorName || ""}! हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${contactRecorded}**) दर्ज है और वे जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेंगे! 🚀`
+      ? `शानदार! मैंने आपकी **${serviceTitle}** आवश्यकताओं को नोट कर लिया है।\n\n${hasRealName ? `धन्यवाद ${cleanVisitorName}! ` : "धन्यवाद! "}हमारी तकनीकी टीम के पास आपका संपर्क विवरण (**${contactRecorded}**) दर्ज है और वे जल्द ही एक कस्टमाइज्ड प्रस्ताव और कार्ययोजना के साथ आपसे संपर्क करेंगे! 🚀`
       : lang === "hinglish"
-      ? `Great! Humne aapke **${serviceTitle}** project ki saari requirements note kar li hain.\n\nThank you ${visitorName || ""}! Hamari technical team ke paas aapka contact details (**${contactRecorded}**) recorded hai aur hamari team jald hi customized proposal ke saath aapse connect karegi! 🚀`
-      : `Great! We have recorded all your requirements for your **${serviceTitle}** project.\n\nThank you, ${visitorName || "there"}! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal and project roadmap! 🚀`;
+      ? `Great! Humne aapke **${serviceTitle}** project ki saari requirements note kar li hain.\n\n${hasRealName ? `Thank you ${cleanVisitorName}! ` : "Thank you! "}Hamari technical team ke paas aapka contact details (**${contactRecorded}**) recorded hai aur hamari team jald hi customized proposal ke saath aapse connect karegi! 🚀`
+      : (hasRealName
+          ? `Great! We have recorded all your requirements for your **${serviceTitle}** project.\n\nThank you, ${cleanVisitorName}! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal and project roadmap! 🚀`
+          : `Great! We have recorded all your requirements for your **${serviceTitle}** project.\n\nThank you! Our technical team has your contact details (**${contactRecorded}**) and will reach out to you shortly with a customized proposal and project roadmap! 🚀`);
 
     return {
       shouldHandle: true,
@@ -1340,10 +1349,16 @@ export function handleSalesFlowTurn({
   current.consentAsked = true;
 
   const consentPrompt = lang === "hindi"
-    ? `${summary}\n\nधन्यवाद ${visitorName || ""}! क्या आप अपना **फ़ोन नंबर (या WhatsApp)** साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे सीधे संपर्क कर सके?`
+    ? (hasRealName
+        ? `${summary}\n\nधन्यवाद ${cleanVisitorName}! क्या आप अपना **फ़ोन नंबर (या WhatsApp)** साझा कर सकते हैं ताकि हमारी तकनीकी टीम आपसे सीधे संपर्क कर सके?`
+        : `${summary}\n\nकृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें ताकि हमारी तकनीकी टीम आपसे सीधे संपर्क कर सके और कस्टमाइज्ड प्रस्ताव तैयार कर सके।`)
     : lang === "hinglish"
-    ? `${summary}\n\nThank you ${visitorName || ""}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sake!`
-    : `${summary}\n\nThank you, ${visitorName || "there"}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can reach out to you with a customized proposal?`;
+    ? (hasRealName
+        ? `${summary}\n\nThank you ${cleanVisitorName}! Please apna **Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sake!`
+        : `${summary}\n\nPlease apna **Name aur Phone Number (ya WhatsApp)** share karein taaki hamari technical team aapse connect kar sake aur customized proposal share kar sake!`)
+    : (hasRealName
+        ? `${summary}\n\nThank you, ${cleanVisitorName}! Could you please share your **Phone Number (or WhatsApp)** so our technical team can reach out to you with a customized proposal?`
+        : `${summary}\n\nCould you please share your **Name and Phone Number (or WhatsApp)** so our technical team can reach out to you with a customized proposal?`);
 
   return {
     shouldHandle: true,

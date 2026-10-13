@@ -1,1 +1,478 @@
-[]
+[
+  {
+    "id": "test_session_1791895067323",
+    "visitorName": "Karan",
+    "visitorEmail": "",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": false,
+    "leadScore": "Medium",
+    "startedAt": "06:07 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "I want a new website",
+    "createdAt": "2026-10-13T12:37:47.324Z",
+    "updatedAt": "2026-10-13T12:37:47.324Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "I want a new website"
+      }
+    ],
+    "qualification": {
+      "service": "website",
+      "answers": {
+        "is_business": true,
+        "is_redesign": "New website"
+      },
+      "askedQuestions": [
+        "is_business",
+        "is_redesign"
+      ],
+      "currentStage": "is_redesign",
+      "status": "in_progress"
+    }
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "06:05 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T12:35:58.032Z",
+    "updatedAt": "2026-10-13T12:35:58.032Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:45 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T12:15:05.320Z",
+    "updatedAt": "2026-10-13T12:15:05.320Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:40 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T12:10:35.215Z",
+    "updatedAt": "2026-10-13T12:10:35.215Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:35 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T12:05:39.523Z",
+    "updatedAt": "2026-10-13T12:05:39.523Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:27 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:57:14.546Z",
+    "updatedAt": "2026-10-13T11:57:14.546Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:24 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:54:07.081Z",
+    "updatedAt": "2026-10-13T11:54:07.081Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:15 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:45:51.628Z",
+    "updatedAt": "2026-10-13T11:45:51.628Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "05:05 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:35:03.189Z",
+    "updatedAt": "2026-10-13T11:35:03.189Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:46 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:16:55.644Z",
+    "updatedAt": "2026-10-13T11:16:55.644Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:41 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:11:58.093Z",
+    "updatedAt": "2026-10-13T11:11:58.093Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:36 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T11:06:11.143Z",
+    "updatedAt": "2026-10-13T11:06:11.143Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "flow_test_1791889312212",
+    "visitorName": "Aviral",
+    "visitorEmail": "",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": false,
+    "leadScore": "Medium",
+    "startedAt": "04:31 pm",
+    "duration": "1 min",
+    "messagesCount": 2,
+    "questionsCount": 1,
+    "lastMessage": "Is this website for your business?",
+    "createdAt": "2026-10-13T11:01:52.237Z",
+    "updatedAt": "2026-10-13T11:01:52.241Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Website Development"
+      },
+      {
+        "role": "assistant",
+        "content": "Is this website for your business?",
+        "quickReplies": [
+          "Yes",
+          "No"
+        ]
+      }
+    ],
+    "qualification": {
+      "service": "website",
+      "answers": {
+        "is_business": true,
+        "needs_admin": "Yes",
+        "needs_payment": "Yes"
+      },
+      "askedQuestions": [
+        "is_business",
+        "is_redesign"
+      ],
+      "currentStage": "is_redesign",
+      "status": "in_progress",
+      "consentAsked": false
+    }
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:29 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T10:59:24.904Z",
+    "updatedAt": "2026-10-13T10:59:24.904Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:25 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T10:55:26.539Z",
+    "updatedAt": "2026-10-13T10:55:26.539Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:18 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T10:48:52.563Z",
+    "updatedAt": "2026-10-13T10:48:52.563Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  },
+  {
+    "id": "c_eval_test_30",
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "04:16 pm",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "createdAt": "2026-10-13T10:46:23.885Z",
+    "updatedAt": "2026-10-13T10:46:23.885Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ],
+    "qualification": null
+  }
+]
