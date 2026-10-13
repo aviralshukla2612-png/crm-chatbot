@@ -20,6 +20,7 @@ import {
 } from "@/lib/ai/salesFlowManager";
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
+import { InferenceProvider } from "@/lib/ai/inferenceProvider";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 
