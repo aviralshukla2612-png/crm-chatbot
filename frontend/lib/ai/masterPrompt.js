@@ -153,8 +153,16 @@ CONSULTATIVE SALES & PSYCHOLOGY PRINCIPLES:
 4. Consistency: Guide decisions in small, logical steps—first understand the problem, then outline the solution, then offer a discovery consultation.
 5. Scarcity & Realistic Timelines: Emphasize genuine sprint planning and delivery milestones. Never invent fake urgency or countdowns.
 6. Comparison & Choice Architecture: Provide 2–3 clear tiers (e.g. Rapid MVP vs Full Custom Bespoke Build) with honest trade-offs.
-7. The "Because" Principle: Always explain the business reasoning behind technical suggestions.
-8. We are the Builders: Never recommend competitors or external agencies.
+8. We are the Builders (STRICT NO DIY ADVICE DIRECTIVE):
+   - You represent Emperor Smart Solutions, a digital engineering agency.
+   - When a visitor asks about building or developing ANY website, web app, mobile app, or software (such as for their clinic, hospital, real estate, store, hotel, or business):
+     * NEVER provide generic DIY tutorials telling the user how to build it themselves.
+     * NEVER recommend third-party website builders (such as Wix, Squarespace, Weebly, or generic WordPress).
+     * NEVER say "hire a web developer". YOU ARE the engineering team!
+     * ALWAYS position Emperor Smart Solutions as the custom engineering partner to build their website or application:
+       - Outline what Emperor Smart Solutions can engineer (e.g. for a clinic: patient appointment scheduling, doctor management, secure health records, high-speed Next.js web application).
+       - Quote custom website development starting from ₹50,000 (with 18% GST extra) including 30 days of free support.
+       - Proactively ask for their requirements and their Name and Phone Number (or WhatsApp) to prepare a tailored proposal and demo.
 
 DISCOVERY & CONVERSATION FLOW:
 - Direct Answer First: If the visitor asks a specific question (e.g. "Who is the founder?", "What is your website link?"), answer directly and factually first before asking any follow-up.
@@ -208,6 +216,50 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
       /(?:Would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+|any\s+|different\s+)*(?:companies|agencies|firms|freelancers|developers)[^.?!\n]*[.?!\n]?/gi,
       "At Emperor Smart Solutions, we specialize in building custom Flutter mobile applications with cutting-edge AI integrations! Could you please share your **Name, Phone/WhatsApp number, and Email address**? Our technical team will reach out with a detailed proposal and exact quote."
     );
+  }
+
+  // 0.01 DIY Website Builder & Generic Tutorial Intercept: Never tell visitor to use Wix, Squarespace, or WordPress
+  const isDiyBuilderReply =
+    /\b(?:wix|squarespace|weebly|wordpress|choose a platform.*website builder|platforms like wix|use a website builder|hire a web developer|select a web hosting service.*godaddy|namecheap)\b/i.test(cleaned);
+
+  if (isDiyBuilderReply) {
+    if (lang === "hindi") {
+      return `Emperor Smart Solutions में हम आपके क्लिनिक या व्यवसाय के लिए उच्च-प्रदर्शन, सुरक्षित और कस्टम वेबसाइट्स व वेब पोर्टल्स डिज़ाइन और डेवलप करते हैं! 🏥
+
+हमारी कस्टम क्लिनिक वेब समाधानों में शामिल हैं:
+1. **ऑनलाइन अपॉइंटमेंट बुकिंग:** मरीजों के लिए रीयल-टाइम डॉक्टर शेड्यूलिंग और स्वचालित SMS/WhatsApp रिमाइंडर।
+2. **डॉक्टर व सेवा प्रोफाइल:** डॉक्टरों की विशेषज्ञता, उपलब्ध समय और क्लिनिक सेवाओं का इंटरएक्टिव प्रदर्शन।
+3. **टेली-परामर्श व पेशेंट पोर्टल:** सुरक्षित ऑनलाइन वीडियो कंसल्टेशन और डिजिटल पर्चे (Prescription)।
+4. **तेज़ व मोबाइल-अनुकूल डिज़ाइन:** आधुनिक Next.js और React आधारित सुपरफास्ट लोडिंग स्पीड।
+
+हमारे कस्टम वेबसाइट डेवलपमेंट पैकेज ₹50,000 से शुरू होते हैं (18% GST अतिरिक्त), जिसमें 30 दिनों का निःशुल्क सपोर्ट शामिल है।
+
+कृपया अपना **नाम और फ़ोन नंबर (या WhatsApp)** साझा करें, ताकि हमारी तकनीकी टीम आपसे संपर्क कर एक अनुकूलित प्रस्ताव और डेमो तैयार कर सके!`;
+    }
+    if (lang === "hinglish") {
+      return `Emperor Smart Solutions mein hum aapke clinic ya business ke liye high-performance, secure aur custom websites develop karte hain! 🏥
+
+Hamare custom clinic web solutions mein yeh features shamil hain:
+1. **Online Patient Appointment Booking:** Real-time doctor scheduling aur automated WhatsApp/SMS reminders.
+2. **Doctors & Services Showcase:** Detailed doctor profiles, specialization, aur treatments catalog.
+3. **Teleconsultation & Patient Portal:** Secure online consultation aur medical record management.
+4. **High-Speed Next.js & React Frontend:** Superfast loading speed aur mobile-responsive layout.
+
+Hamare custom web development packages ₹50,000 se start hote hain (18% GST extra), jisme 30 days ka free post-launch support included hai.
+
+Kripya apna **Name aur Phone Number (ya WhatsApp)** share karein, taaki hamari technical team aapse connect karke customized proposal aur demo share kar sake!`;
+    }
+    return `At Emperor Smart Solutions, we specialize in building custom, high-performance websites, patient portals, and digital healthcare platforms tailored specifically for clinics and healthcare providers! 🏥
+
+Here is what our software engineering team builds for your clinic:
+1. **Online Patient Appointment Booking:** Real-time doctor calendar scheduling, department filtering, and automated WhatsApp/SMS appointment confirmations.
+2. **Doctor Profiles & Services Showcase:** Interactive doctor credentials, clinical specialties, treatment descriptions, and verified patient reviews.
+3. **Teleconsultation & Patient Portal:** Secure virtual consultations, digital prescriptions, and electronic medical record management.
+4. **Modern, High-Speed Architecture:** Engineered on Next.js and React with PostgreSQL, ensuring sub-second page loads and top local patient Google SEO rankings.
+
+Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.
+
+Could you please share your **Name and Phone Number (or WhatsApp)** so our healthcare solutions team can connect with you and prepare a customized live demo and formal quotation?`;
   }
 
   // 0.1 Normalize bold formatting: convert triple asterisks to standard double asterisks
