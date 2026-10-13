@@ -10,6 +10,7 @@ import {
   detectLanguage,
 } from "@/lib/ai/masterPrompt";
 import { classifyMessageIntent } from "@/lib/ai/intentClassifier";
+import { extractLeadDetails } from "@/lib/ai/leadExtractor";
 import {
   handleSalesFlowTurn,
   formatQualificationInquiry,
