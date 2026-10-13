@@ -228,11 +228,13 @@ export async function POST(request, { params }) {
     });
 
     if (intentResult.action === "REFUSE" || intentResult.action === "RESTRICT") {
+      const defaultPills = ["Website Development", "Mobile Applications", "AI Chatbots & Automation", "Custom Business Software"];
       return corsResponse(
         NextResponse.json({
           success: true,
           reply: intentResult.refusalReply,
           intent: intentResult.intent,
+          quickReplies: defaultPills,
           sources: [],
           sessionId: currentSessionId,
         })
@@ -500,6 +502,22 @@ export async function POST(request, { params }) {
          /\b[6-9]\d{9}\b/.test(message) ||
          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(message))));
 
+    const isRomanceOrRelationships =
+      /\b(?:love|lust|romance|romantic|dating|date|girlfriend|boyfriend|crush|breakup|heartbreak|divorce|marriage|marry|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|flirt|flirting|propose|pyar|pyaar|ishq|mohabbat|shadi)\b/i.test(message);
+
+    const isPhilosophyOrReligion =
+      /\b(?:meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i.test(message);
+
+    const isPersonalBotQuery =
+      /\b(?:do\s+you\s+(?:love|like)\s+me|are\s+you\s+(?:single|married|human|alive|sentient|real)|will\s+you\s+marry\s+me|be\s+my\s+(?:girlfriend|boyfriend|friend)|have\s+feelings|feel\s+emotions?|can\s+you\s+feel)\b/i.test(message);
+
+    const isGeneralOffTopicAdvice =
+      /\b(?:weather|temperature|news|headlines|stock\s+market|crypto\s+price|bitcoin\s+rate|gold\s+rate|headache|fever|medicine|prescription|doctor\s+consultation|symptom|legal\s+advice|court|lawyer|sue|lawsuit)\b/i.test(message);
+
+    const isOffTopicDilemma =
+      /^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i.test(message.trim()) &&
+      !/\b(?:web|website|app|mobile|android|ios|flutter|react|native|next\.?js|node|python|ai|bot|chatbot|saas|software|ecommerce|cloud|devops|design|redesign|new|existing|fixed|hourly|sprint|timeline|budget|inr|usd|yes|no)\b/i.test(message);
+
     const isEntertainmentOrTrivia =
       /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i.test(message) ||
       /\b(?:give|tell|name|list|suggest|recommend|write|show)\s+(?:me\s+)?(?:the\s+)?(?:names?\s+of\s+)?(?:\d+|some|few|top)\b/i.test(message) ||
@@ -520,6 +538,11 @@ export async function POST(request, { params }) {
       !isServicesQuery &&
       !isContactSubmission &&
       (isExternalEntityQuery ||
+      isRomanceOrRelationships ||
+      isPhilosophyOrReligion ||
+      isPersonalBotQuery ||
+      isGeneralOffTopicAdvice ||
+      isOffTopicDilemma ||
       (isEntertainmentOrTrivia && !isEssLeadershipQuery) ||
       (!hasSoftwareOrCompanyContext && !isPureGreeting && !isFirstMessageQuery && !isNameIntroductionOnly && /\b(who|what|where|how|why|when|can you|give me|tell me|name|list)\b/i.test(message) && !isEssLeadershipQuery && !/\b(office|address|contact|email|phone)\b/i.test(message)));
 
@@ -900,8 +923,14 @@ Here is what our software engineering team builds for your clinic:
 
 Our custom clinic website & MVP packages start from **₹50,000** (18% GST extra), which includes complete UI/UX design, full-stack engineering, QA testing, and 30 days of free post-launch support.`;
     } else if (isCelebrityOrTriviaQuery) {
-      deterministicReply = `I can help with ESS's business and technology services. Which digital solution are you planning to build?`;
-      quickReplies = [...ALL_ESS_SERVICES];
+      if (lang === "hindi") {
+        deterministicReply = `मैं Emperor Smart Solutions का आधिकारिक AI बिजनेस कंसल्टेंट हूँ और केवल कस्टम सॉफ्टवेयर, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और AI समाधानों में सहायता करता हूँ। मैं व्यक्तिगत सलाह, सामान्य ज्ञान या गैर-व्यावसायिक विषयों पर चर्चा नहीं करता। क्या आपके पास कोई डिजिटल प्रोजेक्ट है जिस पर हम चर्चा कर सकते हैं?`;
+      } else if (lang === "hinglish") {
+        deterministicReply = `Main Emperor Smart Solutions ka official AI Business Consultant hoon aur sirf custom software, mobile apps, websites aur AI solutions mein help karta hoon. Main personal advice, entertainment ya non-business topics discuss nahi karta. Kya aap kisi digital project par kaam kar rahe hain?`;
+      } else {
+        deterministicReply = `I am the official AI Sales Consultant for Emperor Smart Solutions. I specialize exclusively in custom software engineering, mobile applications, web platforms, and enterprise AI solutions. I don't provide personal advice, relationship guidance, entertainment, or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! Which solution are you planning to build?`;
+      }
+      quickReplies = ["Website Development", "Mobile Applications", "AI Chatbots & Automation", "Custom Business Software"];
     } else if (isLowBudgetQuery) {
       const askForLead = (resolvedName && resolvedName !== "Website Visitor" && resolvedName !== "Website Prospect")
         ? (resolvedPhone ? "" : (

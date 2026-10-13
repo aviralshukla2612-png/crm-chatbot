@@ -295,13 +295,19 @@ Could you please share your **Name and Phone Number (or WhatsApp)** so our healt
   cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+Karan\s+Makwana,?\s*(?:the\s+)?(?:founder|co-founder)?\s*(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
   cleaned = cleaned.replace(/\b(?:I am|I'm|Myself)\s+(?:the\s+)?(?:founder|co-founder)\s+(?:of\s+Emperor\s+Smart\s+Solutions)?\.?/gi, "I am the AI Sales Consultant for Emperor Smart Solutions.");
 
-  // 0.5 Off-Topic Content Intercept (Comedians, Movies, Cast, Recipes, Trivia essays)
+  // 0.5 Off-Topic Content Intercept (Comedians, Movies, Cast, Recipes, Trivia, Romance & Relationship essays)
   const isOffTopicReply =
-    /\b(?:stand-?up|comedian|comedians|comedy|cast of|film|movie|bollywood|hollywood|directed by|starring|played by|actor|actress|box office|character of|ingredients|recipe for|tablespoon|teaspoon|preheat|oven|cup of)\b/i.test(cleaned) &&
-    !/\b(?:software|flutter|next\.?js|react|api|engineering|custom|development|emperor|ess)\b/i.test(cleaned);
+    (/\b(?:stand-?up|comedian|comedians|comedy|cast of|film|movie|bollywood|hollywood|directed by|starring|played by|actor|actress|box office|character of|ingredients|recipe for|tablespoon|teaspoon|preheat|oven|cup of)\b/i.test(cleaned) ||
+     /\b(?:love\s+(?:is|and|or)\s+lust|distinct\s+emotions|human\s+relationships|primal\s+emotion|physical\s+attraction|emotional\s+connection|romantic\s+feelings|philosophical\s+topic|complex\s+and\s+intriguing\s+topic)\b/i.test(cleaned)) &&
+    (!/\b(?:software|flutter|next\.?js|react|api|engineering|custom|development|emperor|ess)\b/i.test(cleaned) ||
+     /\b(?:love\s+(?:is|and|or)\s+lust|distinct\s+emotions|human\s+relationships|primal\s+emotion|physical\s+attraction)\b/i.test(cleaned));
 
   if (isOffTopicReply) {
-    return `I am the AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile apps (Flutter, iOS, Android), web platforms, and enterprise AI solutions. I don't provide entertainment or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+    return lang === "hindi"
+      ? `मैं Emperor Smart Solutions का आधिकारिक AI बिजनेस कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और AI समाधानों पर केंद्रित है। मैं सामान्य व्यक्तिगत सलाह, मनोरंजन या गैर-व्यावसायिक विषयों पर चर्चा नहीं करता। क्या आपके पास कोई डिजिटल प्रोजेक्ट है जिस पर हम चर्चा कर सकते हैं?`
+      : lang === "hinglish"
+      ? `Main Emperor Smart Solutions ka official AI Business Consultant hoon, jo specifically custom software, mobile apps, web platforms, aur AI solutions par focus karta hai. Main personal advice, entertainment ya non-business topics discuss nahi karta. Kya aap kisi digital project par kaam kar rahe hain?`
+      : `I am the official AI Sales Consultant for Emperor Smart Solutions, focusing exclusively on custom software engineering, mobile applications, web platforms, and enterprise AI solutions. I don't provide personal advice, relationship guidance, entertainment, or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! Which solution are you planning to build?`;
   }
 
   // Safety refusal intercept: If model ever hallucinates that public office address/contact is private

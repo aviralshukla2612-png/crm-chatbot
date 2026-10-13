@@ -69,3 +69,31 @@ test("IntentClassifier - classifies 'what service they provide' as BUSINESS_RELE
   assert.equal(result.intent, "BUSINESS_RELEVANT");
   assert.equal(result.action, "PROCEED");
 });
+
+test("IntentClassifier - classifies 'love or lust' as OUT_OF_SCOPE with REFUSE", () => {
+  const result = classifyMessageIntent({
+    message: "love or lust",
+    history: [
+      { role: "user", content: "hi" },
+      { role: "assistant", content: "Welcome to Emperor Smart Solutions! What can we build?" }
+    ]
+  });
+  assert.equal(result.intent, "OUT_OF_SCOPE");
+  assert.equal(result.action, "REFUSE");
+  assert.ok(result.refusalReply);
+  assert.doesNotMatch(result.refusalReply, /distinct emotions/i);
+});
+
+test("IntentClassifier - classifies 'what is the meaning of life' as OUT_OF_SCOPE with REFUSE", () => {
+  const result = classifyMessageIntent({ message: "what is the meaning of life" });
+  assert.equal(result.intent, "OUT_OF_SCOPE");
+  assert.equal(result.action, "REFUSE");
+  assert.ok(result.refusalReply);
+});
+
+test("IntentClassifier - classifies 'tea or coffee' as OUT_OF_SCOPE with REFUSE", () => {
+  const result = classifyMessageIntent({ message: "tea or coffee" });
+  assert.equal(result.intent, "OUT_OF_SCOPE");
+  assert.equal(result.action, "REFUSE");
+});
+

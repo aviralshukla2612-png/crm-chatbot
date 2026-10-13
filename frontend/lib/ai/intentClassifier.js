@@ -33,7 +33,7 @@ const CROSS_TENANT_EXFILTRATION_PATTERNS = [
   /(?:internal\s+database\s+credentials|database\s+password|api\s+keys|env\s+variables|jwt\s+secret)/i,
 ];
 
-// Out-of-scope entertainment, pop culture, sports, general trivia patterns
+// Out-of-scope entertainment, pop culture, sports, relationships, philosophy, and general trivia patterns
 const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
   /\b(?:comedian|comedians|comedy|stand-?up|standup|joke|jokes|funny|roast|meme|memes|riddle|riddles|story|stories|poem|poems|poetry|rhyme|song|songs|lyrics|music|singer|singers|album|rap|act|acted|acting|actor|actors|actress|actresses|cast|movie|movies|film|films|cinema|trailer|box\s*office|bollywood|hollywood|dabang|dabangg|sholay|bahubali|kgf|pushpa|pathaan|jawan|dangal|avatar|marvel|dc|batman|superman|spiderman|anime|manga|series|season|episode|director|producer|hero|heroine|villain|dialogue)\b/i,
   /\b(?:cricket|ipl|bcci|icc|world\s*cup|trophy|match|tournament|football|fifa|goal|messi|ronaldo|batting|bowling|wicket|toss|stadium|tennis|badminton|olympics|medal|chess|grandmaster|pubg|free\s*fire|bgmi|fortnite|gameplay)\b/i,
@@ -42,6 +42,16 @@ const ENTERTAINMENT_AND_TRIVIA_PATTERNS = [
   /\b(?:dinosaur|dinosaurs|planet|planets|solar\s*system|mars|jupiter|moon|galaxy|universe|black\s*hole|gravity|quantum\s*physics|photosynthesis|dna|evolution|world\s*war|dynasty|mughal|british\s*raj|independence|freedom\s*fighter|capital\s*of|longest\s*river|highest\s*mountain|mythology|ramayana|mahabharata|zeus|gods)\b/i,
   /\b(?:write\s+(?:an?\s+)?(?:essay|poem|song|story|letter|speech|article)|solve\s+(?:this\s+)?(?:math|equation|problem)|homework|horoscope|astrology|zodiac)\b/i,
   /\bwho\s+(?:is|was|are|were|act|acted|directed|wrote|invented|discovered|created|owns|played|won|scored|killed|sang)\b/i,
+  // Relationships, romance, dating, sexuality, emotions, love vs lust
+  /\b(?:love|lust|romance|romantic|dating|date|girlfriend|boyfriend|crush|breakup|heartbreak|divorce|marriage|marry|affair|kiss|kissing|sex|sexy|sexual|intimacy|feelings|emotions|flirt|flirting|propose|pyar|pyaar|ishq|mohabbat|shadi)\b/i,
+  // Philosophy, religion, existential, afterlife, spiritual queries
+  /\b(?:meaning\s+of\s+life|purpose\s+of\s+life|why\s+(?:do\s+we|are\s+we)\s+(?:exist|alive|born)|is\s+god\s+real|does\s+god\s+exist|afterlife|heaven|hell|reincarnation|spirituality|destiny|karma|meaning\s+of\s+death|ghosts?|aliens?|extraterrestrial)\b/i,
+  // Personal questions directed at bot (sentience, romance, physical)
+  /\b(?:do\s+you\s+(?:love|like)\s+me|are\s+you\s+(?:single|married|human|alive|sentient|real)|will\s+you\s+marry\s+me|be\s+my\s+(?:girlfriend|boyfriend|friend)|have\s+feelings|feel\s+emotions?|can\s+you\s+feel)\b/i,
+  // Weather, medical, legal, stocks / crypto trading signals
+  /\b(?:weather\s+today|temperature\s+in|today'?s\s+weather|todays\s+news|stock\s+market|crypto\s+price|bitcoin\s+rate|gold\s+rate|headache|fever|medicine|prescription|doctor\s+consultation|symptom|legal\s+advice|court|lawyer|sue|lawsuit)\b/i,
+  // Off-topic A or B dilemmas (e.g. "love or lust", "tea or coffee", "cat or dog")
+  /^[a-zA-Z\s]{2,30}\s+or\s+[a-zA-Z\s]{2,30}\??$/i,
 ];
 
 // Legitimate security & technical question markers (to prevent false-positive UNSAFE triggers)
@@ -198,15 +208,15 @@ export function classifyMessageIntent({
   if (isExplicitOffTopic) {
     const refusal =
       lang === "hindi"
-        ? `मैं ${businessName} का आधिकारिक AI बिजनेस कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और AI समाधानों पर केंद्रित है। मैं सामान्य मनोरंजन या सामान्य ज्ञान ट्रिविया की जानकारी नहीं देता। क्या आपके पास कोई डिजिटल प्रोजेक्ट है जिस पर हम चर्चा कर सकते हैं?`
+        ? `मैं ${businessName} का आधिकारिक AI बिजनेस कंसल्टेंट हूँ, जो विशेष रूप से कस्टम सॉफ्टवेयर, मोबाइल ऐप्स, वेब प्लेटफ़ॉर्म और AI समाधानों पर केंद्रित है। मैं सामान्य व्यक्तिगत सलाह, मनोरंजन या गैर-व्यावसायिक विषयों पर चर्चा नहीं करता। क्या आपके पास कोई डिजिटल प्रोजेक्ट है जिस पर हम चर्चा कर सकते हैं?`
         : lang === "hinglish"
-        ? `Main ${businessName} ka official AI Business Consultant hoon, jo specifically custom software, mobile apps, web platforms, aur AI solutions par focus karta hai. Main entertainment ya general trivia provide nahi karta. Kya aap kisi digital project par kaam kar rahe hain?`
-        : `I am the AI Business Assistant for ${businessName}, focusing exclusively on custom software engineering, mobile applications, web platforms, and AI solutions. I don't provide general trivia, entertainment news, or personal advice, but I'd be delighted to discuss how we can build or scale your digital project! What kind of solution are you looking to create?`;
+        ? `Main ${businessName} ka official AI Business Consultant hoon, jo specifically custom software, mobile apps, web platforms, aur AI solutions par focus karta hai. Main personal advice, entertainment, ya non-business topics discuss nahi karta. Kya aap kisi digital project par kaam kar rahe hain?`
+        : `I am the official AI Sales Consultant for ${businessName}, focusing exclusively on custom software engineering, mobile applications, web platforms, and enterprise AI solutions. I don't provide personal advice, relationship guidance, entertainment, or general trivia, but I'd be delighted to discuss how we can build or scale your digital project! Which solution are you planning to build?`;
 
     return {
       intent: "OUT_OF_SCOPE",
-      confidence: 0.97,
-      reason: "Query outside configured business scope (entertainment, trivia, or general non-business topic)",
+      confidence: 0.98,
+      reason: "Query outside configured business scope (entertainment, relationship, trivia, or general non-business topic)",
       subCategory: "trivia_entertainment",
       action: "REFUSE",
       refusalReply: refusal,
@@ -215,11 +225,9 @@ export function classifyMessageIntent({
   }
 
   // 8. Ongoing Conversation Turn or Qualification / Contact Response
-  const hasHistory = Array.isArray(history) && history.length > 0;
-
   const isPersonName =
     /^[A-Za-z.']{2,20}(?:\s+[A-Za-z.']{2,20}){0,2}$/.test(trimmed) &&
-    !/^(?:what|where|who|how|why|when|which|is|are|can|could|will|would|do|does|did|show|give|tell|help|need|want|build|make|create|price|cost|quote|budget|srk|salman)\b/i.test(trimmed);
+    !/^(?:what|where|who|how|why|when|which|is|are|can|could|will|would|do|does|did|show|give|tell|help|need|want|build|make|create|price|cost|quote|budget|srk|salman|love|lust)\b/i.test(trimmed);
 
   const hasPhoneOrEmail =
     /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/.test(trimmed) ||
@@ -231,11 +239,14 @@ export function classifyMessageIntent({
     /\b(?:under|above|less\s+than|more\s+than)?\s*(?:₹|rs\.?|inr)?\s*[\d,]+(?:\s*k|\s*lakh|\s*mo|\s*cr)?\b/i.test(trimmed) ||
     /\b(?:2\s*weeks|month|1–3\s*months|flexible|urgent|immediate)\b/i.test(trimmed);
 
-  if (hasHistory || isPersonName || hasPhoneOrEmail || isQualificationChoice) {
+  const isConversationalAffirmation =
+    /^(?:yes|no|haan|nahi|yep|nope|sure|ok|okay|cool|got\s*it|fine|great|awesome|understood|perfect|definitely|not\s*really|maybe|sounds\s*good|go\s*ahead|proceed|continue|next|tell\s*me\s*more|what\s*else|thanks?|thank\s*you|dhanyawad|shukriya|alright|done)[!.?]*$/i.test(trimmed);
+
+  if (isPersonName || hasPhoneOrEmail || isQualificationChoice || isConversationalAffirmation) {
     return {
       intent: (isPersonName || hasPhoneOrEmail) ? "CUSTOMER_SPECIFIC" : "BUSINESS_RELEVANT",
       confidence: 0.95,
-      reason: hasHistory ? "Active conversation continuation" : "Customer onboarding or qualification reply",
+      reason: "Customer onboarding, qualification reply, or conversational affirmation",
       subCategory: "conversation_turn",
       action: "PROCEED",
       refusalReply: null,
