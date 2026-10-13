@@ -67,6 +67,7 @@ chroma_data/
 qdrant_data/
 storage/
 data/
+!data/training/README.md
 uploads/
 
 # ------------------------------------------------------------------------------
