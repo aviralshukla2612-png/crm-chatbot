@@ -130,10 +130,17 @@ export async function POST(request, { params }) {
 
     // 1. Resolve Bot & Enforce Status
     const resolvedBotId =
-      botId === "default" || botId === "preview" || botId === "demo" || botId === "undefined"
+      botId === "default" ||
+      botId === "preview" ||
+      botId === "demo" ||
+      botId === "undefined" ||
+      botId === "bot_1791618269632"
         ? "bot_aa"
         : botId;
-    const bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
+    let bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
+    if (!bot && (botId === "bot_1791618269632" || botId?.startsWith("bot_17916"))) {
+      bot = (await botsStore.getBotAsync("bot_aa")) || botsStore.getBot("bot_aa");
+    }
     if (!bot) {
       return corsResponse(
         NextResponse.json({ error: "Bot not found" }, { status: 404 })

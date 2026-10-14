@@ -15,7 +15,19 @@ export async function OPTIONS() {
 export async function GET(request, { params }) {
   try {
     const { botId } = await params;
-    const bot = botsStore.getBot(botId);
+    const resolvedBotId =
+      botId === "default" ||
+      botId === "preview" ||
+      botId === "demo" ||
+      botId === "undefined" ||
+      botId === "bot_1791618269632"
+        ? "bot_aa"
+        : botId;
+
+    let bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
+    if (!bot) {
+      bot = (await botsStore.getBotAsync("bot_aa")) || botsStore.getBot("bot_aa");
+    }
 
     if (!bot) {
       return corsResponse(

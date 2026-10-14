@@ -80,7 +80,7 @@ export async function POST(request, { params }) {
     }
 
     // 2. Inspect HTML for widget script
-    const bot = botsStore.getBot(botId);
+    const bot = (await botsStore.getBotAsync(botId)) || botsStore.getBot(botId);
     const validIds = [botId];
     if (bot) {
       if (bot.id) validIds.push(bot.id);
