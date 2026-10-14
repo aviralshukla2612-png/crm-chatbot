@@ -672,6 +672,7 @@ export async function POST(request, { params }) {
         leadsStore.createLead({
           sessionId: currentSessionId,
           botId: bot?.id || botId,
+          organizationId: bot?.organizationId || "org_ess_default",
           name: displayName || leadDetails.name || "Website Prospect",
           email: resolvedEmail || leadDetails.email || "",
           phone: resolvedPhone || leadDetails.phone || "",
@@ -712,6 +713,7 @@ export async function POST(request, { params }) {
           leadsStore.createLead({
             sessionId: currentSessionId,
             botId: bot?.id || botId,
+            organizationId: bot?.organizationId || "org_ess_default",
             name: displayName,
             email: resolvedEmail || "",
             phone: resolvedPhone || "",
@@ -1096,6 +1098,7 @@ Here are our official contact details to speak with our engineering leadership:
           leadsStore.createLead({
             sessionId: currentSessionId,
             botId: bot?.id || botId,
+            organizationId: bot?.organizationId || "org_ess_default",
             name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
             email: resolvedEmail || "",
             phone: resolvedPhone || "",
@@ -1142,6 +1145,7 @@ Here are our official contact details to speak with our engineering leadership:
           const leadData = {
             sessionId: currentSessionId,
             botId: bot?.id || "bot_aa",
+            organizationId: bot?.organizationId || "org_ess_default",
             name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
             email: resolvedEmail,
             phone: resolvedPhone,
@@ -1262,6 +1266,7 @@ Here are our official contact details to speak with our engineering leadership:
             const leadData = {
               sessionId: currentSessionId,
               botId: bot?.id || "bot_aa",
+              organizationId: bot?.organizationId || "org_ess_default",
               name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
               email: resolvedEmail,
               phone: resolvedPhone,
@@ -1327,6 +1332,7 @@ Here are our official contact details to speak with our engineering leadership:
       const leadData = {
         sessionId: currentSessionId,
         botId: bot?.id || "bot_aa",
+        organizationId: bot?.organizationId || "org_ess_default",
         name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
         email: resolvedEmail,
         phone: resolvedPhone,

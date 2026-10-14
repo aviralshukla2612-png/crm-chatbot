@@ -122,10 +122,44 @@ export const leadsStore = {
     return list.find((l) => l.id === id && (!organizationId || (l.organizationId || "org_ess_default") === organizationId)) || null;
   },
 
+  async getLeadsAsync(filters = {}) {
+    try {
+      let query = 'SELECT * FROM "Lead"';
+      const params = [];
+      const conditions = [];
+
+      if (filters.organizationId) {
+        params.push(filters.organizationId);
+        conditions.push(`"organizationId" = $${params.length}`);
+      }
+      if (filters.status && filters.status !== "All" && filters.status !== "All Status") {
+        params.push(filters.status);
+        conditions.push(`LOWER("status") = LOWER($${params.length})`);
+      }
+      if (filters.score && filters.score !== "All") {
+        params.push(filters.score);
+        conditions.push(`LOWER("score") = LOWER($${params.length})`);
+      }
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      query += ' ORDER BY "createdAt" DESC;';
+
+      const dbRes = await queryDb(query, params);
+      if (dbRes.ok && dbRes.rows.length > 0) {
+        return dbRes.rows;
+      }
+    } catch (err) {
+      console.warn("DB leads query failed:", err);
+    }
+    return this.getLeads(filters);
+  },
+
   createLead(data) {
     const list = loadFromDisk();
     const now = new Date();
-    data.organizationId = data.organizationId || "org_ess_default";
+    const targetOrgId = data.organizationId || "org_ess_default";
+    data.organizationId = targetOrgId;
 
     // Check if lead already exists by sessionId, email, or verified phone
     const cleanDigits = (p) => (p || "").replace(/\D/g, "");
@@ -137,6 +171,9 @@ export const leadsStore = {
         (data.sessionId && l.sessionId === data.sessionId && data.name && l.name && l.name.toLowerCase() === data.name.toLowerCase())
     );
     if (existing) {
+      if (data.organizationId && (!existing.organizationId || existing.organizationId === "org_ess_default")) {
+        existing.organizationId = data.organizationId;
+      }
       if (data.sessionId) existing.sessionId = data.sessionId;
       if (data.name && data.name !== "Website Prospect" && data.name !== "Website Visitor") {
         existing.name = data.name;
@@ -173,13 +210,15 @@ export const leadsStore = {
       // Upsert to PostgreSQL so records missing in DB are guaranteed created
       try {
         const targetBotId = (existing.bot === "aa" || !existing.botId) ? "bot_aa" : (existing.botId || existing.bot);
+        const resolvedOrg = existing.organizationId || targetOrgId;
         queryDb(
           `INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
-           VALUES ($1, 'org_default', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
            ON CONFLICT ("id") DO UPDATE 
-           SET "name" = EXCLUDED."name", "phone" = EXCLUDED."phone", "email" = EXCLUDED."email", "score" = EXCLUDED."score", "inquiry" = EXCLUDED."inquiry", "updatedAt" = NOW()`,
+           SET "organizationId" = EXCLUDED."organizationId", "name" = EXCLUDED."name", "phone" = EXCLUDED."phone", "email" = EXCLUDED."email", "score" = EXCLUDED."score", "inquiry" = EXCLUDED."inquiry", "updatedAt" = NOW()`,
           [
             existing.id,
+            resolvedOrg,
             targetBotId,
             existing.name,
             existing.email || "",
@@ -200,6 +239,7 @@ export const leadsStore = {
     const newLead = {
       id: data.id || `lead_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       sessionId: data.sessionId || "",
+      organizationId: targetOrgId,
       name: data.name || "Website Prospect",
       email: data.email || "",
       phone: data.phone || "",
@@ -233,10 +273,10 @@ export const leadsStore = {
       queryDb(
         `INSERT INTO "Lead" ("id", "organizationId", "botId", "name", "email", "phone", "company", "score", "status", "inquiry", "budget", "source", "createdAt", "updatedAt")
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-         ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name", "email" = EXCLUDED."email", "phone" = EXCLUDED."phone", "updatedAt" = NOW()`,
+         ON CONFLICT ("id") DO UPDATE SET "organizationId" = EXCLUDED."organizationId", "name" = EXCLUDED."name", "email" = EXCLUDED."email", "phone" = EXCLUDED."phone", "updatedAt" = NOW()`,
         [
           newLead.id,
-          "org_default",
+          targetOrgId,
           targetBotId,
           newLead.name,
           newLead.email,

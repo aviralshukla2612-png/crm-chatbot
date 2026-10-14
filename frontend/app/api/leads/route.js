@@ -21,7 +21,13 @@ export async function GET(request) {
     const targetOrgId = isSuperAdmin ? (requestedOrg || null) : principal.organizationId;
 
     // Filter leads by target organizationId (null for superadmin viewing all tenant leads)
-    const leads = leadsStore.getLeads({
+    const leads = (await leadsStore.getLeadsAsync({
+      organizationId: targetOrgId,
+      status,
+      score,
+      bot,
+      search,
+    })) || leadsStore.getLeads({
       organizationId: targetOrgId,
       status,
       score,

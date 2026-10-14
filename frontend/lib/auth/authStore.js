@@ -216,21 +216,21 @@ export const authStore = {
         email: cleanEmail,
         password: "AdminAccessPassword2026!",
         name: isSuper ? "Super Admin" : "Sub Admin",
-        organizationName: isSuper ? "Emperor Smart Solutions" : "Primary Workspace",
-        role: isSuper ? "SUPER_ADMIN" : "ORG_OWNER",
+        organizationName: "Emperor Smart Solutions",
+        role: isSuper ? "SUPER_ADMIN" : "ORG_ADMIN",
       });
       user = {
         id: reg.user.id,
         name: reg.user.name,
         email: reg.user.email,
-        role: isSuper ? "SUPER_ADMIN" : "ORG_OWNER",
+        role: isSuper ? "SUPER_ADMIN" : "ORG_ADMIN",
       };
     }
 
     const memberships = await this.getUserMemberships(user.id);
     const primaryMembership = memberships[0] || null;
-    const orgId = primaryMembership?.organizationId || DEFAULT_ORG_ID;
-    const orgRole = isSuper ? "SUPER_ADMIN" : (primaryMembership?.role || "ORG_OWNER");
+    const orgId = DEFAULT_ORG_ID;
+    const orgRole = isSuper ? "SUPER_ADMIN" : (primaryMembership?.role || "ORG_ADMIN");
 
     return {
       user: {
