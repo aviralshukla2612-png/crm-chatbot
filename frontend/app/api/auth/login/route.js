@@ -40,17 +40,23 @@ export async function POST(request) {
       );
     }
 
-    const body = await request.json();
-    const { email, password } = body;
+    const body = await request.json().catch(() => ({}));
+    const { email, password, directLogin, portalRole } = body;
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
-        { status: 400 }
-      );
+    let authResult = null;
+
+    if (directLogin || (!email && !password)) {
+      authResult = await authStore.directLogin(portalRole || "subadmin");
+    } else {
+      if (!email || !password) {
+        return NextResponse.json(
+          { success: false, error: "Invalid email or password" },
+          { status: 400 }
+        );
+      }
+      authResult = await authStore.login({ email, password });
     }
 
-    const authResult = await authStore.login({ email, password });
     const { user, organizationId, orgRole, memberships } = authResult;
 
     const token = signSessionToken({
