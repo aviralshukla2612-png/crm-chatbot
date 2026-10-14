@@ -1205,21 +1205,62 @@ export function handleSalesFlowTurn({
     (s) => s.toLowerCase() === cleanMsg.toLowerCase()
   );
 
-  // If user explicitly clicks or enters a pure service name, allow starting a fresh qualification
-  if (isPureServiceSelection && detectedService) {
+  const cleanVisitorName = (visitorName && typeof visitorName === "string" && !/^(?:there|website visitor|website prospect|visitor|prospect|user|guest)$/i.test(visitorName.trim()))
+    ? visitorName.trim()
+    : "";
+  const hasRealName = Boolean(cleanVisitorName);
+
+  // If user requests to add more details to their completed qualification
+  if (/\b(?:add\s*more\s*details?|extra\s*details?|change\s*details?|update\s*requirements?)\b/i.test(cleanMsg)) {
+    const serviceTitle = QUALIFICATION_FLOWS[current.service]?.serviceName || "Digital Project";
+    const prompt = lang === "hindi"
+      ? `ज़रूर! कृपया अपने **${serviceTitle}** प्रोजेक्ट के बारे में जो भी अतिरिक्त सुविधाएं या आवश्यकताएं जोड़ना चाहते हैं, यहाँ साझा करें:`
+      : lang === "hinglish"
+      ? `Sure! Please apne **${serviceTitle}** project ke baare mein jo bhi extra features ya specifications add karna chahte hain, yahan share karein:`
+      : `Certainly! Please share any additional features, specifications, or timelines you would like to include for your **${serviceTitle}** project:`;
+    return {
+      shouldHandle: true,
+      reply: prompt,
+      quickReplies: ["Admin Panel", "Payment Gateway", "Multi-language", "Timeline: 1 Month"],
+      updatedQualification: current,
+    };
+  }
+
+  // If the user already completed qualification for THIS service, acknowledge their saved requirements!
+  if (current.status === "completed" && detectedService && detectedService === current.service) {
+    const serviceTitle = QUALIFICATION_FLOWS[current.service]?.serviceName || "Website Development";
+    const displayName = cleanVisitorName ? ` ${cleanVisitorName}` : "";
+    const contactInfo = contactRecorded ? ` (contact: ${contactRecorded})` : "";
+    const summary = formatQualificationInquiry(current);
+
+    let ackText = "";
+    if (lang === "hindi") {
+      ackText = `हाँ${displayName}! हमने आपके **${serviceTitle}** प्रोजेक्ट की आवश्यकताएं${contactInfo} पहले से ही सुरक्षित रूप से दर्ज कर ली हैं! 🚀\n\n${summary ? `• **दर्ज विवरण:** ${summary}\n\n` : ""}हमारी तकनीकी टीम आपके लिए कस्टमाइज्ड प्रस्ताव तैयार कर रही है। क्या आप इसमें कुछ और विवरण जोड़ना चाहते हैं या किसी अन्य समाधान (जैसे मोबाइल ऐप या AI बॉट) पर चर्चा करना चाहते हैं?`;
+    } else if (lang === "hinglish") {
+      ackText = `Haan${displayName}! Humne aapke **${serviceTitle}** project ki requirements${contactInfo} already securely record kar li hain! 🚀\n\n${summary ? `• **Recorded Summary:** ${summary}\n\n` : ""}Hamari technical team aapke liye customized proposal prepare kar rahi hai. Kya aap isme koi aur detail add karna chahte hain ya kisi doosre solution (jaise Mobile App ya AI Chatbot) par discuss karna chahte hain?`;
+    } else {
+      ackText = `Yes${displayName}! We have already recorded your **${serviceTitle}** requirements${contactInfo}! 🚀\n\n${summary ? `• **Recorded Details:** ${summary}\n\n` : ""}Our technical engineering team is preparing your customized proposal and roadmap. Would you like to add any extra requirements, or discuss another solution (such as a Mobile App or AI Automation)?`;
+    }
+
+    const otherServices = ALL_ESS_SERVICES.filter((s) => s.toLowerCase() !== cleanMsg.toLowerCase()).slice(0, 3);
+    return {
+      shouldHandle: true,
+      reply: ackText,
+      quickReplies: ["Add more details", ...otherServices],
+      updatedQualification: current,
+    };
+  }
+
+  // If user explicitly clicks or enters a pure service name for a NEW service:
+  if (isPureServiceSelection && detectedService && serviceChanged) {
     current.service = detectedService;
     current.answers = {};
     current.askedQuestions = [];
     current.status = "in_progress";
     current.consentAsked = false;
-  } else if (current.status === "completed" && !serviceChanged) {
+  } else if (current.status === "completed") {
     return { shouldHandle: false };
   }
-
-  const cleanVisitorName = (visitorName && typeof visitorName === "string" && !/^(?:there|website visitor|website prospect|visitor|prospect|user|guest)$/i.test(visitorName.trim()))
-    ? visitorName.trim()
-    : "";
-  const hasRealName = Boolean(cleanVisitorName);
 
   // 2. Check if user already provided consent or submitted contact details
   if (current.consentAsked) {
