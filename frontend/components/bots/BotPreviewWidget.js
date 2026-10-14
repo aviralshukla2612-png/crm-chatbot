@@ -334,10 +334,17 @@ export default function BotPreviewWidget({
         </div>
 
         <button
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await fetch(`/api/public/chat/${encodeURIComponent(botId || "bot_aa")}/session`, {
+                method: "DELETE",
+                credentials: "include",
+              });
+            } catch (e) {}
             setMessages([{ id: "w_1", role: "assistant", content: welcomeMessage, sources: [] }]);
             setShowPromptLead(false);
             setLeadCaptured(false);
+            setSessionId(`session_preview_${Date.now()}`);
           }}
           title="Restart Conversation"
           className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white"

@@ -3,6 +3,7 @@ import { searchWebsiteKnowledge } from "@/lib/crawler/engine";
 import { botsStore } from "@/lib/db/botsStore";
 import { conversationsStore } from "@/lib/db/conversationsStore";
 import { leadsStore } from "@/lib/db/leadsStore";
+import { visitorsStore } from "@/lib/db/visitorsStore";
 import {
   checkInputScopeAndSafety,
   buildMasterSystemPrompt,
@@ -95,8 +96,42 @@ async function executeChatInference({
 function corsResponse(res) {
   res.headers.set("Access-Control-Allow-Origin", "*");
   res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Bot-Id, Accept");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Bot-Id, X-Visitor-Token, Accept");
+  res.headers.set("Access-Control-Allow-Credentials", "true");
   return res;
+}
+
+function resolveCookieName(botId) {
+  const cleanId = (botId || "default").replace(/[^a-zA-Z0-9_]/g, "_");
+  return `ess_visitor_${cleanId}`;
+}
+
+function extractVisitorToken(request, botId, body = null) {
+  const cookieName = resolveCookieName(botId);
+  const cookieVal = request.cookies.get(cookieName)?.value;
+  if (cookieVal && cookieVal.length >= 16) return cookieVal.trim();
+
+  const headerVal = request.headers.get("x-visitor-token");
+  if (headerVal && headerVal.length >= 16) return headerVal.trim();
+
+  if (body && body.visitorToken && typeof body.visitorToken === "string") {
+    return body.visitorToken.trim();
+  }
+  return null;
+}
+
+function setVisitorCookie(response, botId, rawToken) {
+  const cookieName = resolveCookieName(botId);
+  const isProd = process.env.NODE_ENV === "production";
+  response.cookies.set({
+    name: cookieName,
+    value: rawToken,
+    path: "/",
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    maxAge: 365 * 24 * 60 * 60, // 1 Year
+  });
 }
 
 export async function OPTIONS() {
@@ -198,9 +233,47 @@ export async function POST(request, { params }) {
       );
     }
 
-    // 3. Step 3: Resolve Persistent Database Conversation Memory (Sliding Window: 8 turns)
-    const currentSessionId = sessionId || `session_${botId}_${Date.now()}`;
-    const existingConv = conversationsStore.getConversation(currentSessionId);
+    // Resolve Persistent Visitor Identity via Cookie, Token, or New Token
+    const providedToken = extractVisitorToken(request, bot.id, body);
+    let persistentVisitor = null;
+    let isNewVisitorTokenIssued = false;
+    let rawTokenToSet = null;
+
+    if (providedToken) {
+      persistentVisitor = (await visitorsStore.getVisitorByTokenAsync(bot.id, providedToken)) ||
+                          visitorsStore.getVisitorByToken(bot.id, providedToken);
+    }
+
+    if (!persistentVisitor) {
+      const created = visitorsStore.createVisitor({
+        organizationId: bot.organizationId || "org_ess_default",
+        botId: bot.id,
+      });
+      persistentVisitor = created.visitor;
+      rawTokenToSet = created.rawToken;
+      isNewVisitorTokenIssued = true;
+    } else {
+      visitorsStore.recordActivity(persistentVisitor.id);
+    }
+
+    // 3. Step 3: Resolve Persistent Database Conversation Memory (24-Hour Inactivity Window)
+    let currentSessionId = sessionId;
+    let existingConv = currentSessionId ? conversationsStore.getConversation(currentSessionId) : null;
+
+    // If no session or conversation not found by ID, look up the active conversation within 24h for this visitor
+    if (!existingConv && persistentVisitor) {
+      existingConv = conversationsStore.getActiveConversationForVisitor(persistentVisitor.id, bot.id);
+      if (existingConv) {
+        currentSessionId = existingConv.id;
+      }
+    }
+
+    if (!currentSessionId) {
+      currentSessionId = `session_${botId}_${Date.now()}`;
+    }
+
+    const latestConvForVisitor = persistentVisitor ? conversationsStore.getLatestConversationForVisitor(persistentVisitor.id, bot.id) : null;
+    const restoredQual = existingConv?.qualification || latestConvForVisitor?.qualification || null;
 
     let sessionHistory = [];
     if (existingConv && Array.isArray(existingConv.messages)) {
@@ -324,6 +397,8 @@ export async function POST(request, { params }) {
       resolvedPhone = sessionLead.phone;
     } else if (existingConv?.visitorPhone && !isCompanyPhone(existingConv.visitorPhone)) {
       resolvedPhone = existingConv.visitorPhone;
+    } else if (persistentVisitor?.phone && !isCompanyPhone(persistentVisitor.phone)) {
+      resolvedPhone = persistentVisitor.phone;
     } else if (visitor?.phone && !isCompanyPhone(visitor.phone)) {
       resolvedPhone = visitor.phone;
     }
@@ -336,23 +411,57 @@ export async function POST(request, { params }) {
       resolvedEmail = sessionLead.email;
     } else if (existingConv?.visitorEmail && !isCompanyEmail(existingConv.visitorEmail)) {
       resolvedEmail = existingConv.visitorEmail;
+    } else if (persistentVisitor?.email && !isCompanyEmail(persistentVisitor.email)) {
+      resolvedEmail = persistentVisitor.email;
     } else if (visitor?.email && !isCompanyEmail(visitor.email)) {
       resolvedEmail = visitor.email;
     }
 
     // 3. Name Resolution (Preserve existing verified visitor name unless explicitly updated!)
     const hasExplicitNameIntro = /(?:my\s+name\s+is|i\s+am|call\s+me|mera\s+naam|this\s+is)\b/i.test(message);
+    const knownVisitorName = (persistentVisitor?.name && !isPlaceholderName(persistentVisitor.name))
+      ? persistentVisitor.name
+      : (existingConv?.visitorName && !isPlaceholderName(existingConv.visitorName) ? existingConv.visitorName : "");
+
     let resolvedName = "";
     if (hasExplicitNameIntro && currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
+      // Check for conflicting customer details on explicit intro
+      if (knownVisitorName && knownVisitorName.toLowerCase() !== currentMsgLead.name.toLowerCase()) {
+        const isSwitchConfirmation = /\b(?:yes|update|change|confirm|switch)\b/i.test(message);
+        if (!isSwitchConfirmation) {
+          const conflictReply = corsResponse(
+            NextResponse.json({
+              success: true,
+              reply: `I have your profile recorded as **${knownVisitorName}**. Are you a different person using this browser, or would you like to update your name to **${currentMsgLead.name}**?`,
+              quickReplies: [`Update name to ${currentMsgLead.name}`, "Start as new visitor", `Keep ${knownVisitorName}`],
+              sources: [],
+              sessionId: currentSessionId,
+            })
+          );
+          if (isNewVisitorTokenIssued && rawTokenToSet) {
+            setVisitorCookie(conflictReply, bot.id, rawTokenToSet);
+          }
+          return conflictReply;
+        }
+      }
       resolvedName = currentMsgLead.name;
-    } else if (existingConv?.visitorName && !isPlaceholderName(existingConv.visitorName)) {
-      resolvedName = existingConv.visitorName;
+    } else if (knownVisitorName) {
+      resolvedName = knownVisitorName;
     } else if (visitor?.name && !isPlaceholderName(visitor.name)) {
       resolvedName = visitor.name;
     } else if (currentMsgLead.name && !isPlaceholderName(currentMsgLead.name)) {
       resolvedName = currentMsgLead.name;
     } else if (sessionLead.name && !isPlaceholderName(sessionLead.name)) {
       resolvedName = sessionLead.name;
+    }
+
+    // Sync verified details back to persistent visitor profile
+    if (persistentVisitor && (resolvedName || resolvedPhone || resolvedEmail)) {
+      visitorsStore.updateVisitor(persistentVisitor.id, {
+        ...(resolvedName && !isPlaceholderName(resolvedName) ? { name: resolvedName } : {}),
+        ...(resolvedPhone ? { phone: resolvedPhone } : {}),
+        ...(resolvedEmail ? { email: resolvedEmail } : {}),
+      });
     }
 
     const hasVisitorDetails = Boolean(
@@ -456,7 +565,7 @@ export async function POST(request, { params }) {
        /[\u0900-\u097F].*(?:संस्थापक|मालिक|किसने बनाया|किसकी कंपनी)/i.test(message));
 
     const lastAssistantMessage = (sessionHistory || []).filter((m) => m.role === "assistant").slice(-1)[0]?.content || "";
-    const activeQual = existingConv?.qualification || recoverQualificationFromHistory(sessionHistory);
+    const activeQual = restoredQual || existingConv?.qualification || recoverQualificationFromHistory(sessionHistory);
     const hasActiveProject = Boolean(activeQual && activeQual.service && activeQual.status !== "completed");
 
     const isCompanyOverviewQuery =
@@ -1059,7 +1168,7 @@ Here are our official contact details to speak with our engineering leadership:
     if (!deterministicReply) {
       const salesResult = handleSalesFlowTurn({
         message,
-        existingQualification: existingConv?.qualification,
+        existingQualification: existingConv?.qualification || activeQual,
         sessionHistory,
         lang,
         visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "",
@@ -1075,6 +1184,7 @@ Here are our official contact details to speak with our engineering leadership:
           if (conv) {
             conversationsStore.updateConversation(currentSessionId, {
               qualification: salesResult.updatedQualification,
+              visitorId: persistentVisitor?.id || conv.visitorId,
               ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
               ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
               ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
@@ -1082,6 +1192,7 @@ Here are our official contact details to speak with our engineering leadership:
           } else {
             conversationsStore.createConversation({
               id: currentSessionId,
+              visitorId: persistentVisitor?.id || null,
               botId: bot?.id || botId,
               botName: botName,
               visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "Website Visitor",
@@ -1097,6 +1208,7 @@ Here are our official contact details to speak with our engineering leadership:
           const inquirySummary = salesResult.leadDataToSave?.summary || formatQualificationInquiry(salesResult.updatedQualification);
           leadsStore.createLead({
             sessionId: currentSessionId,
+            visitorId: persistentVisitor?.id || null,
             botId: bot?.id || botId,
             organizationId: bot?.organizationId || "org_ess_default",
             name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
@@ -1144,6 +1256,7 @@ Here are our official contact details to speak with our engineering leadership:
 
           const leadData = {
             sessionId: currentSessionId,
+            visitorId: persistentVisitor?.id || null,
             botId: bot?.id || "bot_aa",
             organizationId: bot?.organizationId || "org_ess_default",
             name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
@@ -1265,6 +1378,7 @@ Here are our official contact details to speak with our engineering leadership:
 
             const leadData = {
               sessionId: currentSessionId,
+              visitorId: persistentVisitor?.id || null,
               botId: bot?.id || "bot_aa",
               organizationId: bot?.organizationId || "org_ess_default",
               name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
@@ -1331,6 +1445,7 @@ Here are our official contact details to speak with our engineering leadership:
 
       const leadData = {
         sessionId: currentSessionId,
+        visitorId: persistentVisitor?.id || null,
         botId: bot?.id || "bot_aa",
         organizationId: bot?.organizationId || "org_ess_default",
         name: (!isPlaceholderName(resolvedName)) ? resolvedName : (leadDetails.name || "Website Prospect"),
@@ -1352,22 +1467,24 @@ Here are our official contact details to speak with our engineering leadership:
     // Store conversation
     const reloadedConv = conversationsStore.getConversation(currentSessionId);
     if (reloadedConv) {
-      conversationsStore.addMessage(currentSessionId, { role: "user", content: message });
+      conversationsStore.addMessage(currentSessionId, { role: "user", content: message }, { visitorId: persistentVisitor?.id });
       conversationsStore.addMessage(currentSessionId, {
         role: "assistant",
         content: botReply,
-      });
-      if (resolvedName || resolvedPhone || resolvedEmail) {
+      }, { visitorId: persistentVisitor?.id });
+      if (resolvedName || resolvedPhone || resolvedEmail || persistentVisitor?.id) {
         conversationsStore.updateConversation(currentSessionId, {
           ...(!isPlaceholderName(resolvedName) ? { visitorName: resolvedName } : {}),
           ...(resolvedPhone ? { visitorPhone: resolvedPhone } : {}),
           ...(resolvedEmail ? { visitorEmail: resolvedEmail } : {}),
+          ...(persistentVisitor?.id ? { visitorId: persistentVisitor.id } : {}),
           ...(resolvedPhone || resolvedEmail ? { isLead: true } : {}),
         });
       }
     } else {
       conversationsStore.createConversation({
         id: currentSessionId,
+        visitorId: persistentVisitor?.id || null,
         botId: bot?.id || botId,
         botName: botName,
         visitorName: (!isPlaceholderName(resolvedName)) ? resolvedName : "Website Visitor",
@@ -1382,7 +1499,7 @@ Here are our official contact details to speak with our engineering leadership:
       });
     }
 
-    return corsResponse(
+    const finalRes = corsResponse(
       NextResponse.json({
         success: true,
         reply: botReply,
@@ -1391,6 +1508,12 @@ Here are our official contact details to speak with our engineering leadership:
         sessionId: currentSessionId,
       })
     );
+
+    if (isNewVisitorTokenIssued && rawTokenToSet) {
+      setVisitorCookie(finalRes, bot.id, rawTokenToSet);
+    }
+
+    return finalRes;
   } catch (err) {
     return corsResponse(
       NextResponse.json({ success: false, error: err.message }, { status: 500 })

@@ -42,18 +42,22 @@
     apiBase = window.location.origin;
   }
 
-  // Session state & defaults
+  // Session state & persistent identity defaults
   const sessionKey = `nexus_chat_v2_${botId}`;
   let activeSessionId = "";
+  let visitorToken = null;
+  try {
+    visitorToken = localStorage.getItem(`ess_vtoken_${botId}`);
+  } catch (e) {}
+
   try {
     activeSessionId = sessionStorage.getItem(`${sessionKey}_id`);
-    if (!activeSessionId) {
-      activeSessionId = `visitor_${botId}_${Date.now()}`;
-      sessionStorage.setItem(`${sessionKey}_id`, activeSessionId);
-    }
-  } catch (e) {
+  } catch (e) {}
+  if (!activeSessionId) {
     activeSessionId = `visitor_${botId}_${Date.now()}`;
+    try { sessionStorage.setItem(`${sessionKey}_id`, activeSessionId); } catch (e) {}
   }
+
   let isOpen = false;
   let isLoading = false;
 
@@ -86,7 +90,6 @@
         botConfig = {
           ...botConfig,
           ...data.bot,
-          // Attribute overrides take precedence if explicitly supplied
           primaryColor: (scriptTag && scriptTag.getAttribute("data-color")) || data.bot.primaryColor || "#4f46e5",
           welcomeMessage: (scriptTag && scriptTag.getAttribute("data-welcome")) || data.bot.welcomeMessage || "Hello! How can I help you today?",
           launcherPosition: (scriptTag && scriptTag.getAttribute("data-position")) || data.bot.launcherPosition || "bottom-right",
@@ -98,6 +101,49 @@
     .catch((err) => {
       console.warn("[NexusAI Widget] Using local configuration defaults.", err);
     });
+
+  // 3.1. Fetch or Restore 24-Hour Active Conversation Session & Customer Identity
+  function initVisitorSession() {
+    const headers = {};
+    if (visitorToken) headers["x-visitor-token"] = visitorToken;
+
+    fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}/session`, {
+      method: "GET",
+      credentials: "include",
+      headers,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data || !data.success) return;
+
+        if (data.visitorToken) {
+          visitorToken = data.visitorToken;
+          try { localStorage.setItem(`ess_vtoken_${botId}`, data.visitorToken); } catch (e) {}
+        }
+
+        if (data.conversationId) {
+          activeSessionId = data.conversationId;
+          try { sessionStorage.setItem(`${sessionKey}_id`, activeSessionId); } catch (e) {}
+        }
+
+        if (data.hasActiveChat && Array.isArray(data.messages) && data.messages.length > 0) {
+          // Restoring conversation within 24 hours
+          messages = data.messages;
+          try { sessionStorage.setItem(sessionKey, JSON.stringify(messages)); } catch (e) {}
+          renderMessages();
+        } else if (data.isReturning && data.returningGreeting) {
+          // Returning visitor after 24h: show personalized returning greeting, fresh chat
+          botConfig.welcomeMessage = data.returningGreeting;
+          messages = [];
+          try { sessionStorage.removeItem(sessionKey); } catch (e) {}
+          renderMessages();
+        }
+      })
+      .catch((e) => {
+        console.warn("[NexusAI Widget] Session sync failed, operating with fallback session.", e);
+      });
+  }
+  initVisitorSession();
 
   // 4. Create Container & Inject Scoped Styles
   const container = document.createElement("div");
@@ -663,16 +709,35 @@
   document.getElementById("nexus-close-btn")?.addEventListener("click", toggleChat);
 
   document.getElementById("nexus-refresh-btn")?.addEventListener("click", () => {
-    try {
-      sessionStorage.removeItem(sessionKey);
-      sessionStorage.removeItem(`${sessionKey}_id`);
-    } catch (e) {}
-    activeSessionId = `visitor_${botId}_${Date.now()}`;
-    try {
-      sessionStorage.setItem(`${sessionKey}_id`, activeSessionId);
-    } catch (e) {}
-    messages = [];
-    renderMessages();
+    if (confirm("Start a new chat conversation?")) {
+      const headers = {};
+      if (visitorToken) headers["x-visitor-token"] = visitorToken;
+
+      fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}/session`, {
+        method: "DELETE",
+        credentials: "include",
+        headers,
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && data.conversationId) {
+            activeSessionId = data.conversationId;
+            try { sessionStorage.setItem(`${sessionKey}_id`, activeSessionId); } catch (e) {}
+          } else {
+            activeSessionId = `visitor_${botId}_${Date.now()}`;
+            try { sessionStorage.setItem(`${sessionKey}_id`, activeSessionId); } catch (e) {}
+          }
+          messages = [];
+          try { sessionStorage.removeItem(sessionKey); } catch (e) {}
+          renderMessages();
+        })
+        .catch(() => {
+          activeSessionId = `visitor_${botId}_${Date.now()}`;
+          messages = [];
+          try { sessionStorage.removeItem(sessionKey); } catch (e) {}
+          renderMessages();
+        });
+    }
   });
 
   // 10. Chat Inference with Real-Time SSE Streaming
@@ -691,16 +756,21 @@
     renderMessages();
 
     try {
+      const headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+      };
+      if (visitorToken) headers["x-visitor-token"] = visitorToken;
+
       const res = await fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "text/event-stream",
-        },
+        credentials: "include",
+        headers,
         body: JSON.stringify({
           message: text,
           history: messages.slice(-8),
           sessionId: activeSessionId,
+          visitorToken: visitorToken || undefined,
           stream: true,
         }),
       });

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { sseBroker } from "./sseBroker.js";
+import { queryDb } from "./dbPool.js";
 
 function resolveDataFile() {
   const frontendPath = path.join(process.cwd(), "frontend", "data", "conversations.json");
@@ -12,10 +13,10 @@ function resolveDataFile() {
 }
 
 const DATA_FILE = resolveDataFile();
-
 const SEED_CONVERSATIONS = [];
-
 let memoryCache = null;
+
+const DEFAULT_HISTORY_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 Hours
 
 function loadFromDisk() {
   try {
@@ -87,20 +88,83 @@ export const conversationsStore = {
     return list.find((c) => c.id === id && (!organizationId || (c.organizationId || "org_ess_default") === organizationId)) || null;
   },
 
+  /**
+   * Retrieve active conversation for a visitor if within the 24-hour inactivity window
+   */
+  getActiveConversationForVisitor(visitorId, botId, options = {}) {
+    if (!visitorId || !botId) return null;
+    const list = loadFromDisk();
+    const now = options.now instanceof Date ? options.now : (options.now ? new Date(options.now) : new Date());
+    const windowMs = options.windowMs || DEFAULT_HISTORY_WINDOW_MS;
+
+    const matches = list.filter(
+      (c) => c.visitorId === visitorId &&
+             (c.botId === botId || c.botId === `bot_${botId}` || (botId.startsWith("bot_") && c.botId === botId.replace("bot_", ""))) &&
+             c.status !== "Closed"
+    );
+
+    if (matches.length === 0) return null;
+
+    // Sort newest activity first
+    matches.sort((a, b) => {
+      const tA = new Date(a.lastActivityAt || a.updatedAt || a.createdAt || 0).getTime();
+      const tB = new Date(b.lastActivityAt || b.updatedAt || b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+
+    const latest = matches[0];
+    const lastActivityTime = new Date(latest.lastActivityAt || latest.updatedAt || latest.createdAt || 0).getTime();
+    const expiryTime = latest.historyExpiresAt
+      ? new Date(latest.historyExpiresAt).getTime()
+      : (lastActivityTime + windowMs);
+
+    // If current time exceeds expiration or 24-hour window from last activity, history has expired
+    if (now.getTime() > expiryTime || (now.getTime() - lastActivityTime) > windowMs) {
+      return null;
+    }
+
+    return latest;
+  },
+
+  /**
+   * Retrieve the latest conversation regardless of 24h visibility expiry
+   * Used to restore qualification and contact state for recognized returning visitors
+   */
+  getLatestConversationForVisitor(visitorId, botId) {
+    if (!visitorId || !botId) return null;
+    const list = loadFromDisk();
+    const matches = list.filter(
+      (c) => c.visitorId === visitorId &&
+             (c.botId === botId || c.botId === `bot_${botId}` || (botId.startsWith("bot_") && c.botId === botId.replace("bot_", "")))
+    );
+    if (matches.length === 0) return null;
+    matches.sort((a, b) => {
+      const tA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const tB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+    return matches[0];
+  },
+
   createConversation(data) {
     const list = loadFromDisk();
-    const now = new Date();
+    const now = data.now instanceof Date ? data.now : (data.now ? new Date(data.now) : new Date());
     const id = data.id || `c_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+
+    const lastActivityAt = data.lastActivityAt || now.toISOString();
+    const historyExpiresAt = data.historyExpiresAt || new Date(now.getTime() + DEFAULT_HISTORY_WINDOW_MS).toISOString();
 
     const newConv = {
       id,
       organizationId: data.organizationId || "org_ess_default",
+      botId: data.botId || "bot_aa",
+      botName: data.botName || "AI Assistant",
+      visitorId: data.visitorId || null,
+      leadId: data.leadId || null,
       visitorName: data.visitorName || "Website Visitor",
       visitorEmail: data.visitorEmail || "",
       visitorPhone: data.visitorPhone || "",
       visitorLocation: data.visitorLocation || "Direct Session",
-      botId: data.botId || "bot_aa",
-      botName: data.botName || "AI Assistant",
       status: data.status || "Active",
       isLead: Boolean(data.isLead || data.visitorEmail || data.visitorPhone),
       leadScore: data.leadScore || (data.visitorEmail ? "High" : "Medium"),
@@ -109,10 +173,12 @@ export const conversationsStore = {
       messagesCount: data.messages?.length || 1,
       questionsCount: data.messages?.filter((m) => m.role === "user").length || 1,
       lastMessage: data.lastMessage || (data.messages?.[data.messages.length - 1]?.content) || "",
+      lastActivityAt,
+      historyExpiresAt,
+      qualification: data.qualification || null,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
       messages: data.messages || [],
-      qualification: data.qualification || null,
     };
 
     list.unshift(newConv);
@@ -121,20 +187,55 @@ export const conversationsStore = {
     // Broadcast in real-time
     sseBroker.broadcast("conversation_created", newConv);
 
+    // Sync to PostgreSQL
+    try {
+      queryDb(
+        `INSERT INTO "Conversation" ("id", "organizationId", "botId", "visitorId", "leadId", "visitorName", "visitorEmail", "visitorPhone", "visitorLocation", "status", "isLead", "leadScore", "lastMessage", "qualificationState", "lastActivityAt", "historyExpiresAt", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+         ON CONFLICT ("id") DO UPDATE 
+         SET "visitorId" = COALESCE(EXCLUDED."visitorId", "Conversation"."visitorId"),
+             "lastActivityAt" = EXCLUDED."lastActivityAt",
+             "historyExpiresAt" = EXCLUDED."historyExpiresAt",
+             "qualificationState" = EXCLUDED."qualificationState",
+             "updatedAt" = NOW();`,
+        [
+          newConv.id,
+          newConv.organizationId,
+          newConv.botId,
+          newConv.visitorId,
+          newConv.leadId,
+          newConv.visitorName,
+          newConv.visitorEmail,
+          newConv.visitorPhone,
+          newConv.visitorLocation,
+          newConv.status,
+          newConv.isLead,
+          newConv.leadScore,
+          newConv.lastMessage,
+          JSON.stringify(newConv.qualification || {}),
+          newConv.lastActivityAt,
+          newConv.historyExpiresAt,
+          newConv.createdAt,
+          newConv.updatedAt,
+        ]
+      ).catch((err) => console.warn("[DB_CONVERSATION_INSERT_FAIL]", err.message));
+    } catch (e) {}
+
     return newConv;
   },
 
-  addMessage(conversationId, message) {
+  addMessage(conversationId, message, options = {}) {
     const list = loadFromDisk();
     let conv = list.find((c) => c.id === conversationId);
-    const now = new Date();
+    const now = options.now instanceof Date ? options.now : (options.now ? new Date(options.now) : new Date());
 
     if (!conv) {
-      // If conversation doesn't exist, create it on the fly
       conv = this.createConversation({
         id: conversationId,
+        visitorId: options.visitorId || null,
         visitorName: message.role === "user" ? "Website Visitor" : "AI Assistant",
         messages: [],
+        now,
       });
     }
 
@@ -145,62 +246,22 @@ export const conversationsStore = {
       quickReplies: message.quickReplies || [],
       sources: message.sources || [],
       timestamp: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdAt: now.toISOString(),
     };
 
     conv.messages = [...(conv.messages || []), newMsg];
     conv.messagesCount = conv.messages.length;
     conv.questionsCount = conv.messages.filter((m) => m.role === "user").length;
     conv.lastMessage = newMsg.content;
+    conv.lastActivityAt = now.toISOString();
+    conv.historyExpiresAt = new Date(now.getTime() + DEFAULT_HISTORY_WINDOW_MS).toISOString();
     conv.updatedAt = now.toISOString();
 
-    conv.memory = conv.memory || {
-      requirements: "",
-      projectType: "",
-      budget: "",
-      timeline: "",
-      techPreferences: [],
-      notes: [],
-    };
-
-    // Check if visitor just shared contact info inside the message
-    if (newMsg.role === "user") {
-      const msgText = newMsg.content || "";
-      const isCompanyEmail = (em) =>
-        /emperorsmartsolutions\.com|emperorsmartsolutions@gmail\.com|^contact@|^sales@|^info@/i.test(em || "");
-      const isCompanyPhone = (ph) => /63591\s*20081/.test((ph || "").replace(/\D/g, ""));
-
-      const emailMatch = msgText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      const phoneMatch = msgText.match(/(?:(?:\+|00)91[\s.-]?|0)?[6-9]\d{4}[\s.-]?\d{5,6}\b|(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b|\b\d{10,12}\b/);
-
-      if (emailMatch && !isCompanyEmail(emailMatch[0])) {
-        conv.visitorEmail = emailMatch[0].trim();
-        conv.isLead = true;
-        conv.leadScore = "High";
-      }
-      if (phoneMatch && !isCompanyPhone(phoneMatch[0])) {
-        conv.visitorPhone = phoneMatch[0].trim();
-        conv.isLead = true;
-      }
-      const nameMatch = msgText.match(/(?:(?:my\s+)?name\s*(?:is|:|-|\s)\s*|i\s+am|i'm|this\s+is|call\s+me|mera\s+naam\s*(?:hai|:|-|\s)?\s*)([A-Za-z.']{2,20})/i);
-      if (nameMatch && nameMatch[1]) {
-        conv.visitorName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase();
-      }
-
-      // Auto-capture customer requirements and budget disclosures
-      const budgetMatch = msgText.match(/\b(?:budget\s+(?:is|of)?|have)\s+(?:₹|inr|rs\.?)?\s*([0-9,]+(?:\s*k|\s*lakh)?)/i);
-      if (budgetMatch) {
-        conv.memory.budget = budgetMatch[1].trim();
-      }
-      const projectMatch = msgText.match(/\b(?:build|need|want|develop|create)\s+(?:an?\s+)?([a-zA-Z\s]{3,35}(?:app|website|platform|software|portal|agent|bot|rag))/i);
-      if (projectMatch) {
-        conv.memory.projectType = projectMatch[1].trim();
-        conv.memory.requirements = projectMatch[0].trim();
-      }
-
-      // Customer correction handling
-      if (msgText.match(/\b(?:your\s+previous\s+answer\s+was\s+(?:incorrect|wrong)|actually\s+my|correction)\b/i)) {
-        conv.memory.notes.push(`Customer Correction: ${msgText.slice(0, 150)}`);
-      }
+    if (options.visitorId && !conv.visitorId) {
+      conv.visitorId = options.visitorId;
+    }
+    if (options.qualification) {
+      conv.qualification = options.qualification;
     }
 
     saveToDisk(list);
@@ -212,25 +273,36 @@ export const conversationsStore = {
       conversation: conv,
     });
 
+    // Dual-write message to PostgreSQL
+    try {
+      queryDb(
+        `INSERT INTO "Message" ("id", "conversationId", "role", "content", "createdAt")
+         VALUES ($1, $2, $3, $4, $5);`,
+        [newMsg.id, conv.id, newMsg.role, newMsg.content, newMsg.createdAt]
+      ).catch((err) => console.warn("[DB_MESSAGE_INSERT_FAIL]", err.message));
+
+      queryDb(
+        `UPDATE "Conversation"
+         SET "lastMessage" = $1,
+             "lastActivityAt" = $2,
+             "historyExpiresAt" = $3,
+             "visitorId" = COALESCE($4, "visitorId"),
+             "qualificationState" = COALESCE($5, "qualificationState"),
+             "updatedAt" = $6
+         WHERE "id" = $7;`,
+        [
+          newMsg.content,
+          conv.lastActivityAt,
+          conv.historyExpiresAt,
+          conv.visitorId,
+          conv.qualification ? JSON.stringify(conv.qualification) : null,
+          conv.updatedAt,
+          conv.id,
+        ]
+      ).catch((err) => console.warn("[DB_CONVERSATION_UPDATE_FAIL]", err.message));
+    } catch (e) {}
+
     return { message: newMsg, conversation: conv };
-  },
-
-  getMemory(id) {
-    const conv = this.getConversation(id);
-    return conv?.memory || null;
-  },
-
-  updateMemory(id, memoryUpdates = {}) {
-    const list = loadFromDisk();
-    const conv = list.find((c) => c.id === id);
-    if (!conv) return null;
-    conv.memory = {
-      ...(conv.memory || {}),
-      ...memoryUpdates,
-    };
-    conv.updatedAt = new Date().toISOString();
-    saveToDisk(list);
-    return conv.memory;
   },
 
   updateConversation(id, updates = {}) {
@@ -238,15 +310,78 @@ export const conversationsStore = {
     const index = list.findIndex((c) => c.id === id);
     if (index === -1) return null;
 
+    const now = new Date();
     list[index] = {
       ...list[index],
       ...updates,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
     };
 
     saveToDisk(list);
     sseBroker.broadcast("conversation_updated", list[index]);
+
+    try {
+      const c = list[index];
+      queryDb(
+        `UPDATE "Conversation"
+         SET "visitorName" = COALESCE($1, "visitorName"),
+             "visitorEmail" = COALESCE($2, "visitorEmail"),
+             "visitorPhone" = COALESCE($3, "visitorPhone"),
+             "status" = COALESCE($4, "status"),
+             "qualificationState" = COALESCE($5, "qualificationState"),
+             "visitorId" = COALESCE($6, "visitorId"),
+             "updatedAt" = NOW()
+         WHERE "id" = $7;`,
+        [
+          c.visitorName,
+          c.visitorEmail,
+          c.visitorPhone,
+          c.status,
+          c.qualification ? JSON.stringify(c.qualification) : null,
+          c.visitorId,
+          id,
+        ]
+      ).catch((err) => console.warn("[DB_CONVERSATION_UPDATE_FAIL]", err.message));
+    } catch (e) {}
+
     return list[index];
+  },
+
+  closeConversation(id) {
+    return this.updateConversation(id, { status: "Closed" });
+  },
+
+  /**
+   * Scheduled cleanup process for expired conversations past retention window
+   * Safe, idempotent, observable
+   */
+  cleanupExpiredConversations(options = {}) {
+    const list = loadFromDisk();
+    const now = options.now instanceof Date ? options.now : (options.now ? new Date(options.now) : new Date());
+    let modified = 0;
+
+    list.forEach((c) => {
+      const exp = c.historyExpiresAt ? new Date(c.historyExpiresAt).getTime() : 0;
+      if (exp > 0 && now.getTime() > exp && c.status === "Active") {
+        c.status = "Expired";
+        c.updatedAt = now.toISOString();
+        modified++;
+      }
+    });
+
+    if (modified > 0) {
+      saveToDisk(list);
+    }
+
+    try {
+      queryDb(
+        `UPDATE "Conversation"
+         SET "status" = 'Expired', "updatedAt" = NOW()
+         WHERE "status" = 'Active' AND "historyExpiresAt" < NOW();`
+      ).catch((e) => {});
+    } catch (e) {}
+
+    return { cleanedCount: modified };
   },
 
   deleteConversation(id) {
@@ -254,6 +389,11 @@ export const conversationsStore = {
     const filtered = list.filter((c) => c.id !== id);
     saveToDisk(filtered);
     sseBroker.broadcast("conversation_deleted", { id });
+
+    try {
+      queryDb('DELETE FROM "Conversation" WHERE "id" = $1', [id]).catch((e) => {});
+    } catch (e) {}
+
     return { success: true };
   },
 

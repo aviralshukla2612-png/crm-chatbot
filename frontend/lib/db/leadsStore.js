@@ -161,16 +161,18 @@ export const leadsStore = {
     const targetOrgId = data.organizationId || "org_ess_default";
     data.organizationId = targetOrgId;
 
-    // Check if lead already exists by sessionId, email, or verified phone
+    // Check if lead already exists by visitorId, sessionId, verified email, or verified phone
     const cleanDigits = (p) => (p || "").replace(/\D/g, "");
     const existing = list.find(
       (l) =>
+        (data.visitorId && l.visitorId && l.visitorId === data.visitorId) ||
         (data.sessionId && l.sessionId && l.sessionId === data.sessionId) ||
         (data.email && l.email && l.email.toLowerCase() === data.email.toLowerCase()) ||
         (data.phone && l.phone && cleanDigits(l.phone) === cleanDigits(data.phone) && cleanDigits(data.phone).length >= 10) ||
         (data.sessionId && l.sessionId === data.sessionId && data.name && l.name && l.name.toLowerCase() === data.name.toLowerCase())
     );
     if (existing) {
+      if (data.visitorId && !existing.visitorId) existing.visitorId = data.visitorId;
       if (data.organizationId && (!existing.organizationId || existing.organizationId === "org_ess_default")) {
         existing.organizationId = data.organizationId;
       }
@@ -238,6 +240,7 @@ export const leadsStore = {
 
     const newLead = {
       id: data.id || `lead_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      visitorId: data.visitorId || null,
       sessionId: data.sessionId || "",
       organizationId: targetOrgId,
       name: data.name || "Website Prospect",

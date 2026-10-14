@@ -56,6 +56,7 @@ model Bot {
   ingestionJobs  IngestionJob[]
   installations  WidgetInstallation[]
   conversations  Conversation[]
+  visitors       Visitor[]
   leads          Lead[]
   documents      KnowledgeDocument[]
   webhooks       WebhookConfig[]
@@ -160,25 +161,55 @@ model WidgetInstallation {
   @@index([botId])
 }
 
-model Conversation {
-  id              String        @id @default(cuid())
-  organizationId  String
-  botId           String
-  visitorName     String        @default("Website Visitor")
-  visitorEmail    String?
-  visitorPhone    String?
-  visitorLocation String?
-  status          String        @default("Active") // Active, Closed, Archived
-  isLead          Boolean       @default(false)
-  leadScore       String?       // Hot, High, Medium, Low
-  lastMessage     String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model Visitor {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  botId              String
+  visitorTokenHash   String
+  leadId             String?
+  name               String?
+  email              String?
+  phone              String?
+  metadata           Json?          @default("{}")
+  lastSeenAt         DateTime       @default(now())
+  lastConversationAt DateTime       @default(now())
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  bot             Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
-  messages        Message[]
+  bot                Bot            @relation(fields: [botId], references: [id], onDelete: Cascade)
+  conversations      Conversation[]
+
+  @@unique([botId, visitorTokenHash])
+  @@index([organizationId, botId])
+}
+
+model Conversation {
+  id                 String        @id @default(cuid())
+  organizationId     String
+  botId              String
+  visitorId          String?
+  leadId             String?
+  visitorName        String        @default("Website Visitor")
+  visitorEmail       String?
+  visitorPhone       String?
+  visitorLocation    String?
+  status             String        @default("Active") // Active, Closed, Archived, Expired
+  isLead             Boolean       @default(false)
+  leadScore          String?       // Hot, High, Medium, Low
+  lastMessage        String?
+  qualificationState Json?         @default("{}")
+  lastActivityAt     DateTime      @default(now())
+  historyExpiresAt   DateTime      @default(now())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  bot                Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  visitor            Visitor?      @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  messages           Message[]
 
   @@index([organizationId, botId])
+  @@index([visitorId, lastActivityAt])
+  @@index([historyExpiresAt])
   @@index([createdAt])
 }
 

@@ -121,12 +121,34 @@ export async function initPostgresTables() {
           );
         `);
 
-        // 4. Conversations Table
+        // 3.5. Visitors Table (Persistent identity, opaque token hashes)
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "Visitor" (
+            "id" VARCHAR(128) PRIMARY KEY,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+            "visitorTokenHash" VARCHAR(128) NOT NULL,
+            "leadId" VARCHAR(128),
+            "name" VARCHAR(255),
+            "email" VARCHAR(255),
+            "phone" VARCHAR(64),
+            "metadata" JSONB DEFAULT '{}'::JSONB,
+            "lastSeenAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "lastConversationAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "uq_visitor_token_bot" UNIQUE ("botId", "visitorTokenHash")
+          );
+        `);
+
+        // 4. Conversations Table (Supports 24h visibility window and qualification persistence)
         await client.query(`
           CREATE TABLE IF NOT EXISTS "Conversation" (
             "id" VARCHAR(128) PRIMARY KEY,
             "organizationId" VARCHAR(64) NOT NULL,
             "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+            "visitorId" VARCHAR(128),
+            "leadId" VARCHAR(128),
             "visitorName" VARCHAR(255) DEFAULT 'Website Visitor',
             "visitorEmail" VARCHAR(255),
             "visitorPhone" VARCHAR(64),
@@ -135,9 +157,21 @@ export async function initPostgresTables() {
             "isLead" BOOLEAN DEFAULT FALSE,
             "leadScore" VARCHAR(32),
             "lastMessage" TEXT,
+            "qualificationState" JSONB DEFAULT '{}'::JSONB,
+            "lastActivityAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "historyExpiresAt" TIMESTAMP WITH TIME ZONE DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours'),
             "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           );
+        `);
+
+        // Migration statements to ensure existing database instances acquire new columns idempotently
+        await client.query(`
+          ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "visitorId" VARCHAR(128);
+          ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "leadId" VARCHAR(128);
+          ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "qualificationState" JSONB DEFAULT '{}'::JSONB;
+          ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "lastActivityAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+          ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "historyExpiresAt" TIMESTAMP WITH TIME ZONE DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours');
         `);
 
         // 5. Messages Table
@@ -343,7 +377,11 @@ export async function initPostgresTables() {
         // B-tree indexes for fast tenant filtering & SaaS lookups
         await client.query(`
           CREATE INDEX IF NOT EXISTS idx_bot_org ON "Bot" ("organizationId");
+          CREATE INDEX IF NOT EXISTS idx_visitor_lookup ON "Visitor" ("botId", "visitorTokenHash");
+          CREATE INDEX IF NOT EXISTS idx_visitor_tenant ON "Visitor" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_conversations_tenant ON "Conversation" ("organizationId", "botId");
+          CREATE INDEX IF NOT EXISTS idx_conversation_visitor ON "Conversation" ("visitorId", "lastActivityAt");
+          CREATE INDEX IF NOT EXISTS idx_conversation_history_expiry ON "Conversation" ("historyExpiresAt");
           CREATE INDEX IF NOT EXISTS idx_leads_tenant ON "Lead" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_documents_tenant ON "KnowledgeDocument" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_tenant ON "KnowledgeChunk" ("organizationId", "botId");

@@ -1164,7 +1164,14 @@ export function handleSalesFlowTurn({
   const contactRecorded = contactRecordedParam || visitorPhone || visitorEmail || "";
   const existing = existingQualification || currentQualification;
   let current = existing
-    ? { ...existing }
+    ? {
+        service: existing.service || null,
+        answers: { ...(existing.answers || {}) },
+        askedQuestions: Array.isArray(existing.askedQuestions) ? [...existing.askedQuestions] : [],
+        currentStage: existing.currentStage || "init",
+        status: existing.status || "idle",
+        consentAsked: Boolean(existing.consentAsked),
+      }
     : {
         service: null,
         answers: {},
