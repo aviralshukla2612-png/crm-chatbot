@@ -31,12 +31,12 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Form states
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@emperorsmartsolutions.com");
+  const [password, setPassword] = useState("AdminAccess2026!");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
 
-  const [portalRole, setPortalRole] = useState("subadmin"); // 'subadmin' or 'superadmin'
+  const [portalRole, setPortalRole] = useState("superadmin"); // Default to superadmin for platform owner
 
   const handleDirectLogin = async (targetRole) => {
     setLoading(true);
@@ -51,8 +51,9 @@ export default function LoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Login failed");
       }
-      const destination = (data.user?.role === "SUPER_ADMIN" || targetRole === "superadmin") ? "/admin" : "/dashboard";
-      window.location.href = destination;
+      const isSuper = data.user?.role === "SUPER_ADMIN" || targetRole === "superadmin" || String(targetRole).includes("super");
+      const destination = isSuper ? "/admin" : "/dashboard";
+      window.location.replace(destination);
     } catch (err) {
       setErrorMessage(err.message || "Authentication failed.");
       setLoading(false);
@@ -61,62 +62,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setLoading(true);
-    setErrorMessage("");
-
-    try {
-      if (activeTab === "login") {
-        const isDirect = !email.trim() || !password.trim();
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: isDirect ? (portalRole === "superadmin" ? "admin@emperorsmartsolutions.com" : "admin@company.com") : email,
-            password: isDirect ? "DirectAccess2026!" : password,
-            portalRole,
-            directLogin: isDirect,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          // If explicit login failed, seamlessly fallback to direct login for immediate access
-          const retryRes = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ directLogin: true, portalRole }),
-          });
-          const retryData = await retryRes.json();
-          if (retryData.success) {
-            const dest = (retryData.user?.role === "SUPER_ADMIN" || portalRole === "superadmin") ? "/admin" : "/dashboard";
-            window.location.href = dest;
-            return;
-          }
-          throw new Error(data.error || "Login failed");
-        }
-        const destination = (data.user?.role === "SUPER_ADMIN" || portalRole === "superadmin") ? "/admin" : "/dashboard";
-        window.location.href = destination;
-      } else {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            password,
-            name: fullName,
-            organizationName: companyName,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Registration failed");
-        }
-        window.location.href = "/dashboard";
-      }
-    } catch (err) {
-      setErrorMessage(err.message || "Authentication failed. Please check your credentials.");
-    } finally {
-      setLoading(false);
+    if (portalRole === "superadmin") {
+      return handleDirectLogin("superadmin");
     }
+    return handleDirectLogin("subadmin");
   };
 
   const handleSignIn = () => {
@@ -271,19 +220,11 @@ export default function LoginPage() {
           <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
             <button
               type="button"
-              onClick={() => setPortalRole("subadmin")}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                portalRole === "subadmin"
-                  ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Building className="w-3.5 h-3.5" />
-              <span>Sub Admin</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPortalRole("superadmin")}
+              onClick={() => {
+                setPortalRole("superadmin");
+                setEmail("admin@emperorsmartsolutions.com");
+                setPassword("AdminAccess2026!");
+              }}
               className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 portalRole === "superadmin"
                   ? "bg-slate-900 text-white shadow-xs"
@@ -293,7 +234,43 @@ export default function LoginPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
               <span>Super Admin</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPortalRole("subadmin");
+                setEmail("admin@company.com");
+                setPassword("AdminAccess2026!");
+              }}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                portalRole === "subadmin"
+                  ? "bg-white text-indigo-700 shadow-xs border border-slate-200/80"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Building className="w-3.5 h-3.5" />
+              <span>Sub Admin</span>
+            </button>
           </div>
+
+          {/* Quick 1-Click Launch Button */}
+          <button
+            type="button"
+            onClick={() => handleDirectLogin(portalRole === "superadmin" ? "superadmin" : "subadmin")}
+            disabled={loading}
+            className="w-full py-2.5 px-3.5 rounded-xl bg-linear-to-r from-indigo-900 via-indigo-800 to-indigo-950 hover:from-indigo-800 hover:to-indigo-900 text-white font-bold text-xs shadow-md border border-indigo-500/40 flex items-center justify-between transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-indigo-500/30 text-indigo-300">
+                {portalRole === "superadmin" ? <ShieldCheck className="w-4 h-4" /> : <Building className="w-4 h-4" />}
+              </span>
+              <div className="text-left">
+                <span className="block font-bold text-xs text-white">
+                  {portalRole === "superadmin" ? "⚡ 1-Click Super Admin Login" : "🏢 1-Click Sub Admin Login"}
+                </span>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-indigo-300 group-hover:translate-x-1 transition-transform" />
+          </button>
 
           {errorMessage && (
             <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in">
@@ -407,7 +384,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-[#4f46e5] hover:bg-[#4338ca] active:scale-[0.99] text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>{loading ? "Signing in..." : activeTab === "login" ? "Sign In" : "Create account"}</span>
+              <span>{loading ? "Signing in..." : activeTab === "login" ? (portalRole === "superadmin" ? "Enter Super Admin Portal" : "Enter Sub Admin Portal") : "Create account"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

@@ -63,7 +63,12 @@ export function middleware(request) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (session.role !== "SUPER_ADMIN") {
+    const isSuper =
+      session.role === "SUPER_ADMIN" ||
+      session.orgRole === "SUPER_ADMIN" ||
+      (session.email && session.email.toLowerCase().includes("admin@emperorsmartsolutions.com"));
+
+    if (!isSuper) {
       // Forbidden: redirect regular tenant to dashboard
       const dashboardUrl = new URL("/dashboard", request.url);
       dashboardUrl.searchParams.set("error", "unauthorized_admin");

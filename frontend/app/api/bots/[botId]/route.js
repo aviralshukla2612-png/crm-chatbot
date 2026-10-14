@@ -4,7 +4,7 @@ import { botsStore } from "@/lib/db/botsStore";
 export async function GET(request, { params }) {
   try {
     const { botId } = await params;
-    const bot = botsStore.getBot(botId);
+    const bot = (await botsStore.getBotAsync(botId)) || botsStore.getBot(botId);
     if (!bot) {
       return NextResponse.json({ success: false, error: "Bot not found" }, { status: 404 });
     }

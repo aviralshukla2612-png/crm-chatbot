@@ -155,6 +155,53 @@ export const botsStore = {
   },
 
   /**
+   * Retrieve a bot by ID or Name asynchronously, checking PostgreSQL database first
+   * and falling back to memory/disk store.
+   */
+  async getBotAsync(idOrName, organizationId = null) {
+    if (!idOrName) return null;
+    const query = String(idOrName).trim();
+    if (!query) return null;
+
+    // Check disk/memory first for speed
+    const localMatch = this.getBot(query, organizationId);
+    if (localMatch) return localMatch;
+
+    // Query PostgreSQL Database
+    try {
+      let dbRes;
+      if (organizationId) {
+        dbRes = await queryDb(
+          'SELECT * FROM "Bot" WHERE ("id" = $1 OR LOWER("id") = LOWER($1) OR LOWER("name") = LOWER($1)) AND "organizationId" = $2 LIMIT 1;',
+          [query, organizationId]
+        );
+      } else {
+        dbRes = await queryDb(
+          'SELECT * FROM "Bot" WHERE "id" = $1 OR LOWER("id") = LOWER($1) OR LOWER("name") = LOWER($1) LIMIT 1;',
+          [query]
+        );
+      }
+      if (dbRes.ok && dbRes.rows.length > 0) {
+        const bot = dbRes.rows[0];
+        // Cache in memory store so subsequent synchronous lookups also succeed
+        const all = loadBotsFromDisk();
+        const existingIdx = all.findIndex((b) => b.id === bot.id);
+        if (existingIdx >= 0) {
+          all[existingIdx] = { ...all[existingIdx], ...bot };
+        } else {
+          all.push(bot);
+        }
+        memoryBotsCache = all;
+        return bot;
+      }
+    } catch (err) {
+      console.warn("Database bot lookup error:", err);
+    }
+
+    return null;
+  },
+
+  /**
    * Upsert a bot with explicit tenant scoping.
    */
   upsertBot(botData, targetOrgId = null) {

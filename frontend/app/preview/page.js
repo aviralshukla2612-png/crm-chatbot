@@ -19,7 +19,7 @@ import {
 function PreviewContent() {
   const searchParams = useSearchParams();
   const rawUrl = searchParams.get("url") || "https://cashbook.vardaansmartsolutions.com";
-  const botId = searchParams.get("botId") || "bot_179161059922";
+  const botId = searchParams.get("botId") || "bot_aa";
   const primaryColor = searchParams.get("color") || "#4F46E5";
 
   const [targetUrl, setTargetUrl] = useState(rawUrl);

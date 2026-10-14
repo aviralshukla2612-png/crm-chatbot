@@ -198,7 +198,8 @@ export const authStore = {
    * One-click direct authentication for instant portal access.
    */
   async directLogin(targetRole = "ORG_OWNER") {
-    const isSuper = targetRole === "SUPER_ADMIN" || targetRole === "superadmin";
+    const roleStr = String(targetRole || "").toLowerCase();
+    const isSuper = roleStr === "super_admin" || roleStr === "superadmin" || roleStr.includes("super");
     const email = isSuper ? DEFAULT_ADMIN_EMAIL : "admin@company.com";
     const cleanEmail = email.toLowerCase();
 

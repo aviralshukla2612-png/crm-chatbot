@@ -129,7 +129,11 @@ export async function POST(request, { params }) {
     }
 
     // 1. Resolve Bot & Enforce Status
-    const bot = botsStore.getBot(botId);
+    const resolvedBotId =
+      botId === "default" || botId === "preview" || botId === "demo" || botId === "undefined"
+        ? "bot_aa"
+        : botId;
+    const bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
     if (!bot) {
       return corsResponse(
         NextResponse.json({ error: "Bot not found" }, { status: 404 })
