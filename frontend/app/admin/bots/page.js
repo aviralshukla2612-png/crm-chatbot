@@ -53,39 +53,49 @@ export default function AdminBotsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {bots.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{b.avatar}</span>
-                      <div>
-                        <p className="font-bold text-slate-900">{b.name}</p>
-                        <p className="text-[10px] font-mono text-slate-400">{b.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-slate-700 font-medium">Emperor Smart Solutions</td>
-                  <td className="p-4 text-slate-500">{b.personality}</td>
-                  <td className="p-4 font-mono font-bold text-slate-800">
-                    {b.questionsCount}
-                  </td>
-                  <td className="p-4 font-mono text-slate-600">{b.conversationsCount}</td>
-                  <td className="p-4 font-mono text-emerald-600 font-bold">{b.leadsCount}</td>
-                  <td className="p-4">
-                    <StatusBadge status={b.status} size="sm" />
-                  </td>
-                  <td className="p-4 text-right">
-                    <a
-                      href={`/bots/${b.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
-                    >
-                      Inspect <ExternalLink className="w-3 h-3" />
-                    </a>
+              {bots.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                    {loading ? "Loading bots..." : "No bots found in registry."}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                bots.map((b) => (
+                  <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{b.avatar || "🤖"}</span>
+                        <div>
+                          <p className="font-bold text-slate-900">{b.name}</p>
+                          <p className="text-[10px] font-mono text-slate-400">{b.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-slate-700 font-medium">
+                      {b.organizationName || b.company || b.organizationId || "Emperor Smart Solutions"}
+                    </td>
+                    <td className="p-4 text-slate-500">{b.personality || "Professional"}</td>
+                    <td className="p-4 font-mono font-bold text-slate-800">
+                      {b.questionsCount || 0}
+                    </td>
+                    <td className="p-4 font-mono text-slate-600">{b.conversationsCount || 0}</td>
+                    <td className="p-4 font-mono text-emerald-600 font-bold">{b.leadsCount || 0}</td>
+                    <td className="p-4">
+                      <StatusBadge status={b.status || "Active"} size="sm" />
+                    </td>
+                    <td className="p-4 text-right">
+                      <a
+                        href={`/bots/${b.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                      >
+                        Inspect <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

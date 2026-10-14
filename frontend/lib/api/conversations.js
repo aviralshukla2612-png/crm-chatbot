@@ -6,6 +6,7 @@ export const conversationsApi = {
       if (filters.onlyLeads) params.set("onlyLeads", "true");
       if (filters.search) params.set("search", filters.search);
       if (filters.botId && filters.botId !== "All") params.set("botId", filters.botId);
+      if (filters.organizationId) params.set("organizationId", filters.organizationId);
 
       const res = await fetch(`/api/conversations?${params.toString()}`, {
         cache: "no-store",

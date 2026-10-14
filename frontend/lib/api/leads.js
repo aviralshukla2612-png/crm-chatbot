@@ -14,6 +14,9 @@ export const leadsApi = {
       if (filters.search) {
         params.set("search", filters.search);
       }
+      if (filters.organizationId) {
+        params.set("organizationId", filters.organizationId);
+      }
 
       const res = await fetch(`/api/leads?${params.toString()}`, {
         cache: "no-store",

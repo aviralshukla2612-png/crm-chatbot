@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { conversationsStore } from "@/lib/db/conversationsStore";
-import { requireAuth } from "@/lib/auth/guard";
+import { requireAuth, ROLES } from "@/lib/auth/guard";
 
 export async function GET(request) {
   try {
@@ -13,10 +13,16 @@ export async function GET(request) {
     const onlyLeads = searchParams.get("onlyLeads") === "true";
     const search = searchParams.get("search") || "";
     const botId = searchParams.get("botId") || "All";
+    const requestedOrg = searchParams.get("organizationId");
 
-    // Strictly filter conversations by authenticated organizationId
+    const isSuperAdmin =
+      principal.platformRole === ROLES.SUPER_ADMIN ||
+      principal.orgRole === ROLES.SUPER_ADMIN;
+    const targetOrgId = isSuperAdmin ? (requestedOrg || null) : principal.organizationId;
+
+    // Filter conversations by target organizationId (null for superadmin viewing all tenant conversations)
     const conversations = conversationsStore.getConversations({
-      organizationId: principal.organizationId,
+      organizationId: targetOrgId,
       status,
       onlyLeads,
       search,

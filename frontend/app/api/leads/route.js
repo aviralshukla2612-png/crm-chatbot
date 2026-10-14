@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { leadsStore } from "@/lib/db/leadsStore";
-import { requireAuth } from "@/lib/auth/guard";
+import { requireAuth, ROLES } from "@/lib/auth/guard";
 
 export async function GET(request) {
   try {
@@ -13,10 +13,16 @@ export async function GET(request) {
     const score = searchParams.get("score") || "All";
     const bot = searchParams.get("bot") || "All Bots";
     const search = searchParams.get("search") || "";
+    const requestedOrg = searchParams.get("organizationId");
 
-    // Strictly filter leads by authenticated organizationId
+    const isSuperAdmin =
+      principal.platformRole === ROLES.SUPER_ADMIN ||
+      principal.orgRole === ROLES.SUPER_ADMIN;
+    const targetOrgId = isSuperAdmin ? (requestedOrg || null) : principal.organizationId;
+
+    // Filter leads by target organizationId (null for superadmin viewing all tenant leads)
     const leads = leadsStore.getLeads({
-      organizationId: principal.organizationId,
+      organizationId: targetOrgId,
       status,
       score,
       bot,

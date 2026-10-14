@@ -66,7 +66,8 @@ export const botsApi = {
     }
 
     try {
-      const res = await fetch("/api/bots", { cache: "no-store" });
+      const url = orgId ? `/api/bots?organizationId=${encodeURIComponent(orgId)}` : "/api/bots";
+      const res = await fetch(url, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.bots)) {

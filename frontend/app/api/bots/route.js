@@ -8,8 +8,13 @@ export async function GET(request) {
     if (!auth.ok) return auth.response;
 
     const { principal } = auth;
-    // Strictly isolate bots by authenticated user's active organizationId
-    const bots = await botsStore.getBotsAsync(principal.organizationId);
+    const { searchParams } = new URL(request.url);
+    const requestedOrg = searchParams.get("organizationId");
+
+    const isSuperAdmin = principal.platformRole === ROLES.SUPER_ADMIN || principal.orgRole === ROLES.SUPER_ADMIN;
+    const targetOrgId = isSuperAdmin ? (requestedOrg || null) : principal.organizationId;
+
+    const bots = await botsStore.getBotsAsync(targetOrgId);
 
     return NextResponse.json({ success: true, bots });
   } catch (err) {

@@ -102,6 +102,13 @@ export const botsStore = {
       if (dbRes.ok && dbRes.rows.length > 0) {
         return dbRes.rows;
       }
+    } else {
+      const dbRes = await queryDb(
+        'SELECT * FROM "Bot" ORDER BY "createdAt" DESC;'
+      );
+      if (dbRes.ok && dbRes.rows.length > 0) {
+        return dbRes.rows;
+      }
     }
     const all = loadBotsFromDisk();
     if (!organizationId) return all;
