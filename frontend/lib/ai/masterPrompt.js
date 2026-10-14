@@ -247,6 +247,15 @@ export function validateOutput(reply, businessName = "Emperor Smart Solutions", 
       : "Do you need a new website or a redesign?";
   }
 
+  // 0.002 Hallucinated Safety Refusal Intercept: Intercept false-positive LLM safety refusals on web development inquiries
+  if (/cannot\s+assist\s+with.*(?:illegal\s+activities|creating\s+a\s+website\s+for\s+illegal|illegal\s+tasks)/i.test(cleaned)) {
+    return lang === "hindi"
+      ? `Emperor Smart Solutions में हम हाई-परफॉर्मेंस, सुरक्षित और आधुनिक **वेबसाइट और वेब एप्लिकेशन डेवलपमेंट** सेवाएं प्रदान करते हैं! 🚀\n\nहमारे टेक स्टैक: Next.js, React, Node.js और PostgreSQL।\n\nक्या आप एक नए बिजनेस वेबसाइट, ई-कॉमर्स प्लेटफ़ॉर्म, या कस्टम वेब ऐप पर चर्चा करना चाहते हैं?`
+      : lang === "hinglish"
+      ? `Emperor Smart Solutions mein hum high-performance, secure aur modern **Website & Web Application Development** services provide karte hain! 🚀\n\nTech Stack: Next.js, React, Node.js aur PostgreSQL.\n\nKya aap nayi business website, e-commerce store, ya custom web application develop karwana chahte hain?`
+      : `At Emperor Smart Solutions, we specialize in high-performance, secure, and modern **Website & Web Application Development**! 🚀\n\nOur core tech stack includes Next.js, React, Node.js, and PostgreSQL.\n\nAre you looking to build a new business website, e-commerce store, or custom web application?`;
+  }
+
   // 0. Competitor / Third-Party Agency Referral Intercept: Never tell user to look for other companies
   const competitorReferralRegex = /(?:would you like me to\s+)?(?:suggest|recommend)\s+(?:some\s+|other\s+|any\s+|different\s+)*(?:companies|agencies|firms|freelancers|developers)/i;
   if (competitorReferralRegex.test(cleaned)) {

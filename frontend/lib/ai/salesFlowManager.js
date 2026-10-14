@@ -1201,12 +1201,18 @@ export function handleSalesFlowTurn({
     current.status = "in_progress";
   }
 
-  if (!current.service) {
-    return { shouldHandle: false };
-  }
+  const isPureServiceSelection = ALL_ESS_SERVICES.some(
+    (s) => s.toLowerCase() === cleanMsg.toLowerCase()
+  );
 
-  // If qualification was already completed in a previous turn, do not hijack subsequent queries
-  if (current.status === "completed" && !serviceChanged) {
+  // If user explicitly clicks or enters a pure service name, allow starting a fresh qualification
+  if (isPureServiceSelection && detectedService) {
+    current.service = detectedService;
+    current.answers = {};
+    current.askedQuestions = [];
+    current.status = "in_progress";
+    current.consentAsked = false;
+  } else if (current.status === "completed" && !serviceChanged) {
     return { shouldHandle: false };
   }
 
@@ -1267,10 +1273,6 @@ export function handleSalesFlowTurn({
 
   // 3. Extract answers from incoming message across all attributes
   // If user simply clicked a service button, do not treat the service name as an answer to question 0
-  const isPureServiceSelection = ALL_ESS_SERVICES.some(
-    (s) => s.toLowerCase() === cleanMsg.toLowerCase()
-  );
-
   if (!isPureServiceSelection) {
     // Prioritize answering currentStage if cleanMsg is a direct reply like "Yes", "No", "New website", etc.
     if (current.currentStage && current.service) {
