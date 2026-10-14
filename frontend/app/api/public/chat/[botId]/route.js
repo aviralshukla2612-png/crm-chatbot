@@ -21,25 +21,9 @@ import {
 import { WebhookDispatcher } from "@/lib/integrations/webhookDispatcher";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
 import { InferenceProvider } from "@/lib/ai/inferenceProvider";
+import { checkDistributedRateLimit } from "@/lib/security/distributedRateLimit";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
-
-// --- PHASE 4: RATE LIMITING (Token-Bucket Sliding Window) ---
-const rateLimitMap = new Map();
-function checkRateLimit(ipOrId, maxRequests = 30, windowMs = 60000) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ipOrId);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ipOrId, { count: 1, resetAt: now + windowMs });
-    return { ok: true };
-  }
-  if (entry.count >= maxRequests) {
-    const retrySec = Math.ceil((entry.resetAt - now) / 1000);
-    return { ok: false, retrySec };
-  }
-  entry.count++;
-  return { ok: true };
-}
 
 // --- PHASE 4: DOMAIN WHITELISTING (Origin Locking) ---
 // Guard logic imported from @/lib/security/domainGuard
@@ -123,9 +107,9 @@ export async function POST(request, { params }) {
   try {
     const { botId } = await params;
 
-    // --- PHASE 4: RATE LIMITING ---
+    // --- PHASE 4: DISTRIBUTED RATE LIMITING (Redis + Sliding Window) ---
     const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "global_client";
-    const rateCheck = checkRateLimit(`${clientIp}_${botId}`, 40, 60000);
+    const rateCheck = await checkDistributedRateLimit(`${clientIp}_${botId}`, 40, 60000);
     if (!rateCheck.ok) {
       return corsResponse(
         NextResponse.json(
@@ -170,6 +154,22 @@ export async function POST(request, { params }) {
         ? bot.company
         : "Emperor Smart Solutions";
     const tenantId = bot?.organizationId || botId;
+
+    // --- SAAS BILLING & QUOTA ENFORCEMENT ---
+    const { quotaGuard } = await import("@/lib/billing/quotaGuard");
+    const quotaCheck = await quotaGuard.checkAndReserveQuota(tenantId, "message", 1, bot.id);
+    if (!quotaCheck.allowed) {
+      return corsResponse(
+        NextResponse.json(
+          {
+            error: quotaCheck.error || "Monthly message limit reached for this chatbot. Please upgrade your plan in the dashboard.",
+            code: quotaCheck.reason,
+            planId: quotaCheck.planId,
+          },
+          { status: 402 }
+        )
+      );
+    }
 
     // 2. Step 1: Analyze Input Language (English, Hindi, or Hinglish)
     let lang = detectLanguage(message);

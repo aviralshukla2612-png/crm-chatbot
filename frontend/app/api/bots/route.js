@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { botsStore } from "@/lib/db/botsStore";
+import { requireAuth, requireOrgRole, ROLES } from "@/lib/auth/guard";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const bots = botsStore.getBots();
-    const res = NextResponse.json({ success: true, bots });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    return res;
+    const auth = await requireAuth(request);
+    if (!auth.ok) return auth.response;
+
+    const { principal } = auth;
+    // Strictly isolate bots by authenticated user's active organizationId
+    const bots = await botsStore.getBotsAsync(principal.organizationId);
+
+    return NextResponse.json({ success: true, bots });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -14,20 +19,18 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const auth = await requireOrgRole(request, [ROLES.ORG_OWNER, ROLES.ORG_ADMIN]);
+    if (!auth.ok) return auth.response;
+
+    const { principal } = auth;
     const body = await request.json();
-    const bot = botsStore.upsertBot(body);
-    const res = NextResponse.json({ success: true, bot });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    return res;
+
+    // Enforce tenant boundary: bot belongs to caller's organizationId
+    body.organizationId = principal.organizationId;
+    const bot = botsStore.upsertBot(body, principal.organizationId);
+
+    return NextResponse.json({ success: true, bot });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
-
-export async function OPTIONS() {
-  const res = new NextResponse(null, { status: 204 });
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
 }

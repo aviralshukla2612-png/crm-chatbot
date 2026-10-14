@@ -90,6 +90,9 @@ export const leadsStore = {
       return true;
     });
 
+    if (filters.organizationId) {
+      list = list.filter((l) => (l.organizationId || "org_ess_default") === filters.organizationId);
+    }
     if (filters.status && filters.status !== "All" && filters.status !== "All Status") {
       list = list.filter((l) => l.status?.toLowerCase() === filters.status.toLowerCase());
     }
@@ -114,14 +117,15 @@ export const leadsStore = {
     );
   },
 
-  getLead(id) {
+  getLead(id, organizationId = null) {
     const list = loadFromDisk();
-    return list.find((l) => l.id === id) || null;
+    return list.find((l) => l.id === id && (!organizationId || (l.organizationId || "org_ess_default") === organizationId)) || null;
   },
 
   createLead(data) {
     const list = loadFromDisk();
     const now = new Date();
+    data.organizationId = data.organizationId || "org_ess_default";
 
     // Check if lead already exists by sessionId, email, or verified phone
     const cleanDigits = (p) => (p || "").replace(/\D/g, "");

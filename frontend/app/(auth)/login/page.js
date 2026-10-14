@@ -28,28 +28,60 @@ export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("login"); // 'login' or 'register'
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Form states
-  const [email, setEmail] = useState("you@company.com");
-  const [password, setPassword] = useState("••••••••••••");
-  const [fullName, setFullName] = useState("Srajan Shukla");
-  const [companyName, setCompanyName] = useState("Acme Healthcare");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
 
   const [portalRole, setPortalRole] = useState("subadmin"); // 'subadmin' or 'superadmin'
 
-  const handleSignIn = () => {
+  const handleSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setLoading(true);
-    const destination = portalRole === "superadmin" ? "/admin" : "/dashboard";
-    if (typeof window !== "undefined") {
-      window.location.href = destination;
-    } else {
-      router.push(destination);
+    setErrorMessage("");
+
+    try {
+      if (activeTab === "login") {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Login failed");
+        }
+        const destination = data.user?.role === "SUPER_ADMIN" ? "/admin" : "/dashboard";
+        window.location.href = destination;
+      } else {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            name: fullName,
+            organizationName: companyName,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Registration failed");
+        }
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setErrorMessage(err.message || "Authentication failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    handleSignIn();
+  const handleSignIn = () => {
+    handleSubmit();
   };
 
   return (
@@ -226,6 +258,13 @@ export default function LoginPage() {
               <span>Super Admin</span>
             </button>
           </div>
+
+          {errorMessage && (
+            <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in">
+              <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {activeTab === "register" && (

@@ -12,6 +12,7 @@
     "test:simulate": "node scripts/simulate_real_conversations.js"
   },
   "dependencies": {
+    "ioredis": "^6.0.0",
     "pg": "^8.13.1"
   },
   "devDependencies": {

@@ -31,6 +31,7 @@
         "status": "Ready",
         "chunks": 5
       }
-    ]
+    ],
+    "organizationId": "org_ess_default"
   }
 ]

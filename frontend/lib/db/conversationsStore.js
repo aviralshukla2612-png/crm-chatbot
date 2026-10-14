@@ -55,6 +55,9 @@ function saveToDisk(data) {
 export const conversationsStore = {
   getConversations(filters = {}) {
     let list = loadFromDisk();
+    if (filters.organizationId) {
+      list = list.filter((c) => (c.organizationId || "org_ess_default") === filters.organizationId);
+    }
     if (filters.botId && filters.botId !== "All") {
       list = list.filter((c) => c.botId === filters.botId || c.botName === filters.botId);
     }
@@ -79,9 +82,9 @@ export const conversationsStore = {
     );
   },
 
-  getConversation(id) {
+  getConversation(id, organizationId = null) {
     const list = loadFromDisk();
-    return list.find((c) => c.id === id) || null;
+    return list.find((c) => c.id === id && (!organizationId || (c.organizationId || "org_ess_default") === organizationId)) || null;
   },
 
   createConversation(data) {
@@ -91,6 +94,7 @@ export const conversationsStore = {
 
     const newConv = {
       id,
+      organizationId: data.organizationId || "org_ess_default",
       visitorName: data.visitorName || "Website Visitor",
       visitorEmail: data.visitorEmail || "",
       visitorPhone: data.visitorPhone || "",

@@ -90,3 +90,41 @@ test("EnvValidator - requires GROQ_API_KEY and rejects placeholders when groq is
   assert.equal(res2.valid, false);
   assert.ok(res2.errors.some((e) => e.includes("must not be a placeholder")));
 });
+
+test("EnvValidator - rejects weak or default SESSION_SECRET", () => {
+  const envShort = {
+    DEFAULT_AI_PROVIDER: "mock",
+    SESSION_SECRET: "too_short_secret",
+  };
+  const resShort = validateEnvironment(envShort);
+  assert.equal(resShort.valid, false);
+  assert.ok(resShort.errors.some((e) => e.includes("SESSION_SECRET must be at least 32 characters")));
+
+  const envDevDefault = {
+    DEFAULT_AI_PROVIDER: "mock",
+    SESSION_SECRET: "ess_dev_secret_replace_in_prod_minimum_32_chars_long_123456",
+  };
+  const resDevDefault = validateEnvironment(envDevDefault);
+  assert.equal(resDevDefault.valid, false);
+  assert.ok(resDevDefault.errors.some((e) => e.includes("SESSION_SECRET must be at least 32 characters")));
+});
+
+test("EnvValidator - rejects RAZORPAY_KEY_ID configured without RAZORPAY_KEY_SECRET", () => {
+  const env = {
+    DEFAULT_AI_PROVIDER: "mock",
+    RAZORPAY_KEY_ID: "rzp_live_abc123456",
+  };
+  const res = validateEnvironment(env);
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes("RAZORPAY_KEY_SECRET is required")));
+});
+
+test("EnvValidator - rejects invalid REDIS_URL protocol", () => {
+  const env = {
+    DEFAULT_AI_PROVIDER: "mock",
+    REDIS_URL: "http://myredis:6379",
+  };
+  const res = validateEnvironment(env);
+  assert.equal(res.valid, false);
+  assert.ok(res.errors.some((e) => e.includes("REDIS_URL protocol must be 'redis:' or 'rediss:'")));
+});

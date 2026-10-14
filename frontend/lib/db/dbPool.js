@@ -234,6 +234,105 @@ export async function initPostgresTables() {
           );
         `);
 
+        // 11. User Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "User" (
+            "id" VARCHAR(64) PRIMARY KEY,
+            "name" VARCHAR(255) NOT NULL,
+            "email" VARCHAR(255) UNIQUE NOT NULL,
+            "passwordHash" TEXT NOT NULL,
+            "role" VARCHAR(64) DEFAULT 'MEMBER',
+            "status" VARCHAR(64) DEFAULT 'ACTIVE',
+            "emailVerifiedAt" TIMESTAMP WITH TIME ZONE,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // 12. OrganizationMembership Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "OrganizationMembership" (
+            "id" VARCHAR(64) PRIMARY KEY,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "userId" VARCHAR(64) NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+            "role" VARCHAR(64) DEFAULT 'MEMBER',
+            "status" VARCHAR(64) DEFAULT 'ACTIVE',
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "uq_org_user" UNIQUE ("organizationId", "userId")
+          );
+        `);
+
+        // 13. Subscription Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "Subscription" (
+            "id" VARCHAR(64) PRIMARY KEY,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "provider" VARCHAR(64) DEFAULT 'razorpay',
+            "providerCustomerId" VARCHAR(128),
+            "providerSubscriptionId" VARCHAR(128),
+            "planId" VARCHAR(64) DEFAULT 'STARTER',
+            "status" VARCHAR(64) DEFAULT 'active',
+            "currentPeriodStart" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "currentPeriodEnd" TIMESTAMP WITH TIME ZONE,
+            "cancelAtPeriodEnd" BOOLEAN DEFAULT FALSE,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // 14. UsageRecord Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "UsageRecord" (
+            "id" VARCHAR(128) PRIMARY KEY,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "botId" VARCHAR(64),
+            "conversationId" VARCHAR(128),
+            "metric" VARCHAR(64) NOT NULL,
+            "quantity" INT DEFAULT 1,
+            "periodKey" VARCHAR(32) NOT NULL,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // 15. ApiKey Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "ApiKey" (
+            "id" VARCHAR(64) PRIMARY KEY,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "name" VARCHAR(255) NOT NULL,
+            "keyHash" VARCHAR(128) NOT NULL UNIQUE,
+            "prefix" VARCHAR(32) NOT NULL,
+            "role" VARCHAR(64) DEFAULT 'MEMBER',
+            "lastUsedAt" TIMESTAMP WITH TIME ZONE,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // 16. BillingEvent Table (Idempotent Webhooks)
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "BillingEvent" (
+            "id" VARCHAR(128) PRIMARY KEY,
+            "provider" VARCHAR(64) NOT NULL,
+            "eventId" VARCHAR(128) UNIQUE NOT NULL,
+            "eventType" VARCHAR(128) NOT NULL,
+            "organizationId" VARCHAR(64),
+            "payload" JSONB,
+            "processedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        // 17. WhatsAppMapping Table
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS "WhatsAppMapping" (
+            "id" VARCHAR(64) PRIMARY KEY,
+            "phoneNumberId" VARCHAR(128) UNIQUE NOT NULL,
+            "organizationId" VARCHAR(64) NOT NULL REFERENCES "Organization"("id") ON DELETE CASCADE,
+            "botId" VARCHAR(64) NOT NULL REFERENCES "Bot"("id") ON DELETE CASCADE,
+            "webhookSecret" TEXT,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
         // Create HNSW vector similarity index for sub-10ms approximate nearest neighbor search
         await client.query(`
           CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_hnsw 
@@ -241,13 +340,18 @@ export async function initPostgresTables() {
           WITH (m = 16, ef_construction = 64);
         `);
 
-        // B-tree indexes for fast tenant filtering
+        // B-tree indexes for fast tenant filtering & SaaS lookups
         await client.query(`
           CREATE INDEX IF NOT EXISTS idx_bot_org ON "Bot" ("organizationId");
           CREATE INDEX IF NOT EXISTS idx_conversations_tenant ON "Conversation" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_leads_tenant ON "Lead" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_documents_tenant ON "KnowledgeDocument" ("organizationId", "botId");
           CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_tenant ON "KnowledgeChunk" ("organizationId", "botId");
+          CREATE INDEX IF NOT EXISTS idx_user_email ON "User" ("email");
+          CREATE INDEX IF NOT EXISTS idx_membership_lookup ON "OrganizationMembership" ("organizationId", "userId");
+          CREATE INDEX IF NOT EXISTS idx_subscription_org ON "Subscription" ("organizationId");
+          CREATE INDEX IF NOT EXISTS idx_usage_org_metric_period ON "UsageRecord" ("organizationId", "metric", "periodKey");
+          CREATE INDEX IF NOT EXISTS idx_apikey_hash ON "ApiKey" ("keyHash");
         `);
 
         await client.query("COMMIT;");

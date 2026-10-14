@@ -1,54 +1,55 @@
 import { NextResponse } from "next/server";
 import { leadsStore } from "@/lib/db/leadsStore";
-
-function corsResponse(res) {
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
-}
-
-export async function OPTIONS() {
-  return corsResponse(new NextResponse(null, { status: 204 }));
-}
+import { requireAuth } from "@/lib/auth/guard";
 
 export async function GET(request) {
   try {
+    const auth = await requireAuth(request);
+    if (!auth.ok) return auth.response;
+
+    const { principal } = auth;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "All";
     const score = searchParams.get("score") || "All";
     const bot = searchParams.get("bot") || "All Bots";
     const search = searchParams.get("search") || "";
 
-    const leads = leadsStore.getLeads({ status, score, bot, search });
+    // Strictly filter leads by authenticated organizationId
+    const leads = leadsStore.getLeads({
+      organizationId: principal.organizationId,
+      status,
+      score,
+      bot,
+      search,
+    });
 
-    return corsResponse(
-      NextResponse.json({
-        success: true,
-        leads,
-        total: leads.length,
-      })
-    );
+    return NextResponse.json({
+      success: true,
+      leads,
+      total: leads.length,
+    });
   } catch (err) {
-    return corsResponse(
-      NextResponse.json({ success: false, error: err.message }, { status: 500 })
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
+    const auth = await requireAuth(request);
+    if (!auth.ok) return auth.response;
+
+    const { principal } = auth;
     const body = await request.json();
+
+    // Bind lead to caller's organizationId
+    body.organizationId = principal.organizationId;
     const newLead = leadsStore.createLead(body);
-    return corsResponse(
-      NextResponse.json({
-        success: true,
-        lead: newLead,
-      })
-    );
+
+    return NextResponse.json({
+      success: true,
+      lead: newLead,
+    });
   } catch (err) {
-    return corsResponse(
-      NextResponse.json({ success: false, error: err.message }, { status: 500 })
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

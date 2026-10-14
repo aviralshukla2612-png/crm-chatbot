@@ -147,8 +147,12 @@ function runLiveEvaluation() {
   return report;
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { requireSuperAdmin } = await import("@/lib/auth/guard");
+    const auth = await requireSuperAdmin(request);
+    if (!auth.ok) return auth.response;
+
     if (fs.existsSync(REPORT_PATH)) {
       const raw = fs.readFileSync(REPORT_PATH, "utf8");
       return NextResponse.json(JSON.parse(raw));
@@ -160,8 +164,12 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request) {
   try {
+    const { requireSuperAdmin } = await import("@/lib/auth/guard");
+    const auth = await requireSuperAdmin(request);
+    if (!auth.ok) return auth.response;
+
     const report = runLiveEvaluation();
     return NextResponse.json({ success: true, report });
   } catch (e) {
