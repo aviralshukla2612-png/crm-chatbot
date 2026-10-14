@@ -133,8 +133,8 @@ export function parseCookies(cookieHeader = "") {
  * Build standard Set-Cookie string for session
  */
 export function createSessionCookie(token, maxAgeSeconds = DEFAULT_TTL_SECONDS) {
-  const isProd = process.env.NODE_ENV === "production";
-  const secureFlag = isProd ? "; Secure" : "";
+  const isSecure = process.env.COOKIE_SECURE === "true";
+  const secureFlag = isSecure ? "; Secure" : "";
   return `ess_session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secureFlag}`;
 }
 
@@ -142,7 +142,7 @@ export function createSessionCookie(token, maxAgeSeconds = DEFAULT_TTL_SECONDS) 
  * Build Set-Cookie string to clear session
  */
 export function clearSessionCookie() {
-  const isProd = process.env.NODE_ENV === "production";
-  const secureFlag = isProd ? "; Secure" : "";
+  const isSecure = process.env.COOKIE_SECURE === "true";
+  const secureFlag = isSecure ? "; Secure" : "";
   return `ess_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
 }

@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
-import { verifySessionToken } from "./lib/auth/session.js";
+
+function decodeEdgeSession(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    let rawPayload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (rawPayload.length % 4) {
+      rawPayload += "=";
+    }
+    const jsonStr = atob(rawPayload);
+    const payload = JSON.parse(jsonStr);
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -23,9 +41,9 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // 2. Extract and verify session cookie
+  // 2. Extract and decode session cookie (Edge-compatible)
   const sessionCookie = request.cookies.get("ess_session")?.value;
-  const session = sessionCookie ? verifySessionToken(sessionCookie) : null;
+  const session = sessionCookie ? decodeEdgeSession(sessionCookie) : null;
 
   // 3. Protect /dashboard and /dashboard/*
   if (pathname.startsWith("/dashboard")) {

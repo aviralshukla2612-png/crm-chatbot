@@ -70,12 +70,21 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       user,
+      token,
       organizationId,
       orgRole,
       memberships,
     });
 
-    response.headers.set("Set-Cookie", createSessionCookie(token));
+    response.cookies.set({
+      name: "ess_session",
+      value: token,
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 3600,
+      secure: process.env.COOKIE_SECURE === "true",
+    });
     return response;
   } catch (err) {
     return NextResponse.json(
