@@ -36,12 +36,6 @@ export default function HomePage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/admin"
-              className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 transition-colors"
-            >
-              Super Admin Portal
-            </Link>
-            <Link
               href="/login"
               className="text-xs font-semibold px-3 py-1.5 text-neutral-300 hover:text-white transition-colors"
             >

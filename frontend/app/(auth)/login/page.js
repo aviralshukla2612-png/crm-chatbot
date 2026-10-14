@@ -203,13 +203,6 @@ export default function LoginPage() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             © 2026 ChatPilot Inc.
           </span>
-          <Link
-            href="/admin"
-            className="text-amber-400 hover:text-amber-300 flex items-center gap-1.5 font-semibold bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20 transition-colors"
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Super Admin</span>
-          </Link>
         </div>
       </div>
 
