@@ -28,30 +28,39 @@ import { analyticsApi } from "@/lib/api/analytics";
 import { botsApi } from "@/lib/api/bots";
 import RealtimeBadge from "@/components/ui/RealtimeBadge";
 
-const platformGrowthData = [
-  { date: "Day 1", orgs: 1, users: 1, bots: 1 },
-  { date: "Day 2", orgs: 1, users: 1, bots: 1 },
-  { date: "Day 3", orgs: 1, users: 1, bots: 1 },
-  { date: "Today", orgs: 1, users: 1, bots: 1 },
-];
-
-const topOrganizations = [
-  {
-    name: "Emperor Smart Solutions",
-    bots: 1,
-    conversations: 0,
-    users: 1,
-  },
-];
-
 export default function AdminOverviewPage() {
   const [timeRange, setTimeRange] = useState("Last 30 days");
   const [metrics, setMetrics] = useState(null);
+  const [statsData, setStatsData] = useState({
+    organizationsCount: 1,
+    usersCount: 1,
+    botsCount: 1,
+    conversationsCount: 0,
+    questionsCount: 0,
+    leadsCount: 0,
+    uptime: "99.9%",
+    tier: "Enterprise",
+  });
+  const [topOrgs, setTopOrgs] = useState([
+    { name: "Emperor Smart Solutions", bots: 1, conversations: 0, users: 1 }
+  ]);
+  const [growthData, setGrowthData] = useState([
+    { date: "Day 1", orgs: 1, users: 1, bots: 1 },
+    { date: "Today", orgs: 1, users: 1, bots: 1 },
+  ]);
 
   const loadData = async () => {
     try {
-      const data = await analyticsApi.getDashboardMetrics();
-      setMetrics(data);
+      const [dashMetrics, statsRes] = await Promise.all([
+        analyticsApi.getDashboardMetrics(),
+        fetch("/api/admin/stats").then((r) => r.ok ? r.json() : null),
+      ]);
+      setMetrics(dashMetrics);
+      if (statsRes?.success) {
+        if (statsRes.stats) setStatsData(statsRes.stats);
+        if (statsRes.topOrganizations) setTopOrgs(statsRes.topOrganizations);
+        if (statsRes.growthTrend?.length > 0) setGrowthData(statsRes.growthTrend);
+      }
     } catch (err) {
       console.warn("Admin real-time sync error:", err);
     }
@@ -100,7 +109,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              1
+              {statsData.organizationsCount}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Organizations
@@ -115,7 +124,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              1
+              {statsData.usersCount}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Users
@@ -130,7 +139,7 @@ export default function AdminOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {metrics?.activeBotsCount ?? 1}
+              {statsData.botsCount ?? metrics?.activeBotsCount ?? 1}
             </div>
             <div className="text-xs font-medium text-slate-500 mt-1">
               Bots
@@ -243,7 +252,7 @@ export default function AdminOverviewPage() {
 
           <div className="h-68 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={platformGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2} />
@@ -338,7 +347,7 @@ export default function AdminOverviewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {topOrganizations.map((org) => (
+                  {topOrgs.map((org) => (
                     <tr key={org.name} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3 pr-2 font-semibold text-slate-800">
                         {org.name}
@@ -347,7 +356,7 @@ export default function AdminOverviewPage() {
                         {org.bots}
                       </td>
                       <td className="py-3 px-2 text-center text-slate-600 font-medium">
-                        {metrics?.totalConversations ?? 0}
+                        {metrics?.totalConversations ?? org.conversations ?? 0}
                       </td>
                       <td className="py-3 pl-2 text-right font-medium text-slate-700">
                         {org.users}
