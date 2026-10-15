@@ -27,6 +27,7 @@ import {
 import { botsApi } from "@/lib/api/bots";
 import { useRealtimeSync } from "@/lib/hooks/useRealtimeSync";
 import RealtimeBadge from "@/components/ui/RealtimeBadge";
+import DeployWebsiteModal from "@/components/bots/DeployWebsiteModal";
 
 export default function BotsPage() {
   const [bots, setBots] = useState([]);
@@ -36,6 +37,7 @@ export default function BotsPage() {
 
   // Instant Deploy Modal State
   const [deployModalBot, setDeployModalBot] = useState(null);
+  const [deployWebsiteBot, setDeployWebsiteBot] = useState(null);
   const [copiedScript, setCopiedScript] = useState(false);
   const [modalCmsTab, setModalCmsTab] = useState("html");
 
@@ -352,16 +354,15 @@ export default function BotsPage() {
                 </Link>
 
                 {/* Direct Live Website Deploy Button */}
-                <a
-                  href={bot.websiteUrl || "https://cashbook.vardaansmartsolutions.com"}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setDeployWebsiteBot(bot)}
                   className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="Open live website with chatbot active"
+                  title="Configure and open live website with chatbot active"
                 >
                   <Globe className="w-3.5 h-3.5" />
                   <span>Live Website Deploy 🚀</span>
-                </a>
+                </button>
 
                 <Link
                   href={`/bots/${bot.id}`}
@@ -582,6 +583,17 @@ export default function BotsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {deployWebsiteBot && (
+        <DeployWebsiteModal
+          isOpen={Boolean(deployWebsiteBot)}
+          onClose={() => setDeployWebsiteBot(null)}
+          bot={deployWebsiteBot}
+          onBotUpdated={(updated) => {
+            setBots((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+          }}
+        />
       )}
     </div>
   );

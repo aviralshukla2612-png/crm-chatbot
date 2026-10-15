@@ -27,6 +27,7 @@ import BotPreviewWidget from "@/components/bots/BotPreviewWidget";
 import WebsiteKnowledgeManager from "@/components/knowledge/WebsiteKnowledgeManager";
 import { botsApi } from "@/lib/api/bots";
 import { knowledgeApi } from "@/lib/api/knowledge";
+import DeployWebsiteModal from "@/components/bots/DeployWebsiteModal";
 
 function BotDetailContent() {
   const routeParams = useParams();
@@ -38,6 +39,7 @@ function BotDetailContent() {
   const [documents, setDocuments] = useState([]);
   const [qas, setQas] = useState([]);
   const [activeTab, setActiveTab] = useState(queryTab || "overview");
+  const [deployModalOpen, setDeployModalOpen] = useState(false);
   const [knowledgeSubtab, setKnowledgeSubtab] = useState("websites");
   const [loading, setLoading] = useState(true);
 
@@ -112,16 +114,15 @@ function BotDetailContent() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Direct Live Website Deploy Button */}
-          <a
-            href={bot.websiteUrl || "https://cashbook.vardaansmartsolutions.com"}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => setDeployModalOpen(true)}
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer"
-            title="Open live website with chatbot active"
+            title="Configure and open live website with chatbot active"
           >
             <Globe className="w-3.5 h-3.5" />
             Live Website Deploy 🚀
-          </a>
+          </button>
 
           {/* Direct Add Information / Knowledge Button */}
           <button
@@ -427,6 +428,15 @@ function BotDetailContent() {
             />
           </div>
         </div>
+      )}
+
+      {bot && (
+        <DeployWebsiteModal
+          isOpen={deployModalOpen}
+          onClose={() => setDeployModalOpen(false)}
+          bot={bot}
+          onBotUpdated={(updated) => setBot(updated)}
+        />
       )}
     </div>
   );

@@ -54,13 +54,13 @@ function DeployBotContent() {
   const [copiedSsh, setCopiedSsh] = useState(false);
 
   // Verification State
-  const [verifyUrl, setVerifyUrl] = useState("https://cashbook.vardaansmartsolutions.com/");
+  const [verifyUrl, setVerifyUrl] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
 
   // Live Simulator Website State
-  const [previewSiteUrl, setPreviewSiteUrl] = useState("https://cashbook.vardaansmartsolutions.com/");
-  const [simulatorUrlInput, setSimulatorUrlInput] = useState("https://cashbook.vardaansmartsolutions.com/");
+  const [previewSiteUrl, setPreviewSiteUrl] = useState("");
+  const [simulatorUrlInput, setSimulatorUrlInput] = useState("");
   const [simulatorChatOpen, setSimulatorChatOpen] = useState(true);
   const [simulatorMessages, setSimulatorMessages] = useState([]);
   const [simulatorInputText, setSimulatorInputText] = useState("");
@@ -73,6 +73,11 @@ function DeployBotContent() {
         setBot(b);
         if (b.primaryColor) setWidgetColor(b.primaryColor);
         if (b.welcomeMessage) setWelcomeMessage(b.welcomeMessage);
+        if (b.websiteUrl) {
+          setVerifyUrl(b.websiteUrl);
+          setPreviewSiteUrl(b.websiteUrl);
+          setSimulatorUrlInput(b.websiteUrl);
+        }
       }
       setLoading(false);
     }
@@ -306,13 +311,19 @@ function DeployBotContent() {
             <div className="flex flex-col sm:flex-row gap-2.5">
               <input
                 type="url"
-                value={verifyUrl || "https://cashbook.vardaansmartsolutions.com"}
+                value={verifyUrl}
                 onChange={(e) => setVerifyUrl(e.target.value)}
                 placeholder="https://yourwebsite.com"
                 className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900/80 border border-indigo-400/30 text-white text-xs outline-hidden focus:border-indigo-400 font-mono"
               />
               <a
-                href={`/preview?url=${encodeURIComponent(verifyUrl || "https://cashbook.vardaansmartsolutions.com")}&botId=${bot?.id || botId}&color=${encodeURIComponent(widgetColor)}`}
+                href={verifyUrl ? `/preview?url=${encodeURIComponent(verifyUrl)}&botId=${bot?.id || botId}&color=${encodeURIComponent(widgetColor)}` : "#"}
+                onClick={(e) => {
+                  if (!verifyUrl) {
+                    e.preventDefault();
+                    alert("Please enter your website URL first.");
+                  }
+                }}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-2.5 rounded-xl bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer"
@@ -427,7 +438,7 @@ function DeployBotContent() {
               <input
                 type="url"
                 required
-                placeholder="https://cashbook.vardaansmartsolutions.com/"
+                placeholder="https://yourwebsite.com"
                 value={verifyUrl}
                 onChange={(e) => {
                   setVerifyUrl(e.target.value);

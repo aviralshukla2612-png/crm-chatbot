@@ -18,7 +18,7 @@ import {
 
 function PreviewContent() {
   const searchParams = useSearchParams();
-  const rawUrl = searchParams.get("url") || "https://cashbook.vardaansmartsolutions.com";
+  const rawUrl = searchParams.get("url") || "https://emperorsmartsolutions.com";
   const botId = searchParams.get("botId") || "bot_aa";
   const primaryColor = searchParams.get("color") || "#4F46E5";
 
