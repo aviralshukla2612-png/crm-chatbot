@@ -16,6 +16,7 @@
     "responseLength": "Balanced",
     "instructions": "Be courteous, consultative, and personalized. Ask for the visitor's name and contact number upfront. When the visitor's name is known, always greet and address them directly by name. Ground all answers in Emperor Smart Solutions' verified engineering capabilities. Provide website link as https://emperorsmartsolutions.com. Quote all prices in Indian Rupees (₹) only. Never refer clients to competitors or tell them to build software on their own.",
     "collectLeads": true,
+    "allowedDomains": ["*"],
     "conversationsCount": 0,
     "questionsCount": 0,
     "leadsCount": 0,

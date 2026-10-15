@@ -92,13 +92,48 @@ async function executeChatInference({
   });
 }
 
-// CORS Headers helper
-function corsResponse(res) {
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+function getCorsOrigin(request) {
+  if (!request) return "*";
+  try {
+    const origin = request.headers?.get?.("origin");
+    if (origin && origin !== "null") return origin;
+    const referer = request.headers?.get?.("referer");
+    if (referer) {
+      const u = new URL(referer);
+      return u.origin;
+    }
+  } catch (e) {}
+  return "*";
+}
+
+// CORS Headers helper - strictly adheres to W3C Fetch/CORS specs
+function corsResponse(res, request = null) {
+  const allowOrigin = getCorsOrigin(request);
+  res.headers.set("Access-Control-Allow-Origin", allowOrigin);
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Bot-Id, X-Visitor-Token, Accept");
-  res.headers.set("Access-Control-Allow-Credentials", "true");
+  if (allowOrigin !== "*") {
+    res.headers.set("Access-Control-Allow-Credentials", "true");
+    res.headers.set("Vary", "Origin");
+  }
   return res;
+}
+
+function sseResponse(body, request = null) {
+  const allowOrigin = getCorsOrigin(request);
+  const headers = {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Bot-Id, X-Visitor-Token, Accept",
+  };
+  if (allowOrigin !== "*") {
+    headers["Access-Control-Allow-Credentials"] = "true";
+    headers["Vary"] = "Origin";
+  }
+  return new Response(body, { headers });
 }
 
 function resolveCookieName(botId) {
@@ -134,8 +169,8 @@ function setVisitorCookie(response, botId, rawToken) {
   });
 }
 
-export async function OPTIONS() {
-  return corsResponse(new NextResponse(null, { status: 204 }));
+export async function OPTIONS(request) {
+  return corsResponse(new NextResponse(null, { status: 204 }), request);
 }
 
 export async function POST(request, { params }) {
@@ -159,7 +194,8 @@ export async function POST(request, { params }) {
 
     if (!message || typeof message !== "string") {
       return corsResponse(
-        NextResponse.json({ error: "Message content is required" }, { status: 400 })
+        NextResponse.json({ error: "Message content is required" }, { status: 400 }),
+        request
       );
     }
 
@@ -169,28 +205,38 @@ export async function POST(request, { params }) {
       botId === "preview" ||
       botId === "demo" ||
       botId === "undefined" ||
+      botId === "aa" ||
       botId === "bot_1791618269632"
         ? "bot_aa"
         : botId;
     let bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
-    if (!bot && (botId === "bot_1791618269632" || botId?.startsWith("bot_17916"))) {
+    if (!bot) {
       bot = (await botsStore.getBotAsync("bot_aa")) || botsStore.getBot("bot_aa");
     }
     if (!bot) {
+      const allBots = (await botsStore.getBotsAsync()) || botsStore.getBots();
+      if (allBots && allBots.length > 0) bot = allBots[0];
+    }
+    if (!bot) {
       return corsResponse(
-        NextResponse.json({ error: "Bot not found" }, { status: 404 })
+        NextResponse.json({ error: "Bot not found" }, { status: 404 }),
+        request
       );
     }
 
     // --- PHASE 4: DOMAIN WHITELISTS ---
     const originHeader = request.headers.get("origin") || request.headers.get("referer");
-    const domainCheck = checkDomainAuthorization(originHeader, bot?.allowedDomains);
+    const allowedDomains = (!bot?.allowedDomains || !Array.isArray(bot.allowedDomains) || bot.allowedDomains.length === 0)
+      ? ["*"]
+      : bot.allowedDomains;
+    const domainCheck = checkDomainAuthorization(originHeader, allowedDomains);
     if (!domainCheck.allowed) {
       return corsResponse(
         NextResponse.json(
           { error: `Unauthorized domain. This chatbot cannot be embedded on ${domainCheck.host || "this origin"}.` },
           { status: 403 }
-        )
+        ),
+        request
       );
     }
 
@@ -1279,14 +1325,7 @@ Here are our official contact details to speak with our engineering leadership:
           streamPayload += `data: ${JSON.stringify({ quickReplies })}\n\n`;
         }
         streamPayload += `data: [DONE]\n\n`;
-        return new Response(streamPayload, {
-          headers: {
-            "Content-Type": "text/event-stream; charset=utf-8",
-            "Cache-Control": "no-cache, no-transform",
-            Connection: "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-          },
-        });
+        return sseResponse(streamPayload, request);
       }
 
       const responseStream = new TransformStream();
@@ -1406,14 +1445,7 @@ Here are our official contact details to speak with our engineering leadership:
         }
       })();
 
-      return new Response(responseStream.readable, {
-        headers: {
-          "Content-Type": "text/event-stream; charset=utf-8",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      return sseResponse(responseStream.readable, request);
     }
 
     // --- STANDARD JSON RESPONSE PIPELINE ---
@@ -1506,7 +1538,8 @@ Here are our official contact details to speak with our engineering leadership:
         quickReplies: quickReplies || [],
         sources: [],
         sessionId: currentSessionId,
-      })
+      }),
+      request
     );
 
     if (isNewVisitorTokenIssued && rawTokenToSet) {
@@ -1516,7 +1549,8 @@ Here are our official contact details to speak with our engineering leadership:
     return finalRes;
   } catch (err) {
     return corsResponse(
-      NextResponse.json({ success: false, error: err.message }, { status: 500 })
+      NextResponse.json({ success: false, error: err.message }, { status: 500 }),
+      request
     );
   }
 }

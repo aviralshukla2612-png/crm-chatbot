@@ -4,16 +4,34 @@ import { visitorsStore } from "@/lib/db/visitorsStore";
 import { conversationsStore } from "@/lib/db/conversationsStore";
 import { checkDomainAuthorization } from "@/lib/security/domainGuard";
 
-function corsResponse(res) {
-  res.headers.set("Access-Control-Allow-Origin", "*");
+function getCorsOrigin(request) {
+  if (!request) return "*";
+  try {
+    const origin = request.headers?.get?.("origin");
+    if (origin && origin !== "null") return origin;
+    const referer = request.headers?.get?.("referer");
+    if (referer) {
+      const u = new URL(referer);
+      return u.origin;
+    }
+  } catch (e) {}
+  return "*";
+}
+
+function corsResponse(res, request = null) {
+  const allowOrigin = getCorsOrigin(request);
+  res.headers.set("Access-Control-Allow-Origin", allowOrigin);
   res.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Bot-Id, X-Visitor-Token, Accept");
-  res.headers.set("Access-Control-Allow-Credentials", "true");
+  if (allowOrigin !== "*") {
+    res.headers.set("Access-Control-Allow-Credentials", "true");
+    res.headers.set("Vary", "Origin");
+  }
   return res;
 }
 
-export async function OPTIONS() {
-  return corsResponse(new NextResponse(null, { status: 204 }));
+export async function OPTIONS(request) {
+  return corsResponse(new NextResponse(null, { status: 204 }), request);
 }
 
 function resolveCookieName(botId) {
@@ -65,30 +83,40 @@ async function handleSession(request, { params }) {
       botId === "preview" ||
       botId === "demo" ||
       botId === "undefined" ||
+      botId === "aa" ||
       botId === "bot_1791618269632"
         ? "bot_aa"
         : botId;
 
     let bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
-    if (!bot && (botId === "bot_1791618269632" || botId?.startsWith("bot_17916"))) {
+    if (!bot) {
       bot = (await botsStore.getBotAsync("bot_aa")) || botsStore.getBot("bot_aa");
+    }
+    if (!bot) {
+      const allBots = (await botsStore.getBotsAsync()) || botsStore.getBots();
+      if (allBots && allBots.length > 0) bot = allBots[0];
     }
 
     if (!bot) {
       return corsResponse(
-        NextResponse.json({ success: false, error: "Bot not found" }, { status: 404 })
+        NextResponse.json({ success: false, error: "Bot not found" }, { status: 404 }),
+        request
       );
     }
 
     // Domain origin check
     const originHeader = request.headers.get("origin") || request.headers.get("referer");
-    const domainCheck = checkDomainAuthorization(originHeader, bot?.allowedDomains);
+    const allowedDomains = (!bot?.allowedDomains || !Array.isArray(bot.allowedDomains) || bot.allowedDomains.length === 0)
+      ? ["*"]
+      : bot.allowedDomains;
+    const domainCheck = checkDomainAuthorization(originHeader, allowedDomains);
     if (!domainCheck.allowed) {
       return corsResponse(
         NextResponse.json(
           { success: false, error: "Unauthorized domain origin" },
           { status: 403 }
-        )
+        ),
+        request
       );
     }
 
@@ -195,7 +223,7 @@ async function handleSession(request, { params }) {
       };
     }
 
-    const response = corsResponse(NextResponse.json(resPayload));
+    const response = corsResponse(NextResponse.json(resPayload), request);
     if (isNewTokenIssued && visitorTokenToReturn) {
       setVisitorCookie(response, bot.id, visitorTokenToReturn);
     }
@@ -203,7 +231,8 @@ async function handleSession(request, { params }) {
   } catch (err) {
     console.error("[CHAT_SESSION_ERROR]", err);
     return corsResponse(
-      NextResponse.json({ success: false, error: err.message }, { status: 500 })
+      NextResponse.json({ success: false, error: err.message }, { status: 500 }),
+      request
     );
   }
 }
@@ -215,11 +244,15 @@ async function handleSession(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { botId } = await params;
-    const resolvedBotId = botId === "default" ? "bot_aa" : botId;
-    const bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
+    const resolvedBotId = botId === "default" || botId === "aa" ? "bot_aa" : botId;
+    let bot = (await botsStore.getBotAsync(resolvedBotId)) || botsStore.getBot(resolvedBotId);
+    if (!bot) {
+      bot = (await botsStore.getBotAsync("bot_aa")) || botsStore.getBot("bot_aa");
+    }
     if (!bot) {
       return corsResponse(
-        NextResponse.json({ success: false, error: "Bot not found" }, { status: 404 })
+        NextResponse.json({ success: false, error: "Bot not found" }, { status: 404 }),
+        request
       );
     }
 
@@ -250,17 +283,20 @@ export async function DELETE(request, { params }) {
             message: "Active conversation closed. Started new chat.",
             conversationId: newConv.id,
             messages: [],
-          })
+          }),
+          request
         );
       }
     }
 
     return corsResponse(
-      NextResponse.json({ success: true, message: "Session reset." })
+      NextResponse.json({ success: true, message: "Session reset." }),
+      request
     );
   } catch (err) {
     return corsResponse(
-      NextResponse.json({ success: false, error: err.message }, { status: 500 })
+      NextResponse.json({ success: false, error: err.message }, { status: 500 }),
+      request
     );
   }
 }

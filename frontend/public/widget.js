@@ -109,7 +109,6 @@
 
     fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}/session`, {
       method: "GET",
-      credentials: "include",
       headers,
     })
       .then((r) => (r.ok ? r.json() : null))
@@ -868,13 +867,12 @@
     try {
       const headers = {
         "Content-Type": "application/json",
-        "Accept": "text/event-stream",
+        "Accept": "text/event-stream, application/json",
       };
       if (visitorToken) headers["x-visitor-token"] = visitorToken;
 
       const res = await fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}`, {
         method: "POST",
-        credentials: "include",
         headers,
         body: JSON.stringify({
           message: text,
@@ -934,7 +932,13 @@
           try {
             const errData = await res.json();
             if (errData && errData.error) errText = errData.error;
-          } catch (e) {}
+          } catch (e) {
+            try {
+              const rawTxt = await res.text();
+              if (rawTxt && rawTxt.trim()) errText = rawTxt.slice(0, 160);
+            } catch (e2) {}
+          }
+          console.error("[NexusWidget] Server returned error status", res.status, errText);
           messages.push({
             role: "assistant",
             content: errText,
@@ -952,6 +956,33 @@
         renderMessages();
       }
     } catch (e) {
+      console.warn("[NexusWidget] Streaming fetch failed, attempting non-streaming fallback:", e);
+      try {
+        const fallbackRes = await fetch(`${apiBase}/api/public/chat/${encodeURIComponent(botId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            history: messages.slice(-8),
+            sessionId: activeSessionId,
+            visitorToken: visitorToken || undefined,
+            stream: false,
+          }),
+        });
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          messages.push({
+            role: "assistant",
+            content: fbData.reply || "I am ready to assist you. What kind of digital project are you looking to create?",
+            quickReplies: fbData.quickReplies || [],
+            sources: fbData.sources || [],
+          });
+          renderMessages();
+          return;
+        }
+      } catch (retryErr) {
+        console.error("[NexusWidget] Fallback non-stream request also failed:", retryErr);
+      }
       messages.push({
         role: "assistant",
         content: "I'm currently assisting multiple visitors. Please ask your question again or leave your email for human follow-up.",

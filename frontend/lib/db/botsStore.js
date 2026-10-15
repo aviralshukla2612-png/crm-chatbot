@@ -183,6 +183,9 @@ export const botsStore = {
       }
       if (dbRes.ok && dbRes.rows.length > 0) {
         const bot = dbRes.rows[0];
+        if (!bot.allowedDomains || !Array.isArray(bot.allowedDomains) || bot.allowedDomains.length === 0) {
+          bot.allowedDomains = ["*"];
+        }
         // Cache in memory store so subsequent synchronous lookups also succeed
         const all = loadBotsFromDisk();
         const existingIdx = all.findIndex((b) => b.id === bot.id);
