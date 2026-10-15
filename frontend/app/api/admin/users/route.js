@@ -24,7 +24,7 @@ function getGeneratedDemoUsers() {
   const list = [
     {
       id: "u_super_01",
-      name: "Aviral Shukla",
+      name: "Emperor Smart Solution",
       email: "admin@emperorsmartsolutions.com",
       organization: "Emperor Smart Solutions",
       role: "Platform Super Admin",

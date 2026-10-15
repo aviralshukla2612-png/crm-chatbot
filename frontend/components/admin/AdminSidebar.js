@@ -122,14 +122,14 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
           {/* User Profile */}
           <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/40 border border-slate-800/60">
-            <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-              SS
+            <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+              ESS
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-slate-200 truncate">
-                Srajan Shukla
+                Emperor Smart Solution
               </p>
-              <p className="text-[11px] text-slate-400 truncate">
+              <p className="text-[11px] text-indigo-400 font-medium truncate">
                 Super Admin
               </p>
             </div>

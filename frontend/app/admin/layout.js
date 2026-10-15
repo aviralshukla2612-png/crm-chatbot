@@ -54,8 +54,11 @@ export default function AdminLayout({ children }) {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 All Systems Operational
               </span>
-              <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                SS
+              <div
+                title="Emperor Smart Solution (Super Admin)"
+                className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-default"
+              >
+                ESS
               </div>
             </div>
           </header>
