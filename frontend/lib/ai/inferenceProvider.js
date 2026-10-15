@@ -202,25 +202,66 @@ export class InferenceProvider {
       ...(Array.isArray(stopTokens) ? stopTokens : []),
     ];
 
-    const res = await fetch(`${endpoint}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        keep_alive: "24h",
-        messages,
-        stream: Boolean(stream && onToken),
-        options: {
-          temperature,
-          num_predict: maxTokens,
-          num_ctx: 2048,
-          stop: stops,
-        },
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    let targetModel = model;
 
-    if (!res.ok) throw new Error(`Ollama error HTTP ${res.status}`);
+    // Try primary model first, fallback to available tags if 404 or missing
+    let res;
+    try {
+      res = await fetch(`${endpoint}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: targetModel,
+          keep_alive: "24h",
+          messages,
+          stream: Boolean(stream && onToken),
+          options: {
+            temperature,
+            num_predict: maxTokens,
+            num_ctx: 2048,
+            stop: stops,
+          },
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      // If requested model (e.g. llama3.2:1b) was not found (HTTP 404), discover installed models
+      if (!res.ok && res.status === 404) {
+        try {
+          const tagsRes = await fetch(`${endpoint}/api/tags`, { signal: AbortSignal.timeout(3000) });
+          if (tagsRes.ok) {
+            const data = await tagsRes.json();
+            const models = (data.models || []).map((m) => m.name);
+            const chatCandidate = models.find((m) => !m.includes("embed")) || models[0];
+            if (chatCandidate && chatCandidate !== targetModel) {
+              console.log(`[OLLAMA_FALLBACK] Model '${targetModel}' not found. Automatically switching to installed model: '${chatCandidate}'`);
+              targetModel = chatCandidate;
+              res = await fetch(`${endpoint}/api/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: targetModel,
+                  keep_alive: "24h",
+                  messages,
+                  stream: Boolean(stream && onToken),
+                  options: {
+                    temperature,
+                    num_predict: maxTokens,
+                    num_ctx: 2048,
+                    stop: stops,
+                  },
+                }),
+                signal: AbortSignal.timeout(timeoutMs),
+              });
+            }
+          }
+        } catch (discoverErr) {}
+      }
+    } catch (netErr) {
+      throw new Error(`Ollama connection error: ${netErr.message}`);
+    }
+
+    if (!res || !res.ok) throw new Error(`Ollama error HTTP ${res?.status || "Unknown"}`);
 
     if (stream && onToken && res.body) {
       const reader = res.body.getReader();
