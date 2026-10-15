@@ -116,7 +116,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Bottom Profile Area */}
-        <div className="p-3 border-t border-slate-800/80 space-y-2">
+        <div className="p-3 pb-6 mb-2 border-t border-slate-800/80 space-y-2 mt-auto">
           {/* Platform Status indicator */}
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-400 bg-slate-800/30">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -124,12 +124,12 @@ export default function AdminSidebar({ isOpen, onClose }) {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/40 border border-slate-800/60">
+          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
             <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
               ESS
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-slate-200 truncate">
+              <p className="text-xs font-semibold text-slate-100 truncate">
                 Emperor Smart Solution
               </p>
               <p className="text-[11px] text-indigo-400 font-medium truncate">
