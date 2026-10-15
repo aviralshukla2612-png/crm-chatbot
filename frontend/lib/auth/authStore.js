@@ -120,13 +120,6 @@ export const authStore = {
         'INSERT INTO "Subscription" ("id", "organizationId", "provider", "planId", "status", "currentPeriodStart", "currentPeriodEnd") VALUES ($1, $2, $3, $4, $5, $6, $7);',
         [subscriptionId, orgId, "razorpay", "STARTER", "active", subObj.currentPeriodStart, subObj.currentPeriodEnd]
       );
-
-      // Create default starter bot for this new tenant
-      const botId = `bot_${orgId.slice(4, 12)}`;
-      await queryDb(
-        'INSERT INTO "Bot" ("id", "organizationId", "name", "description", "welcomeMessage", "status") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING;',
-        [botId, orgId, `${cleanName} Assistant`, "Official AI Sales Representative", "Hello! How can I assist you with our services today?", "Active"]
-      );
     }
 
     // Always mirror in memory cache

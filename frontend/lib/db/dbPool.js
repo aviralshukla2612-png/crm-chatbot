@@ -390,6 +390,22 @@ export async function initPostgresTables() {
           CREATE INDEX IF NOT EXISTS idx_subscription_org ON "Subscription" ("organizationId");
           CREATE INDEX IF NOT EXISTS idx_usage_org_metric_period ON "UsageRecord" ("organizationId", "metric", "periodKey");
           CREATE INDEX IF NOT EXISTS idx_apikey_hash ON "ApiKey" ("keyHash");
+
+          -- Automated cleanup: purge legacy dummy test bots and test dummy organizations
+          DELETE FROM "Bot" 
+          WHERE ("name" ILIKE '%Assistant%' AND "id" != 'bot_aa')
+             OR ("name" ILIKE '%Sub Admin%')
+             OR ("name" ILIKE '%Super Admin%')
+             OR ("name" ILIKE '%Workspace Administrator%')
+             OR ("organizationId" NOT IN ('org_ess_01', 'org_ess_default') AND "name" LIKE '%Assistant%');
+
+          DELETE FROM "Organization" 
+          WHERE "id" NOT IN ('org_ess_01', 'org_ess_default')
+            AND ("name" ILIKE '%Sub Admin%' OR "name" ILIKE '%Super Admin%' OR "name" ILIKE '%Workspace Administrator%');
+
+          UPDATE "User" 
+          SET "name" = 'Emperor Smart Solution', "role" = 'SUPER_ADMIN' 
+          WHERE "email" = 'admin@emperorsmartsolutions.com';
         `);
 
         await client.query("COMMIT;");
