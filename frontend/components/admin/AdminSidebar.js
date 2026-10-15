@@ -62,21 +62,24 @@ export default function AdminSidebar({ isOpen, onClose }) {
             </span>
           </div>
 
-          {/* Super Admin Badge Switcher */}
-          <div className="mt-3.5 flex items-center justify-between p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          {/* Super Admin Organization Identity */}
+          <div className="mt-3.5 p-2.5 rounded-xl bg-slate-800/90 border border-indigo-500/30 text-xs shadow-xs">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5 text-indigo-400 text-[10px] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Super Admin</span>
               </div>
-              <span className="font-semibold text-slate-200">Super Admin</span>
+              <Link
+                href="/dashboard"
+                title="Switch to Tenant Workspace"
+                className="text-[10px] text-indigo-400 hover:text-indigo-200 font-medium underline"
+              >
+                Tenant App →
+              </Link>
             </div>
-            <Link
-              href="/dashboard"
-              title="Switch to Tenant Workspace"
-              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium underline"
-            >
-              Tenant App →
-            </Link>
+            <p className="font-bold text-slate-100 text-xs truncate">
+              Emperor Smart Solution
+            </p>
           </div>
         </div>
 

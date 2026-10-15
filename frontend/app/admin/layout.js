@@ -14,7 +14,7 @@ export default function AdminLayout({ children }) {
       <div className="bg-[#1e1b4b] border-b border-indigo-900/50 px-4 py-1.5 text-xs font-medium text-indigo-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>ChatPilot Super Admin • Master Platform Controller</span>
+          <span>Emperor Smart Solution • Master Platform Controller</span>
         </div>
         <Link
           href="/dashboard"
@@ -54,11 +54,21 @@ export default function AdminLayout({ children }) {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 All Systems Operational
               </span>
-              <div
-                title="Emperor Smart Solution (Super Admin)"
-                className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-default"
-              >
-                ESS
+              <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
+                <div
+                  title="Emperor Smart Solution (Super Admin)"
+                  className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-default"
+                >
+                  ESS
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="text-xs font-bold text-slate-900 leading-tight">
+                    Emperor Smart Solution
+                  </p>
+                  <p className="text-[10px] text-indigo-600 font-semibold leading-tight">
+                    Super Admin
+                  </p>
+                </div>
               </div>
             </div>
           </header>
