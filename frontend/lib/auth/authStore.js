@@ -179,14 +179,26 @@ export const authStore = {
     const memberships = await this.getUserMemberships(user.id);
     const primaryMembership = memberships[0] || null;
     const orgId = primaryMembership?.organizationId || DEFAULT_ORG_ID;
-    const orgRole = primaryMembership?.role || (user.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "MEMBER");
+    const defaultOrgRole = primaryMembership?.role || (user.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "MEMBER");
+    const isSuper = user.role === "SUPER_ADMIN" || cleanEmail === DEFAULT_ADMIN_EMAIL;
+    const orgRole = isSuper ? "SUPER_ADMIN" : defaultOrgRole;
+
+    if (isSuper) {
+      user.name = "Emperor Smart Solution";
+      user.role = "SUPER_ADMIN";
+      await queryDb('UPDATE "User" SET "name" = $1, "role" = $2 WHERE "email" = $3;', [
+        "Emperor Smart Solution",
+        "SUPER_ADMIN",
+        cleanEmail,
+      ]);
+    }
 
     return {
       user: {
         id: user.id,
-        name: user.name,
+        name: isSuper ? "Emperor Smart Solution" : user.name,
         email: user.email,
-        role: user.role,
+        role: isSuper ? "SUPER_ADMIN" : user.role,
       },
       organizationId: orgId,
       orgRole,
@@ -225,6 +237,18 @@ export const authStore = {
         email: reg.user.email,
         role: isSuper ? "SUPER_ADMIN" : "ORG_ADMIN",
       };
+    } else if (isSuper) {
+      user.name = "Emperor Smart Solution";
+      user.role = "SUPER_ADMIN";
+      await queryDb('UPDATE "User" SET "name" = $1, "role" = $2 WHERE "email" = $3;', [
+        "Emperor Smart Solution",
+        "SUPER_ADMIN",
+        cleanEmail,
+      ]);
+      if (memoryUsers.has(cleanEmail)) {
+        memoryUsers.get(cleanEmail).name = "Emperor Smart Solution";
+        memoryUsers.get(cleanEmail).role = "SUPER_ADMIN";
+      }
     }
 
     const memberships = await this.getUserMemberships(user.id);
@@ -235,7 +259,7 @@ export const authStore = {
     return {
       user: {
         id: user.id,
-        name: user.name,
+        name: isSuper ? "Emperor Smart Solution" : (user.name || "Workspace Administrator"),
         email: user.email,
         role: isSuper ? "SUPER_ADMIN" : (user.role || "MEMBER"),
       },

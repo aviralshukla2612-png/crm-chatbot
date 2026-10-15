@@ -155,8 +155,8 @@ export default function Header({ onToggleSidebar }) {
           href="/settings"
           className="flex items-center gap-2 pl-2 border-l border-neutral-200 dark:border-neutral-800"
         >
-          <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-600 to-violet-600 text-white font-bold text-xs flex items-center justify-center">
-            AS
+          <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-600 to-violet-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+            ESS
           </div>
         </Link>
       </div>

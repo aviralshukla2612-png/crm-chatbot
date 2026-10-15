@@ -13,6 +13,63 @@
     "status": "Active",
     "isLead": true,
     "leadScore": "Medium",
+    "startedAt": "11:10 am",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "",
+    "lastActivityAt": "2026-10-15T05:40:26.534Z",
+    "historyExpiresAt": "2026-10-16T05:40:26.534Z",
+    "qualification": null,
+    "createdAt": "2026-10-15T05:40:26.534Z",
+    "updatedAt": "2026-10-15T05:40:26.534Z",
+    "messages": []
+  },
+  {
+    "id": "c_eval_test_30",
+    "organizationId": "org_ess_default",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "visitorId": null,
+    "leadId": null,
+    "visitorName": "Test Prospect",
+    "visitorEmail": "prospect@eval.com",
+    "visitorPhone": "",
+    "visitorLocation": "Direct Session",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "High",
+    "startedAt": "11:10 am",
+    "duration": "1 min",
+    "messagesCount": 1,
+    "questionsCount": 1,
+    "lastMessage": "Need AI bot",
+    "lastActivityAt": "2026-10-15T05:40:24.970Z",
+    "historyExpiresAt": "2026-10-16T05:40:24.970Z",
+    "qualification": null,
+    "createdAt": "2026-10-15T05:40:24.970Z",
+    "updatedAt": "2026-10-15T05:40:24.970Z",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Need AI bot"
+      }
+    ]
+  },
+  {
+    "id": "conv_medical_secret",
+    "organizationId": "org_medical_clinic",
+    "botId": "bot_aa",
+    "botName": "AI Assistant",
+    "visitorId": null,
+    "leadId": null,
+    "visitorName": "Patient John Doe",
+    "visitorEmail": "",
+    "visitorPhone": "+919876543210",
+    "visitorLocation": "Direct Session",
+    "status": "Active",
+    "isLead": true,
+    "leadScore": "Medium",
     "startedAt": "10:52 am",
     "duration": "1 min",
     "messagesCount": 1,
@@ -337,11 +394,11 @@
     "leadScore": "Medium",
     "startedAt": "10:20 am",
     "duration": "1 min",
-    "messagesCount": 14,
-    "questionsCount": 14,
+    "messagesCount": 16,
+    "questionsCount": 16,
     "lastMessage": "",
     "createdAt": "2026-10-14T04:50:57.629Z",
-    "updatedAt": "2026-10-15T05:22:24.397Z",
+    "updatedAt": "2026-10-15T05:40:33.374Z",
     "messages": [
       {
         "id": "m_1791953525878_2z01",
@@ -456,6 +513,24 @@
         "sources": [],
         "timestamp": "10:52 am",
         "createdAt": "2026-10-15T05:22:24.397Z"
+      },
+      {
+        "id": "m_1792042833355_6ctn",
+        "role": "user",
+        "content": "",
+        "quickReplies": [],
+        "sources": [],
+        "timestamp": "11:10 am",
+        "createdAt": "2026-10-15T05:40:33.355Z"
+      },
+      {
+        "id": "m_1792042833374_9l7e",
+        "role": "user",
+        "content": "",
+        "quickReplies": [],
+        "sources": [],
+        "timestamp": "11:10 am",
+        "createdAt": "2026-10-15T05:40:33.374Z"
       }
     ],
     "qualification": null,
@@ -467,8 +542,8 @@
       "techPreferences": [],
       "notes": []
     },
-    "lastActivityAt": "2026-10-15T05:22:24.397Z",
-    "historyExpiresAt": "2026-10-16T05:22:24.397Z"
+    "lastActivityAt": "2026-10-15T05:40:33.374Z",
+    "historyExpiresAt": "2026-10-16T05:40:33.374Z"
   },
   {
     "id": "conv_medical_secret",

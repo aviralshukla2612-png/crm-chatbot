@@ -2,9 +2,9 @@
 
 export const mockCurrentUser = {
   id: "usr_01",
-  name: "Aviral Shukla",
-  email: "aviral@emperorsolutions.com",
-  role: "OWNER", // Can be OWNER, ADMIN, MEMBER, or SUPER_ADMIN
+  name: "Emperor Smart Solution",
+  email: "admin@emperorsmartsolutions.com",
+  role: "SUPER_ADMIN", // Can be OWNER, ADMIN, MEMBER, or SUPER_ADMIN
   organizationId: "org_ess_01",
   avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face",
 };
@@ -14,7 +14,7 @@ export const mockOrganizations = [
     id: "org_ess_01",
     name: "Emperor Smart Solutions",
     slug: "emperor-solutions",
-    owner: "Aviral Shukla",
+    owner: "Emperor Smart Solution",
     plan: "Enterprise",
     status: "ACTIVE",
     botsCount: 1,
@@ -91,8 +91,8 @@ export const mockTimeseriesData = [
 export const mockTeamMembers = [
   {
     id: "tm_01",
-    name: "Aviral Shukla",
-    email: "aviral@emperorsolutions.com",
+    name: "Emperor Smart Solution",
+    email: "admin@emperorsmartsolutions.com",
     role: "Admin",
     status: "Active",
     addedDate: "2026-01-15",
