@@ -427,6 +427,81 @@
       cursor: not-allowed;
       transform: none;
     }
+    .nexus-confirm-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(3px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: nexusFadeIn 0.2s ease-out;
+    }
+    .nexus-confirm-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 22px;
+      width: 100%;
+      max-width: 290px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      text-align: center;
+      animation: nexusScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nexus-confirm-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 10px;
+      margin-bottom: 6px;
+    }
+    .nexus-confirm-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+    .nexus-confirm-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .nexus-confirm-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .nexus-confirm-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .nexus-confirm-cancel:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .nexus-confirm-ok {
+      background: ${botConfig.primaryColor};
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+    .nexus-confirm-ok:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    @keyframes nexusFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes nexusScaleUp {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
     .nexus-typing {
       display: flex;
       align-items: center;
@@ -705,11 +780,46 @@
     }
   }
 
+  function showInChatConfirm(message, onConfirm) {
+    // Remove any existing overlay
+    const existing = chatWindow.querySelector(".nexus-confirm-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "nexus-confirm-overlay";
+    overlay.innerHTML = `
+      <div class="nexus-confirm-card">
+        <div style="width:42px; height:42px; border-radius:14px; background:rgba(79, 70, 229, 0.1); color:${botConfig.primaryColor}; display:inline-flex; align-items:center; justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </div>
+        <div class="nexus-confirm-title">New Conversation</div>
+        <div class="nexus-confirm-desc">${message || "Would you like to clear the current chat and start fresh?"}</div>
+        <div class="nexus-confirm-actions">
+          <button type="button" class="nexus-confirm-btn nexus-confirm-cancel" id="nexus-confirm-cancel">Cancel</button>
+          <button type="button" class="nexus-confirm-btn nexus-confirm-ok" id="nexus-confirm-ok">Start New</button>
+        </div>
+      </div>
+    `;
+
+    chatWindow.appendChild(overlay);
+
+    overlay.querySelector("#nexus-confirm-cancel").addEventListener("click", () => {
+      overlay.remove();
+    });
+
+    overlay.querySelector("#nexus-confirm-ok").addEventListener("click", () => {
+      overlay.remove();
+      onConfirm();
+    });
+  }
+
   launcher.addEventListener("click", toggleChat);
   document.getElementById("nexus-close-btn")?.addEventListener("click", toggleChat);
 
   document.getElementById("nexus-refresh-btn")?.addEventListener("click", () => {
-    if (confirm("Start a new chat conversation?")) {
+    showInChatConfirm("Start a new chat conversation? Your previous messages will be cleared.", () => {
       const headers = {};
       if (visitorToken) headers["x-visitor-token"] = visitorToken;
 
@@ -737,7 +847,7 @@
           try { sessionStorage.removeItem(sessionKey); } catch (e) {}
           renderMessages();
         });
-    }
+    });
   });
 
   // 10. Chat Inference with Real-Time SSE Streaming
