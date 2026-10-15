@@ -215,7 +215,7 @@ export const authStore = {
       const reg = await this.register({
         email: cleanEmail,
         password: "AdminAccessPassword2026!",
-        name: isSuper ? "Super Admin" : "Sub Admin",
+        name: isSuper ? "Platform Administrator" : "Workspace Administrator",
         organizationName: "Emperor Smart Solutions",
         role: isSuper ? "SUPER_ADMIN" : "ORG_ADMIN",
       });

@@ -156,9 +156,9 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-xl bg-amber-950 text-amber-400 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base text-white">Dedicated Super Admin</h3>
+            <h3 className="font-bold text-base text-white">Enterprise Governance</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Complete SaaS owner platform visibility: inspect any tenant bot, track global token usage, and monitor cluster health for AI Inference, pgvector, and automated webhooks.
+              Enterprise-grade administrative controls: granular role permissions, end-to-end audit trails, dedicated vector workspaces, and 99.9% high-availability SLA.
             </p>
           </div>
 

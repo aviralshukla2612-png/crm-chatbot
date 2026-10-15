@@ -164,20 +164,6 @@ export default function Sidebar({ isOpen, onClose }) {
             </span>
           </Link>
 
-          {/* Super Admin Switcher */}
-          <Link
-            href="/admin"
-            className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-amber-300/90 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-              <span>Super Admin</span>
-            </div>
-            <span className="text-[9px] font-mono bg-amber-400/20 px-1 rounded-sm">
-              PANEL
-            </span>
-          </Link>
-
           {/* Help link */}
           <a
             href="#help"
@@ -191,13 +177,13 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/40 border border-slate-700/40">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-7 h-7 rounded-full bg-linear-to-tr from-indigo-500 to-violet-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                S
+                A
               </div>
               <div className="truncate">
                 <p className="text-xs font-semibold text-white truncate">
-                  Srajan Shukla
+                  Administrator
                 </p>
-                <p className="text-[10px] text-slate-400">Admin</p>
+                <p className="text-[10px] text-indigo-400 font-medium">Workspace Owner</p>
               </div>
             </div>
             <Link

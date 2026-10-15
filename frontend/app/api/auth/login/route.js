@@ -55,13 +55,13 @@ export async function POST(request) {
     let authResult = null;
 
     if (isDirect) {
-      authResult = await authStore.directLogin(isSuperRole ? "superadmin" : (portalRole || "subadmin"));
+      authResult = await authStore.directLogin(isSuperRole ? "superadmin" : (portalRole || "ORG_ADMIN"));
     } else {
       try {
         authResult = await authStore.login({ email, password });
       } catch (loginErr) {
         // Graceful fallback for portal role switching
-        authResult = await authStore.directLogin(isSuperRole ? "superadmin" : "subadmin");
+        authResult = await authStore.directLogin(isSuperRole ? "superadmin" : "ORG_ADMIN");
       }
     }
 
