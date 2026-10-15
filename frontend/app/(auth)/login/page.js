@@ -212,25 +212,43 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Quick 1-Click Launch Button */}
-          <button
-            type="button"
-            onClick={() => handleDirectLogin("ORG_ADMIN")}
-            disabled={loading}
-            className="w-full py-2.5 px-3.5 rounded-xl bg-linear-to-r from-indigo-900 via-indigo-800 to-indigo-950 hover:from-indigo-800 hover:to-indigo-900 text-white font-bold text-xs shadow-md border border-indigo-500/40 flex items-center justify-between transition-all cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-indigo-500/30 text-indigo-300">
-                <Building className="w-4 h-4" />
-              </span>
-              <div className="text-left">
-                <span className="block font-bold text-xs text-white">
-                  ⚡ 1-Click Workspace Demo Login
+          {/* 1-Click Fast Login Actions */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handleDirectLogin("superadmin")}
+              disabled={loading}
+              className="w-full py-2.5 px-3.5 rounded-xl bg-linear-to-r from-slate-900 via-slate-800 to-indigo-950 hover:from-slate-800 hover:to-indigo-900 text-white font-bold text-xs shadow-md border border-indigo-500/30 flex items-center justify-between transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+                  <ShieldCheck className="w-4 h-4" />
                 </span>
+                <div className="text-left">
+                  <span className="block font-bold text-xs text-white">
+                    ⚡ 1-Click Super Admin Login
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    Master platform controller & manage 1,000s of workspaces
+                  </span>
+                </div>
               </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-indigo-300 group-hover:translate-x-1 transition-transform" />
-          </button>
+              <ArrowRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDirectLogin("ORG_ADMIN")}
+              disabled={loading}
+              className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs border border-slate-200 flex items-center justify-between transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <Building className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-[11px] font-semibold">1-Click Workspace Admin Login</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
 
           {errorMessage && (
             <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in">
