@@ -62,6 +62,32 @@ export default function LoginPage() {
     setErrorMessage("");
 
     try {
+      if (activeTab === "register") {
+        if (!fullName.trim()) throw new Error("Full name is required");
+        if (!companyName.trim()) throw new Error("Company / Organization name is required");
+        if (!email.trim()) throw new Error("Email address is required");
+        if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
+
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: fullName.trim(),
+            organizationName: companyName.trim(),
+            email: email.trim(),
+            password,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Registration failed");
+        }
+
+        window.location.replace("/dashboard");
+        return;
+      }
+
       const isPlatformAdmin = email.trim().toLowerCase() === "admin@emperorsmartsolutions.com";
       
       const res = await fetch("/api/auth/login", {
@@ -395,7 +421,14 @@ export default function LoginPage() {
                 Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setActiveTab("register")}
+                  onClick={() => {
+                    setActiveTab("register");
+                    if (email === "admin@company.com") {
+                      setEmail("");
+                      setPassword("");
+                    }
+                    setErrorMessage("");
+                  }}
                   className="text-indigo-600 font-semibold hover:underline cursor-pointer"
                 >
                   Create account

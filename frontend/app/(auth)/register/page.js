@@ -13,14 +13,32 @@ export default function RegisterPage() {
     email: "",
     password: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 600);
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          organizationName: form.company.trim(),
+          email: form.email.trim(),
+          password: form.password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to create organization");
+      }
+      window.location.replace("/dashboard");
+    } catch (err) {
+      setErrorMessage(err.message || "Registration failed");
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,6 +57,11 @@ export default function RegisterPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <div className="bg-white dark:bg-neutral-900 py-8 px-6 shadow-xl border border-neutral-200 dark:border-neutral-800 rounded-3xl sm:px-10">
+          {errorMessage && (
+            <div className="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs">
+              {errorMessage}
+            </div>
+          )}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
