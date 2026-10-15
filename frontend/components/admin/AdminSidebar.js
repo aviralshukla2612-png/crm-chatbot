@@ -84,7 +84,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+        <nav className="px-3 py-2 space-y-1">
           {adminNavItems.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -115,8 +115,8 @@ export default function AdminSidebar({ isOpen, onClose }) {
           })}
         </nav>
 
-        {/* Bottom Profile Area */}
-        <div className="p-3 pb-6 mb-2 border-t border-slate-800/80 space-y-2 mt-auto">
+        {/* Profile and Platform Status directly following menu items */}
+        <div className="p-3 border-t border-slate-800/80 space-y-2">
           {/* Platform Status indicator */}
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-400 bg-slate-800/30">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -138,6 +138,9 @@ export default function AdminSidebar({ isOpen, onClose }) {
             </div>
           </div>
         </div>
+
+        {/* Empty flexible space below */}
+        <div className="flex-1" />
       </aside>
     </>
   );
