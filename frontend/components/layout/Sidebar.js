@@ -25,11 +25,12 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Analytics AI", href: "/analytics-ai", icon: Sparkles },
   { name: "Bots", href: "/bots", icon: Bot },
   { name: "Knowledge", href: "/knowledge", icon: BookOpen },
   { name: "Conversations", href: "/conversations", icon: MessageSquare },
   { name: "Leads", href: "/leads", icon: Users2 },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Bot Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Integrations", href: "/integrations", icon: Puzzle },
   { name: "Team", href: "/team", icon: UserPlus },
   { name: "Settings", href: "/settings", icon: Settings },
